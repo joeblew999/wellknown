@@ -1,59 +1,95 @@
 package main
 
 import (
+	_ "embed"
+	"flag"
 	"fmt"
+	"html/template"
 	"log"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/joeblew999/wellknown/pkg/google"
 	"github.com/joeblew999/wellknown/pkg/types"
 )
 
+//go:embed index.html
+var indexHTML string
+
+var (
+	port = flag.String("port", "8080", "Port to run the web server on")
+)
+
+type PageData struct {
+	GeneratedURL string
+	Error        string
+	Event        *types.CalendarEvent
+}
+
 func main() {
-	fmt.Println("=== wellknown Basic Examples ===\n")
+	flag.Parse()
 
-	// Google Calendar Example - Using the real library!
-	fmt.Println("1. Google Calendar Event (using wellknown library):")
+	tmpl := template.Must(template.New("index").Parse(indexHTML))
 
-	event := types.CalendarEvent{
-		Title:       "Team Meeting",
-		StartTime:   time.Date(2025, 10, 26, 14, 0, 0, 0, time.UTC),
-		EndTime:     time.Date(2025, 10, 26, 15, 0, 0, 0, time.UTC),
-		Location:    "Conference Room A",
-		Description: "Discuss Q4 roadmap",
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			// Show empty form
+			tmpl.Execute(w, PageData{})
+			return
+		}
+
+		if r.Method == "POST" {
+			// Parse form
+			r.ParseForm()
+
+			// Parse times
+			startTime, err := time.Parse("2006-01-02T15:04", r.FormValue("start_time"))
+			if err != nil {
+				tmpl.Execute(w, PageData{Error: "Invalid start time: " + err.Error()})
+				return
+			}
+
+			endTime, err := time.Parse("2006-01-02T15:04", r.FormValue("end_time"))
+			if err != nil {
+				tmpl.Execute(w, PageData{Error: "Invalid end time: " + err.Error()})
+				return
+			}
+
+			// Create event
+			event := types.CalendarEvent{
+				Title:       r.FormValue("title"),
+				StartTime:   startTime,
+				EndTime:     endTime,
+				Location:    r.FormValue("location"),
+				Description: r.FormValue("description"),
+			}
+
+			// Generate URL
+			url, err := google.Calendar(event)
+			if err != nil {
+				tmpl.Execute(w, PageData{
+					Error: "Failed to generate URL: " + err.Error(),
+					Event: &event,
+				})
+				return
+			}
+
+			// Show result
+			tmpl.Execute(w, PageData{
+				GeneratedURL: url,
+				Event:        &event,
+			})
+			return
+		}
+	})
+
+	addr := ":" + *port
+	fmt.Fprintf(os.Stderr, "🚀 wellknown demo server starting...\n")
+	fmt.Fprintf(os.Stderr, "📱 Open http://localhost%s in your browser\n", addr)
+	fmt.Fprintf(os.Stderr, "💡 Press Ctrl+C to stop\n\n")
+
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		log.Fatalf("Server failed: %v", err)
 	}
-
-	googleCalendarURL, err := google.Calendar(event)
-	if err != nil {
-		log.Fatalf("Failed to generate Google Calendar URL: %v", err)
-	}
-	fmt.Printf("   URL: %s\n", googleCalendarURL)
-	fmt.Printf("   ✓ Generated with wellknown library\n\n")
-
-	// Another example with minimal fields
-	fmt.Println("2. Quick Meeting (minimal fields):")
-	quickMeeting := types.CalendarEvent{
-		Title:     "Quick Sync",
-		StartTime: time.Now().Add(24 * time.Hour), // Tomorrow
-		EndTime:   time.Now().Add(24*time.Hour + 30*time.Minute), // 30 min duration
-	}
-
-	quickMeetingURL, err := google.Calendar(quickMeeting)
-	if err != nil {
-		log.Fatalf("Failed to generate URL: %v", err)
-	}
-	fmt.Printf("   URL: %s\n", quickMeetingURL)
-	fmt.Printf("   ✓ No location or description needed\n\n")
-
-	// Placeholder for future implementations
-	fmt.Println("=== Coming Soon ===\n")
-	fmt.Println("3. Apple Calendar - Not yet implemented")
-	fmt.Println("4. Google Maps - Not yet implemented")
-	fmt.Println("5. Apple Maps - Not yet implemented")
-	fmt.Println("6. Google Drive - Not yet implemented")
-	fmt.Println("7. Apple Files/iCloud - Not yet implemented")
-
-	fmt.Println("\n=== End of Examples ===")
-	fmt.Println("\nℹ️  Google Calendar deep links are now generated using the wellknown library!")
-	fmt.Println("ℹ️  More platforms coming soon...")
 }

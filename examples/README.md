@@ -19,7 +19,15 @@ Demonstrates native deep link generation for:
 go run ./basic/main.go
 ```
 
-### 2. WebView (`./webview`)
+### 2. WebView (`./mcp`)
+Demonstrates claude code calling out MCP.
+
+**Run:**
+```bash
+go run ./mcp/main.go
+```
+
+### 3. WebView (`./webview`)
 Demonstrates web fallback URLs for scenarios where native apps aren't available:
 - Google Calendar web interface
 - Google Maps web interface

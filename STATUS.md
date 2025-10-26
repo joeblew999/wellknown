@@ -1,6 +1,6 @@
 # Project Status
 
-## Current State: PLANNING COMPLETE - Examples Added
+## Current State: FIRST IMPLEMENTATION COMPLETE ✅
 
 **Last Updated**: 2025-10-26
 
@@ -25,33 +25,37 @@ The `wellknown` project is a Universal Go library for generating and opening dee
 - [x] .gitignore configuration
 - [x] Go module initialization (`go.mod`)
 - [x] Initial git commits
-- [x] Folder structure design and approval
+- [x] Folder structure design and approval (simplified pkg/ structure)
 - [x] Template strategy decision (go:embed + custom support)
 - [x] Go workspace decision (go.work for examples)
 - [x] CLAUDE.md with critical instructions (module name, mobile-first, etc.)
 - [x] Examples with go.work setup (basic and webview examples)
+- [x] **pkg/types/calendar.go** - Shared CalendarEvent struct with validation
+- [x] **pkg/google/calendar.go** - Google Calendar URL generator
+- [x] **pkg/google/calendar.tmpl** - Google Calendar URL template
+- [x] **pkg/google/calendar_test.go** - Comprehensive unit tests (all passing)
+- [x] **examples/basic** - Updated to use real library
 
 ### 🚧 In Progress
-- [ ] Implementation ready to begin
+- [ ] Additional platform implementations
 
 ### 📋 Planned - Infrastructure
-- [ ] Create folder structure
-- [ ] Set up go.work and go.work.example
-- [ ] Update .gitignore for go.work files
-- [ ] Create internal/template package (renderer, loader)
-- [ ] Create pkg/deeplink core interfaces
+- [ ] Create pkg/platform/ for platform detection
+- [ ] Platform detection with override support
+- [ ] URL opener interface (pkg/opener/)
+- [ ] Helper function for auto-platform selection
 
 ### 📋 Planned - Google Platform
-- [ ] Google Calendar (pkg/deeplink/google/calendar.go + calendar.tmpl)
-- [ ] Google Maps (pkg/deeplink/google/maps.go + maps.tmpl)
-- [ ] Google Drive (pkg/deeplink/google/drive.go + drive.tmpl)
-- [ ] Google web fallbacks (pkg/deeplink/web/google.go + templates)
+- [x] Google Calendar (pkg/google/calendar.go + calendar.tmpl) ✅
+- [ ] Google Maps (pkg/google/maps.go + maps.tmpl)
+- [ ] Google Drive (pkg/google/drive.go + drive.tmpl)
+- [ ] Google web fallbacks (pkg/web/google.go + templates)
 
 ### 📋 Planned - Apple Platform
-- [ ] Apple Calendar (pkg/deeplink/apple/calendar.go + calendar.tmpl)
-- [ ] Apple Maps (pkg/deeplink/apple/maps.go + maps.tmpl)
-- [ ] Apple Files (pkg/deeplink/apple/files.go + files.tmpl)
-- [ ] Apple web fallbacks (pkg/deeplink/web/apple.go + templates)
+- [ ] Apple Calendar (pkg/apple/calendar.go + calendar.tmpl)
+- [ ] Apple Maps (pkg/apple/maps.go + maps.tmpl)
+- [ ] Apple Files (pkg/apple/files.go + files.tmpl)
+- [ ] Apple web fallbacks (pkg/web/apple.go + templates)
 
 ### 📋 Planned - Additional Features
 - [ ] Platform detection interface (pkg/platform/detect.go)
