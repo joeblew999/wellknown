@@ -34,17 +34,25 @@
 
 ## Supported Deep Links
 
+### ⚠️ CRITICAL: Google Calendar Native Deep Links Are NOT Supported!
+
+**Research Finding (2025-10-26):**
+- `comgooglecalendar://` exists but does NOT support event parameters
+- Google does not document any way to pass event data via native deep link
+- **Verified**: Web URL works, native deep link does not
+- **Decision**: Our library uses web URLs as the primary approach for Google Calendar
+
 ### Google Ecosystem
-- Calendar: `googlecalendar://render?...`
-- Maps: `comgooglemaps://?q=`
-- Drive: `googledrive://`
-- Mail: `mailto:`
+- Calendar: ❌ No native deep link - **Use `https://calendar.google.com` instead**
+- Maps: `comgooglemaps://?q=` ✅ Documented and working
+- Drive: `googledrive://` ⚠️ May work but undocumented
+- Mail: `mailto:` ✅ Universal standard
 
 ### Apple Ecosystem
-- Calendar: `calshow:`
-- Maps: `maps://?q=`
-- Files: `shareddocuments://`
-- Mail: `mailto:`
+- Calendar: `calshow:` ✅ Works on macOS/iOS
+- Maps: `maps://?q=` ✅ Universal on Apple devices
+- Files: `shareddocuments://` ⚠️ iOS only
+- Mail: `mailto:` ✅ Universal standard
 
 ---
 

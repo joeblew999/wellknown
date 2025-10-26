@@ -16,8 +16,12 @@ var calendarTemplate string
 
 // Calendar generates a Google Calendar deep link URL for the given event.
 //
-// The generated URL uses the googlecalendar:// scheme which opens the Google Calendar
-// app on mobile devices (iOS/Android) if installed.
+// ⚠️ WARNING: Google Calendar native deep links (googlecalendar://) do NOT work!
+// Google does not support passing event parameters via native deep links.
+// This function exists for API completeness but the URLs it generates will not work.
+//
+// ✅ RECOMMENDED: Use web.GoogleCalendar() instead which generates working
+// https://calendar.google.com URLs that open in any browser and work reliably.
 //
 // Returns an error if the event fails validation.
 //
