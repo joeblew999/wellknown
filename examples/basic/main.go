@@ -75,13 +75,17 @@ func handleGoogleCalendar(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
 
 	if r.Method == "GET" {
-		templates.ExecuteTemplate(w, "base", PageData{
+		err := templates.ExecuteTemplate(w, "base", PageData{
 			Platform:     "google",
 			AppType:      "calendar",
 			CurrentPage:  "custom",
 			TemplateName: "google_calendar_custom",
 			TestCases:    google.CalendarEvents,
 		})
+		if err != nil {
+			log.Printf("Template execution error: %v", err)
+			http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
