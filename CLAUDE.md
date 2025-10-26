@@ -19,15 +19,10 @@
 3. **NEVER use `docs/` folder** for Claude tracking documents (user-facing docs only)
 4. **NEVER add external dependencies** to core library (stdlib only)
 
----
-
-## IMPORTANT: File Responsibilities
-
-**CLAUDE.md** (this file): Technical decisions, architecture, how things work
-**STATUS.md**: Current state, what's done, what's next, milestones
-
-**⚠️ ALWAYS UPDATE STATUS.md** when making progress or completing tasks
-**🚫 DO NOT USE `docs/` FOLDER** for Claude tracking documents (user-facing docs only)
+### 📁 File Responsibilities:
+- **CLAUDE.md** (this file): Technical decisions, architecture, how things work
+- **STATUS.md**: Current state, what's done, what's next, milestones
+- **docs/**: User-facing documentation ONLY (never for Claude tracking)
 
 ---
 
