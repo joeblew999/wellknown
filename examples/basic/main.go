@@ -3,12 +3,10 @@ package main
 import (
 	"embed"
 	"flag"
-	"fmt"
 	"html/template"
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/joeblew999/wellknown/examples/basic/handlers"
@@ -48,10 +46,11 @@ func main() {
 	handlers.LocalURL = "http://localhost" + addr
 	handlers.MobileURL = "http://" + localIP + addr
 
-	fmt.Fprintf(os.Stderr, "🚀 wellknown demo server starting...\n")
-	fmt.Fprintf(os.Stderr, "💻 Local:  %s\n", handlers.LocalURL)
-	fmt.Fprintf(os.Stderr, "📱 Mobile: %s\n", handlers.MobileURL)
-	fmt.Fprintf(os.Stderr, "\n💡 Press Ctrl+C to stop\n\n")
+	log.Println("🚀 wellknown demo server starting...")
+	log.Printf("💻 Local:  %s", handlers.LocalURL)
+	log.Printf("📱 Mobile: %s", handlers.MobileURL)
+	log.Println("")
+	log.Println("💡 Press Ctrl+C to stop")
 
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatalf("Server failed: %v", err)
