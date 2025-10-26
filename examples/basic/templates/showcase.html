@@ -1,0 +1,22 @@
+{{define "content"}}
+<p style="margin-bottom: 20px; color: #666;">
+    Click any example below to test the generated URLs:
+</p>
+
+{{range .TestCases}}
+<div class="showcase-item">
+    <h3>{{.Name}}</h3>
+    <div class="details">
+        <strong>Title:</strong> {{.Event.Title}}<br>
+        <strong>Time:</strong> {{.Event.StartTime.Format "2006-01-02 15:04"}} - {{.Event.EndTime.Format "15:04"}}<br>
+        {{if .Event.Location}}<strong>Location:</strong> {{.Event.Location}}<br>{{end}}
+        {{if .Event.Description}}<strong>Description:</strong> {{.Event.Description}}<br>{{end}}
+    </div>
+    <div class="url">{{.ExpectedURL}}</div>
+    <div class="actions">
+        <button class="btn-open" onclick="window.open('{{.ExpectedURL}}', '_blank')">Open Calendar</button>
+        <button class="btn-copy" onclick="copyURL('{{.ExpectedURL}}', this)">Copy URL</button>
+    </div>
+</div>
+{{end}}
+{{end}}

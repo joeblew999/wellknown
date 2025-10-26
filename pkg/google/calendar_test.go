@@ -5,13 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/joeblew999/wellknown/pkg/testdata"
 	"github.com/joeblew999/wellknown/pkg/types"
 )
 
 // TestCalendar_ValidCases tests all valid calendar events from testdata
 func TestCalendar_ValidCases(t *testing.T) {
-	for _, tc := range testdata.CalendarEvents {
+	for _, tc := range CalendarEvents {
 		t.Run(tc.Name, func(t *testing.T) {
 			got, err := Calendar(tc.Event)
 			if err != nil {
@@ -26,7 +25,7 @@ func TestCalendar_ValidCases(t *testing.T) {
 
 // TestCalendar_ErrorCases tests all error cases from testdata
 func TestCalendar_ErrorCases(t *testing.T) {
-	for _, tc := range testdata.ErrorTestCases {
+	for _, tc := range ErrorTestCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			_, err := Calendar(tc.Event)
 			if err == nil {

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/joeblew999/wellknown/pkg/google"
-	"github.com/joeblew999/wellknown/pkg/testdata"
 	"github.com/joeblew999/wellknown/pkg/types"
 )
 
@@ -19,27 +18,30 @@ import (
 var templatesFS embed.FS
 
 var (
-	port = flag.String("port", "8080", "Port to run the web server on")
-	tmpl *template.Template
+	port      = flag.String("port", "8080", "Port to run the web server on")
+	templates *template.Template
 )
 
 type PageData struct {
-	CurrentPage  string // "custom" or "showcase"
+	CurrentPage  string
 	GeneratedURL string
 	Error        string
 	Event        *types.CalendarEvent
-	TestCases    []testdata.CalendarTestCase
+	TestCases    []google.CalendarTestCase
 }
 
 func main() {
 	flag.Parse()
-	
-	tmpl = template.Must(template.ParseFS(templatesFS, "templates/index.html"))
 
-	// Route: / (Custom - user input)
+	// Parse all templates with composition
+	var err error
+	templates, err = template.ParseFS(templatesFS, "templates/*.html")
+	if err != nil {
+		log.Fatalf("Failed to parse templates: %v", err)
+	}
+
+	// Routes
 	http.HandleFunc("/", handleCustom)
-	
-	// Route: /showcase (Showcase - testdata)
 	http.HandleFunc("/showcase", handleShowcase)
 
 	addr := ":" + *port
@@ -59,9 +61,9 @@ func handleCustom(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
 		// Show custom form
-		tmpl.Execute(w, PageData{
+		templates.ExecuteTemplate(w, "base", PageData{
 			CurrentPage: "custom",
-			TestCases:   testdata.CalendarEvents,
+			TestCases:   google.CalendarEvents,
 		})
 		return
 	}
@@ -74,10 +76,10 @@ func handleCustom(w http.ResponseWriter, r *http.Request) {
 		startTime, err := time.Parse("2006-01-02T15:04", r.FormValue("start_time"))
 		if err != nil {
 			log.Printf("ERROR parsing start time: %v", err)
-			tmpl.Execute(w, PageData{
+			templates.ExecuteTemplate(w, "base", PageData{
 				CurrentPage: "custom",
 				Error:       "Invalid start time format: " + err.Error(),
-				TestCases:   testdata.CalendarEvents,
+				TestCases:   google.CalendarEvents,
 			})
 			return
 		}
@@ -85,10 +87,10 @@ func handleCustom(w http.ResponseWriter, r *http.Request) {
 		endTime, err := time.Parse("2006-01-02T15:04", r.FormValue("end_time"))
 		if err != nil {
 			log.Printf("ERROR parsing end time: %v", err)
-			tmpl.Execute(w, PageData{
+			templates.ExecuteTemplate(w, "base", PageData{
 				CurrentPage: "custom",
 				Error:       "Invalid end time format: " + err.Error(),
-				TestCases:   testdata.CalendarEvents,
+				TestCases:   google.CalendarEvents,
 			})
 			return
 		}
@@ -106,11 +108,11 @@ func handleCustom(w http.ResponseWriter, r *http.Request) {
 		url, err := google.Calendar(event)
 		if err != nil {
 			log.Printf("ERROR: Validation failed: %v", err)
-			tmpl.Execute(w, PageData{
+			templates.ExecuteTemplate(w, "base", PageData{
 				CurrentPage: "custom",
 				Error:       err.Error(),
 				Event:       &event,
-				TestCases:   testdata.CalendarEvents,
+				TestCases:   google.CalendarEvents,
 			})
 			return
 		}
@@ -118,11 +120,11 @@ func handleCustom(w http.ResponseWriter, r *http.Request) {
 		log.Printf("SUCCESS! Generated URL: %s", url)
 
 		// Show result
-		tmpl.Execute(w, PageData{
+		templates.ExecuteTemplate(w, "base", PageData{
 			CurrentPage:  "custom",
 			GeneratedURL: url,
 			Event:        &event,
-			TestCases:    testdata.CalendarEvents,
+			TestCases:    google.CalendarEvents,
 		})
 		return
 	}
@@ -130,10 +132,10 @@ func handleCustom(w http.ResponseWriter, r *http.Request) {
 
 func handleShowcase(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
-	
+
 	// Show showcase page with testdata
-	tmpl.Execute(w, PageData{
+	templates.ExecuteTemplate(w, "base", PageData{
 		CurrentPage: "showcase",
-		TestCases:   testdata.CalendarEvents,
+		TestCases:   google.CalendarEvents,
 	})
 }

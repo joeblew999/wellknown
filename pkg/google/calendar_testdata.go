@@ -1,6 +1,6 @@
 // Package testdata provides shared test cases for both unit tests and examples.
 // This ensures consistency between what we test and what we demonstrate.
-package testdata
+package google
 
 import (
 	"time"
