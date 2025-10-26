@@ -189,12 +189,22 @@
         </div>
         {{end}}
 
-        {{if .GeneratedURL}}
+        {{if .NativeURL}}
         <div class="result">
-            <h2>✅ Generated Deep Link</h2>
-            <div class="url-display" id="generatedUrl">{{.GeneratedURL}}</div>
-            <a href="{{.GeneratedURL}}" class="url-link">📱 Open in Google Calendar</a>
-            <button class="copy-btn" onclick="copyUrl()">📋 Copy URL</button>
+            <h2>✅ Native Deep Link (Mobile)</h2>
+            <div class="url-display" id="nativeUrl">{{.NativeURL}}</div>
+            <a href="{{.NativeURL}}" class="url-link">📱 Open Native App</a>
+            <button class="copy-btn" onclick="copyUrl('nativeUrl')">📋 Copy</button>
+        </div>
+
+        <div class="result" style="margin-top: 20px;">
+            <h2>🌐 Web Fallback (Testable Now!)</h2>
+            <div class="url-display" id="webUrl">{{.WebURL}}</div>
+            <a href="{{.WebURL}}" class="url-link" target="_blank">🔗 Test in Browser</a>
+            <button class="copy-btn" onclick="copyUrl('webUrl')">📋 Copy</button>
+            <p style="margin-top: 15px; color: #666; font-size: 13px;">
+                💡 <strong>Tip:</strong> Test the web URL first to verify it works before trying the native deep link!
+            </p>
         </div>
         {{end}}
 
@@ -222,8 +232,8 @@
             document.getElementById('end_time').value = end.toISOString().slice(0, 16);
         }
 
-        function copyUrl() {
-            const url = document.getElementById('generatedUrl').textContent;
+        function copyUrl(elementId) {
+            const url = document.getElementById(elementId).textContent;
             navigator.clipboard.writeText(url).then(() => {
                 const btn = event.target;
                 const originalText = btn.textContent;

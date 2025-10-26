@@ -12,6 +12,7 @@ import (
 
 	"github.com/joeblew999/wellknown/pkg/google"
 	"github.com/joeblew999/wellknown/pkg/types"
+	"github.com/joeblew999/wellknown/pkg/web"
 )
 
 //go:embed templates/*
@@ -22,9 +23,10 @@ var (
 )
 
 type PageData struct {
-	GeneratedURL string
-	Error        string
-	Event        *types.CalendarEvent
+	NativeURL string
+	WebURL    string
+	Error     string
+	Event     *types.CalendarEvent
 }
 
 func main() {
@@ -65,20 +67,31 @@ func main() {
 				Description: r.FormValue("description"),
 			}
 
-			// Generate URL
-			url, err := google.Calendar(event)
+			// Generate native deep link URL
+			nativeURL, err := google.Calendar(event)
 			if err != nil {
 				tmpl.Execute(w, PageData{
-					Error: "Failed to generate URL: " + err.Error(),
+					Error: "Failed to generate native URL: " + err.Error(),
 					Event: &event,
 				})
 				return
 			}
 
-			// Show result
+			// Generate web fallback URL (testable in browser!)
+			webURL, err := web.GoogleCalendar(event)
+			if err != nil {
+				tmpl.Execute(w, PageData{
+					Error: "Failed to generate web URL: " + err.Error(),
+					Event: &event,
+				})
+				return
+			}
+
+			// Show both URLs
 			tmpl.Execute(w, PageData{
-				GeneratedURL: url,
-				Event:        &event,
+				NativeURL: nativeURL,
+				WebURL:    webURL,
+				Event:     &event,
 			})
 			return
 		}
