@@ -14,21 +14,71 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f5f5;
             min-height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            margin: 0;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
             padding: 20px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            font-size: 20px;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .nav-section {
+            margin-bottom: 25px;
+        }
+
+        .nav-section-title {
+            font-size: 12px;
+            color: #95a5a6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 10px 15px;
+            color: #ecf0f1;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background: #34495e;
+        }
+
+        .nav-link.active {
+            background: #3498db;
+            color: white;
         }
 
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            flex: 1;
             padding: 40px;
-            max-width: 800px;
-            width: 100%;
+            overflow-y: auto;
+        }
+
+        .content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 900px;
         }
 
         h1 {
@@ -37,36 +87,10 @@
             font-size: 28px;
         }
 
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-
-        .nav {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #e0e0e0;
-        }
-
-        .nav a {
-            padding: 12px 24px;
-            text-decoration: none;
-            border-bottom: 3px solid transparent;
-            font-size: 16px;
-            font-weight: 600;
-            color: #666;
-            transition: all 0.3s;
-        }
-
-        .nav a:hover {
-            color: #667eea;
-        }
-
-        .nav a.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
         }
 
         .form-group {
@@ -212,34 +236,36 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📅 wellknown</h1>
-        <p class="subtitle">Deep Link Generator - Multi-Platform Testing</p>
+    <div class="sidebar">
+        <h2>📅 wellknown</h2>
 
-        <div class="nav">
-            <select onchange="window.location=this.value" style="padding: 12px; font-size: 14px; border-radius: 6px; border: 2px solid #e0e0e0;">
-                <optgroup label="Google Calendar">
-                    <option value="/google/calendar" {{if and (eq .Platform "google") (eq .AppType "calendar") (eq .CurrentPage "custom")}}selected{{end}}>Custom</option>
-                    <option value="/google/calendar/showcase" {{if and (eq .Platform "google") (eq .AppType "calendar") (eq .CurrentPage "showcase")}}selected{{end}}>Showcase</option>
-                </optgroup>
-                <optgroup label="Google Maps (stub)">
-                    <option value="/google/maps" {{if and (eq .Platform "google") (eq .AppType "maps") (eq .CurrentPage "custom")}}selected{{end}}>Custom</option>
-                    <option value="/google/maps/showcase" {{if and (eq .Platform "google") (eq .AppType "maps") (eq .CurrentPage "showcase")}}selected{{end}}>Showcase</option>
-                </optgroup>
-            </select>
+        <div class="nav-section">
+            <div class="nav-section-title">Google Calendar</div>
+            <a href="/google/calendar" class="nav-link {{if and (eq .Platform "google") (eq .AppType "calendar") (eq .CurrentPage "custom")}}active{{end}}">Custom</a>
+            <a href="/google/calendar/showcase" class="nav-link {{if and (eq .Platform "google") (eq .AppType "calendar") (eq .CurrentPage "showcase")}}active{{end}}">Showcase</a>
         </div>
 
-        {{if .IsStub}}
-            {{template "stub" .}}
-        {{else if eq .TemplateName "google_calendar_custom"}}
-            {{template "google_calendar_custom" .}}
-        {{else if eq .TemplateName "google_calendar_showcase"}}
-            {{template "google_calendar_showcase" .}}
-        {{else}}
-            <div style="padding: 40px; text-align: center;">
-                <p style="color: #999;">Template "{{.TemplateName}}" not found</p>
-            </div>
-        {{end}}
+        <div class="nav-section">
+            <div class="nav-section-title">Google Maps</div>
+            <a href="/google/maps" class="nav-link {{if and (eq .Platform "google") (eq .AppType "maps") (eq .CurrentPage "custom")}}active{{end}}">Custom</a>
+            <a href="/google/maps/showcase" class="nav-link {{if and (eq .Platform "google") (eq .AppType "maps") (eq .CurrentPage "showcase")}}active{{end}}">Showcase</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content">
+            {{if .IsStub}}
+                {{template "stub" .}}
+            {{else if eq .TemplateName "google_calendar_custom"}}
+                {{template "google_calendar_custom" .}}
+            {{else if eq .TemplateName "google_calendar_showcase"}}
+                {{template "google_calendar_showcase" .}}
+            {{else}}
+                <div style="padding: 40px; text-align: center;">
+                    <p style="color: #999;">Template "{{.TemplateName}}" not found</p>
+                </div>
+            {{end}}
+        </div>
     </div>
 
     <script>
