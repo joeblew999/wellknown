@@ -27,6 +27,7 @@ type PageData struct {
 	Platform     string // "google", "apple"
 	AppType      string // "calendar", "maps", "drive", etc
 	CurrentPage  string // "custom", "showcase"
+	TemplateName string // template to use: "google_calendar_custom", etc
 	IsStub       bool   // true if this is a stub page
 	GeneratedURL string
 	Error        string
@@ -47,28 +48,18 @@ func main() {
 		log.Fatalf("Failed to parse templates: %v", err)
 	}
 
-	// Google Calendar routes
+	// Routes
+	http.HandleFunc("/", handleGoogleCalendar)                      // Home = Google Calendar
 	http.HandleFunc("/google/calendar", handleGoogleCalendar)
 	http.HandleFunc("/google/calendar/showcase", handleGoogleCalendarShowcase)
-
-	// Google Maps routes (stub)
 	http.HandleFunc("/google/maps", handleStub("google", "maps"))
 	http.HandleFunc("/google/maps/showcase", handleStub("google", "maps"))
-
-	// Redirect root to /google/calendar
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			http.Redirect(w, r, "/google/calendar", http.StatusFound)
-			return
-		}
-		http.NotFound(w, r)
-	})
 
 	addr := ":" + *port
 	fmt.Fprintf(os.Stderr, "🚀 wellknown demo server starting...\n")
 	fmt.Fprintf(os.Stderr, "📱 Open http://localhost%s in your browser\n", addr)
-	fmt.Fprintf(os.Stderr, "\n")
-	fmt.Fprintf(os.Stderr, "Routes:\n")
+	fmt.Fprintf(os.Stderr, "\nRoutes:\n")
+	fmt.Fprintf(os.Stderr, "  /                         - Google Calendar Custom (home)\n")
 	fmt.Fprintf(os.Stderr, "  /google/calendar          - Google Calendar Custom\n")
 	fmt.Fprintf(os.Stderr, "  /google/calendar/showcase - Google Calendar Showcase\n")
 	fmt.Fprintf(os.Stderr, "  /google/maps              - Google Maps (stub)\n")
@@ -85,10 +76,11 @@ func handleGoogleCalendar(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
 		templates.ExecuteTemplate(w, "base", PageData{
-			Platform:    "google",
-			AppType:     "calendar",
-			CurrentPage: "custom",
-			TestCases:   google.CalendarEvents,
+			Platform:     "google",
+			AppType:      "calendar",
+			CurrentPage:  "custom",
+			TemplateName: "google_calendar_custom",
+			TestCases:    google.CalendarEvents,
 		})
 		return
 	}
@@ -99,11 +91,12 @@ func handleGoogleCalendar(w http.ResponseWriter, r *http.Request) {
 		startTime, err := time.Parse("2006-01-02T15:04", r.FormValue("start_time"))
 		if err != nil {
 			templates.ExecuteTemplate(w, "base", PageData{
-				Platform:    "google",
-				AppType:     "calendar",
-				CurrentPage: "custom",
-				Error:       "Invalid start time format: " + err.Error(),
-				TestCases:   google.CalendarEvents,
+				Platform:     "google",
+				AppType:      "calendar",
+				CurrentPage:  "custom",
+				TemplateName: "google_calendar_custom",
+				Error:        "Invalid start time format: " + err.Error(),
+				TestCases:    google.CalendarEvents,
 			})
 			return
 		}
@@ -111,11 +104,12 @@ func handleGoogleCalendar(w http.ResponseWriter, r *http.Request) {
 		endTime, err := time.Parse("2006-01-02T15:04", r.FormValue("end_time"))
 		if err != nil {
 			templates.ExecuteTemplate(w, "base", PageData{
-				Platform:    "google",
-				AppType:     "calendar",
-				CurrentPage: "custom",
-				Error:       "Invalid end time format: " + err.Error(),
-				TestCases:   google.CalendarEvents,
+				Platform:     "google",
+				AppType:      "calendar",
+				CurrentPage:  "custom",
+				TemplateName: "google_calendar_custom",
+				Error:        "Invalid end time format: " + err.Error(),
+				TestCases:    google.CalendarEvents,
 			})
 			return
 		}
@@ -131,12 +125,13 @@ func handleGoogleCalendar(w http.ResponseWriter, r *http.Request) {
 		url, err := google.Calendar(event)
 		if err != nil {
 			templates.ExecuteTemplate(w, "base", PageData{
-				Platform:    "google",
-				AppType:     "calendar",
-				CurrentPage: "custom",
-				Error:       err.Error(),
-				Event:       &event,
-				TestCases:   google.CalendarEvents,
+				Platform:     "google",
+				AppType:      "calendar",
+				CurrentPage:  "custom",
+				TemplateName: "google_calendar_custom",
+				Error:        err.Error(),
+				Event:        &event,
+				TestCases:    google.CalendarEvents,
 			})
 			return
 		}
@@ -147,6 +142,7 @@ func handleGoogleCalendar(w http.ResponseWriter, r *http.Request) {
 			Platform:     "google",
 			AppType:      "calendar",
 			CurrentPage:  "custom",
+			TemplateName: "google_calendar_custom",
 			GeneratedURL: url,
 			Event:        &event,
 			TestCases:    google.CalendarEvents,
@@ -159,14 +155,14 @@ func handleGoogleCalendarShowcase(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
 
 	templates.ExecuteTemplate(w, "base", PageData{
-		Platform:    "google",
-		AppType:     "calendar",
-		CurrentPage: "showcase",
-		TestCases:   google.CalendarEvents,
+		Platform:     "google",
+		AppType:      "calendar",
+		CurrentPage:  "showcase",
+		TemplateName: "google_calendar_showcase",
+		TestCases:    google.CalendarEvents,
 	})
 }
 
-// handleStub returns a handler for stub pages
 func handleStub(platform, appType string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Request: %s %s (stub)", r.Method, r.URL.Path)

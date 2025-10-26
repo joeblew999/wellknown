@@ -231,8 +231,14 @@
 
         {{if .IsStub}}
             {{template "stub" .}}
+        {{else if eq .TemplateName "google_calendar_custom"}}
+            {{template "google_calendar_custom" .}}
+        {{else if eq .TemplateName "google_calendar_showcase"}}
+            {{template "google_calendar_showcase" .}}
         {{else}}
-            {{template "content" .}}
+            <div style="padding: 40px; text-align: center;">
+                <p style="color: #999;">Template "{{.TemplateName}}" not found</p>
+            </div>
         {{end}}
     </div>
 
