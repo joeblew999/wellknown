@@ -5,50 +5,20 @@ This directory contains example programs demonstrating the wellknown library.
 ## Examples
 
 ### 1. Basic (`./basic`)
-web demo that demonstrates native deep link generation for:
-- Google Calendar events
-- Apple Calendar events
-- Google Maps navigation
-- Apple Maps navigation
-- Google Drive files
-- Apple Files/iCloud
-- Email (universal)
-
-**Run:**
-```bash
-go run ./basic/main.go
-```
+web demo that demonstrates link generation for
 
 ### 2. WebView (`./mcp`)
-Demonstrates claude code calling out MCP.
-
-**Run:**
-```bash
-go run ./mcp/main.go
-```
+Demonstrates claude code calling out to the MCP.
 
 ### 3. WebView (`./webview`)
-Demonstrates web fallback URLs for scenarios where native apps aren't available:
-- Google Calendar web interface
-- Google Maps web interface
-- Google Drive web interface
-- iCloud web interface
+Demonstrates web gui running inside a webview.
 
-**Run:**
-```bash
-go run ./webview/main.go
-```
+### 4. Custom (`./custom`)
+Demonstrates custom url schema.
 
 ## Workspace Setup
 
 This project uses Go workspaces. The `go.work` file in the project root coordinates all modules:
-
-```
-go.work
-├── . (main module)
-├── ./examples/basic
-└── ./examples/webview
-```
 
 ## Development
 
@@ -62,7 +32,7 @@ Example go.mod:
 ```go
 module github.com/joeblew999/wellknown/examples/myexample
 
-go 1.23
+go 1.25
 
 replace github.com/joeblew999/wellknown => ../..
 ```

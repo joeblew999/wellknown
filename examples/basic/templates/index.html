@@ -3,149 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>wellknown - Google Calendar Deep Link Generator</title>
+    <title>wellknown - Google Calendar Demo</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #333;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
         }
+
         .container {
-            max-width: 600px;
-            margin: 0 auto;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
+            max-width: 800px;
+            width: 100%;
         }
+
         h1 {
-            color: #667eea;
+            color: #333;
             margin-bottom: 10px;
             font-size: 28px;
         }
+
         .subtitle {
             color: #666;
             margin-bottom: 30px;
             font-size: 14px;
         }
+
+        .nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .nav a {
+            padding: 12px 24px;
+            text-decoration: none;
+            border-bottom: 3px solid transparent;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .nav a:hover {
+            color: #667eea;
+        }
+
+        .nav a.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        /* Form styles */
         .form-group {
             margin-bottom: 20px;
         }
+
         label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
             font-size: 14px;
         }
-        input, textarea {
+
+        input[type="text"],
+        input[type="datetime-local"],
+        textarea {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
             transition: border-color 0.3s;
+            font-family: inherit;
         }
-        input:focus, textarea:focus {
+
+        input[type="text"]:focus,
+        input[type="datetime-local"]:focus,
+        textarea:focus {
             outline: none;
             border-color: #667eea;
         }
+
         textarea {
             resize: vertical;
             min-height: 80px;
         }
-        button {
-            width: 100%;
-            padding: 14px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 6px;
+
+        button, .btn {
+            padding: 14px 28px;
+            border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
         }
-        button:hover {
-            background: #5568d3;
+
+        button:hover, .btn:hover {
+            transform: translateY(-2px);
         }
+
+        button:active, .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-open {
+            background: #48bb78;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-open:hover {
+            box-shadow: 0 10px 20px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-copy {
+            background: #6c757d;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-copy:hover {
+            box-shadow: 0 10px 20px rgba(108, 117, 125, 0.4);
+        }
+
         .result {
             margin-top: 30px;
             padding: 20px;
-            background: #f8f9fa;
-            border-radius: 6px;
+            background: #f0f7ff;
+            border-radius: 12px;
             border-left: 4px solid #667eea;
         }
-        .result h2 {
-            color: #667eea;
-            font-size: 18px;
-            margin-bottom: 15px;
-        }
-        .url-display {
-            background: white;
-            padding: 15px;
-            border-radius: 6px;
-            word-break: break-all;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
+
+        .result h3 {
             color: #333;
             margin-bottom: 15px;
         }
-        .url-link {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #28a745;
-            color: white;
-            text-decoration: none;
+
+        .url {
+            background: white;
+            padding: 10px;
             border-radius: 6px;
-            font-weight: 600;
-            margin-right: 10px;
-            transition: background 0.3s;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
         }
-        .url-link:hover {
-            background: #218838;
+
+        .actions {
+            display: flex;
+            gap: 10px;
         }
-        .copy-btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        .copy-btn:hover {
-            background: #5a6268;
-        }
+
         .error {
-            margin-top: 30px;
-            padding: 15px;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-radius: 6px;
-            color: #721c24;
+            background: #fee;
+            border-left: 4px solid #e53e3e;
+            padding: 12px 16px;
+            border-radius: 4px;
+            color: #c53030;
+            margin-top: 20px;
         }
-        .info {
-            margin-top: 30px;
-            padding: 15px;
-            background: #d1ecf1;
-            border: 1px solid #bee5eb;
-            border-radius: 6px;
-            color: #0c5460;
+
+        .showcase-item {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .showcase-item h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .showcase-item .details {
+            color: #666;
             font-size: 14px;
-        }
-        .required {
-            color: #dc3545;
+            margin-bottom: 15px;
         }
     </style>
 </head>
@@ -154,33 +216,40 @@
         <h1>📅 wellknown</h1>
         <p class="subtitle">Google Calendar Deep Link Generator</p>
 
-        <form method="POST">
+        <div class="nav">
+            <a href="/" {{if eq .CurrentPage "custom"}}class="active"{{end}}>Custom</a>
+            <a href="/showcase" {{if eq .CurrentPage "showcase"}}class="active"{{end}}>Showcase</a>
+        </div>
+
+        {{if eq .CurrentPage "custom"}}
+        <!-- Custom Page - User Input -->
+        <form method="POST" action="/">
             <div class="form-group">
-                <label for="title">Event Title <span class="required">*</span></label>
-                <input type="text" id="title" name="title" value="{{if .Event}}{{.Event.Title}}{{end}}" placeholder="Team Meeting" required>
+                <label for="title">Event Title *</label>
+                <input type="text" id="title" name="title" required placeholder="Team Meeting">
             </div>
 
             <div class="form-group">
-                <label for="start_time">Start Time <span class="required">*</span></label>
-                <input type="datetime-local" id="start_time" name="start_time" required>
+                <label for="start_time">Start Time *</label>
+                <input type="datetime-local" id="start_time" name="start_time" value="2025-10-26T14:00" required>
             </div>
 
             <div class="form-group">
-                <label for="end_time">End Time <span class="required">*</span></label>
-                <input type="datetime-local" id="end_time" name="end_time" required>
+                <label for="end_time">End Time *</label>
+                <input type="datetime-local" id="end_time" name="end_time" value="2025-10-26T15:00" required>
             </div>
 
             <div class="form-group">
                 <label for="location">Location</label>
-                <input type="text" id="location" name="location" value="{{if .Event}}{{.Event.Location}}{{end}}" placeholder="Conference Room A">
+                <input type="text" id="location" name="location" placeholder="Conference Room A">
             </div>
 
             <div class="form-group">
                 <label for="description">Description</label>
-                <textarea id="description" name="description" placeholder="Discuss Q4 roadmap">{{if .Event}}{{.Event.Description}}{{end}}</textarea>
+                <textarea id="description" name="description" placeholder="Quarterly planning meeting"></textarea>
             </div>
 
-            <button type="submit">Generate Deep Link</button>
+            <button type="submit" class="btn-primary">Generate Calendar URL</button>
         </form>
 
         {{if .Error}}
@@ -189,57 +258,50 @@
         </div>
         {{end}}
 
-        {{if .NativeURL}}
+        {{if .GeneratedURL}}
         <div class="result">
-            <h2>✅ Native Deep Link (Mobile)</h2>
-            <div class="url-display" id="nativeUrl">{{.NativeURL}}</div>
-            <a href="{{.NativeURL}}" class="url-link">📱 Open Native App</a>
-            <button class="copy-btn" onclick="copyUrl('nativeUrl')">📋 Copy</button>
-        </div>
-
-        <div class="result" style="margin-top: 20px;">
-            <h2>🌐 Web Fallback (Testable Now!)</h2>
-            <div class="url-display" id="webUrl">{{.WebURL}}</div>
-            <a href="{{.WebURL}}" class="url-link" target="_blank">🔗 Test in Browser</a>
-            <button class="copy-btn" onclick="copyUrl('webUrl')">📋 Copy</button>
-            <p style="margin-top: 15px; color: #666; font-size: 13px;">
-                💡 <strong>Tip:</strong> Test the web URL first to verify it works before trying the native deep link!
-            </p>
+            <h3>✅ Generated URL</h3>
+            <div class="url">{{.GeneratedURL}}</div>
+            <div class="actions">
+                <button class="btn-open" onclick="window.open('{{.GeneratedURL}}', '_blank')">Open Calendar</button>
+                <button class="btn-copy" onclick="copyURL('{{.GeneratedURL}}', this)">Copy URL</button>
+            </div>
         </div>
         {{end}}
+        {{end}}
 
-        <div class="info">
-            <strong>ℹ️ How to use:</strong>
-            <ul style="margin-left: 20px; margin-top: 10px;">
-                <li>Fill in the event details above</li>
-                <li>Click "Generate Deep Link" to create the URL</li>
-                <li>Click "Open in Google Calendar" on your mobile device</li>
-                <li>Or copy the URL and share it</li>
-            </ul>
+        {{if eq .CurrentPage "showcase"}}
+        <!-- Showcase Page - Testdata -->
+        <p style="margin-bottom: 20px; color: #666;">
+            Click any example below to test the generated URLs:
+        </p>
+        
+        {{range .TestCases}}
+        <div class="showcase-item">
+            <h3>{{.Name}}</h3>
+            <div class="details">
+                <strong>Title:</strong> {{.Event.Title}}<br>
+                <strong>Time:</strong> {{.Event.StartTime.Format "2006-01-02 15:04"}} - {{.Event.EndTime.Format "15:04"}}<br>
+                {{if .Event.Location}}<strong>Location:</strong> {{.Event.Location}}<br>{{end}}
+                {{if .Event.Description}}<strong>Description:</strong> {{.Event.Description}}<br>{{end}}
+            </div>
+            <div class="url">{{.ExpectedURL}}</div>
+            <div class="actions">
+                <button class="btn-open" onclick="window.open('{{.ExpectedURL}}', '_blank')">Open Calendar</button>
+                <button class="btn-copy" onclick="copyURL('{{.ExpectedURL}}', this)">Copy URL</button>
+            </div>
         </div>
+        {{end}}
+        {{end}}
     </div>
 
     <script>
-        // Set default times (now + 1 hour for start, + 2 hours for end)
-        if (!document.getElementById('start_time').value) {
-            const now = new Date();
-            now.setHours(now.getHours() + 1);
-            now.setMinutes(0);
-            document.getElementById('start_time').value = now.toISOString().slice(0, 16);
-
-            const end = new Date(now);
-            end.setHours(end.getHours() + 1);
-            document.getElementById('end_time').value = end.toISOString().slice(0, 16);
-        }
-
-        function copyUrl(elementId) {
-            const url = document.getElementById(elementId).textContent;
+        function copyURL(url, button) {
             navigator.clipboard.writeText(url).then(() => {
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = '✅ Copied!';
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
                 setTimeout(() => {
-                    btn.textContent = originalText;
+                    button.textContent = originalText;
                 }, 2000);
             });
         }
