@@ -4,6 +4,23 @@
 
 ---
 
+## 🚨 CRITICAL INSTRUCTIONS - READ FIRST 🚨
+
+### ✅ MUST DO:
+1. **ALWAYS use the correct file path**: `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
+2. **ALWAYS use the correct module name**: `github.com/joeblew999/wellknown` (note: `999` not `99`)
+3. **MOBILE-FIRST**: This library is FOR mobile deep links - iOS and Android apps
+4. **UPDATE STATUS.md** whenever making progress or completing tasks
+5. **Test on actual mobile devices** when possible (see docs/testing-with-goup-util.md)
+
+### ❌ NEVER DO:
+1. **NEVER use wrong module name** (`joeblew99` is WRONG, must be `joeblew999`)
+2. **NEVER forget this is mobile-focused** - deep links are for mobile apps
+3. **NEVER use `docs/` folder** for Claude tracking documents (user-facing docs only)
+4. **NEVER add external dependencies** to core library (stdlib only)
+
+---
+
 ## IMPORTANT: File Responsibilities
 
 **CLAUDE.md** (this file): Technical decisions, architecture, how things work
@@ -16,9 +33,10 @@
 
 ## Project Overview
 
-**What**: Universal Go library for generating and opening deep links across Google and Apple app ecosystems
+**What**: Universal Go library for generating and opening deep links across Google and Apple **MOBILE** app ecosystems
+**Target Platforms**: iOS and Android (mobile-first!)
 **Language**: Go (pure, zero external dependencies for core library)
-**Module**: `github.com/joeblew999/wellknown`
+**Module**: `github.com/joeblew999/wellknown` ⚠️ NOTE: `999` not `99`!
 **Path**: `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
 
 **Key Principle**: Deterministic URL generation (same input → same output every time)

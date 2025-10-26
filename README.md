@@ -34,3 +34,10 @@ The library also provides safe fallbacks to open the **web equivalents** when na
 
 ```bash
 go get github.com/joeblew999/wellknown
+```
+
+## Examples
+
+There are 2 examples in the examples folder.
+
+
