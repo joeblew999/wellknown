@@ -7,11 +7,10 @@
 ## 🚨 CRITICAL INSTRUCTIONS - READ FIRST 🚨
 
 ### ✅ MUST DO:
-1. **ALWAYS use the correct file path**: `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
-2. **ALWAYS use the correct module name**: `github.com/joeblew999/wellknown` (note: `999` not `99`)
-3. **MOBILE-FIRST**: This library is FOR mobile deep links - iOS and Android apps
-4. **UPDATE STATUS.md** whenever making progress or completing tasks
-5. **Test on actual mobile devices** when possible (see docs/testing-with-goup-util.md)
+1. **ALWAYS verify module name is `joeblew999`** (NOT `joeblew99`!) - see Project Overview below
+2. **MOBILE-FIRST**: This library is FOR mobile deep links - iOS and Android apps
+3. **UPDATE STATUS.md** whenever making progress or completing tasks
+4. **Test on actual mobile devices** when possible (see docs/testing-with-goup-util.md)
 
 ### ❌ NEVER DO:
 1. **NEVER use wrong module name** (`joeblew99` is WRONG, must be `joeblew999`)
