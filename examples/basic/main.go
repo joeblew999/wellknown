@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -41,11 +42,30 @@ func main() {
 	http.HandleFunc("/google/maps/showcase", handlers.Stub("google", "maps"))
 
 	addr := ":" + *port
+	localIP := getLocalIP()
+
 	fmt.Fprintf(os.Stderr, "🚀 wellknown demo server starting...\n")
-	fmt.Fprintf(os.Stderr, "📱 Open http://localhost%s in your browser\n", addr)
+	fmt.Fprintf(os.Stderr, "💻 Local:  http://localhost%s\n", addr)
+	fmt.Fprintf(os.Stderr, "📱 Mobile: http://%s%s\n", localIP, addr)
 	fmt.Fprintf(os.Stderr, "\n💡 Press Ctrl+C to stop\n\n")
 
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
+}
+
+func getLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "localhost"
+	}
+
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return "localhost"
 }
