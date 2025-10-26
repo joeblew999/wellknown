@@ -1,8 +1,8 @@
 # Project Status
 
-## Current State: PLANNING COMPLETE
+## Current State: PLANNING COMPLETE - Examples Added
 
-**Last Updated**: 2025-10-23
+**Last Updated**: 2025-10-26
 
 ---
 
@@ -28,6 +28,8 @@ The `wellknown` project is a Universal Go library for generating and opening dee
 - [x] Folder structure design and approval
 - [x] Template strategy decision (go:embed + custom support)
 - [x] Go workspace decision (go.work for examples)
+- [x] CLAUDE.md with critical instructions (module name, mobile-first, etc.)
+- [x] Examples with go.work setup (basic and webview examples)
 
 ### 🚧 In Progress
 - [ ] Implementation ready to begin
@@ -57,7 +59,6 @@ The `wellknown` project is a Universal Go library for generating and opening dee
 - [ ] URL opener interface (pkg/opener/opener.go)
 - [ ] URL opener implementations (real + spy)
 - [ ] CLI tool (cmd/wellknown/main.go)
-- [ ] Examples with go.work setup
 - [ ] Custom template validation
 - [ ] Documentation (docs/)
 
@@ -98,8 +99,8 @@ The `wellknown` project is a Universal Go library for generating and opening dee
 ## Repository Statistics
 
 - **Branch**: main
-- **Commits**: 2
-- **Go Files**: 0
+- **Commits**: 6
+- **Go Files**: 2 (examples only)
 - **Test Files**: 0
 - **Dependencies**: 0 (pure Go, zero deps)
 
