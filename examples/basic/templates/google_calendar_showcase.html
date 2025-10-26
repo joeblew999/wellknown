@@ -14,7 +14,8 @@
     </div>
     <div class="url">{{.ExpectedURL}}</div>
     <div class="actions">
-        <button class="btn-open" onclick="window.open('{{.ExpectedURL}}', '_blank')">Open Calendar</button>
+        <button class="btn-open" onclick="tryNativeApp('{{.ExpectedURL}}')">Open in App</button>
+        <button class="btn-open" onclick="window.open('{{.ExpectedURL}}', '_blank')">Open in Web</button>
         <button class="btn-copy" onclick="copyURL('{{.ExpectedURL}}', this)">Copy URL</button>
     </div>
 </div>

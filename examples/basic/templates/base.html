@@ -278,6 +278,26 @@
                 }, 2000);
             });
         }
+
+        function tryNativeApp(webUrl) {
+            // Try to convert web URL to app URL
+            // Google Calendar: googlecalendar:// (won't work with params, but we try)
+            // Apple Calendar: calshow:// (works!)
+
+            if (webUrl.includes('calendar.google.com')) {
+                // Try Google Calendar app (will likely fail, but worth trying)
+                const appUrl = 'googlecalendar://';
+                window.location.href = appUrl;
+
+                // Fallback to web after 1 second
+                setTimeout(() => {
+                    window.open(webUrl, '_blank');
+                }, 1000);
+            } else {
+                // For other apps, just open web
+                window.open(webUrl, '_blank');
+            }
+        }
     </script>
 </body>
 </html>
