@@ -88,12 +88,16 @@ func GoogleCalendar(w http.ResponseWriter, r *http.Request) {
 
 		log.Printf("SUCCESS! Generated URL: %s", url)
 
+		// Google Calendar app URL (won't work with params, but worth trying)
+		appURL := "googlecalendar://"
+
 		Templates.ExecuteTemplate(w, "base", PageData{
 			Platform:     "google",
 			AppType:      "calendar",
 			CurrentPage:  "custom",
 			TemplateName: "google_calendar_custom",
 			GeneratedURL: url,
+			AppURL:       appURL,
 			Event:        &event,
 			TestCases:    google.CalendarEvents,
 			LocalURL:     LocalURL,
@@ -112,6 +116,7 @@ func GoogleCalendarShowcase(w http.ResponseWriter, r *http.Request) {
 		CurrentPage:  "showcase",
 		TemplateName: "google_calendar_showcase",
 		TestCases:    google.CalendarEvents,
+		AppURL:       "googlecalendar://",
 		LocalURL:     LocalURL,
 		MobileURL:    MobileURL,
 	})

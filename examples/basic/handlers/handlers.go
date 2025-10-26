@@ -15,6 +15,7 @@ type PageData struct {
 	TemplateName string
 	IsStub       bool
 	GeneratedURL string
+	AppURL       string // Native app deep link
 	Error        string
 	Event        interface{}
 	TestCases    interface{}

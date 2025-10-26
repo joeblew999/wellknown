@@ -39,7 +39,9 @@
     <h3>✅ Generated URL</h3>
     <div class="url">{{.GeneratedURL}}</div>
     <div class="actions">
-        <button class="btn-open" onclick="tryNativeApp('{{.GeneratedURL}}')">Open in App</button>
+        {{if .AppURL}}
+        <button class="btn-open" onclick="window.location.href='{{.AppURL}}'; setTimeout(() => window.open('{{.GeneratedURL}}', '_blank'), 1000);">Open in App</button>
+        {{end}}
         <button class="btn-open" onclick="window.open('{{.GeneratedURL}}', '_blank')">Open in Web</button>
         <button class="btn-copy" onclick="copyURL('{{.GeneratedURL}}', this)">Copy URL</button>
     </div>

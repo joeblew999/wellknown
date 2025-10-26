@@ -35,6 +35,52 @@
             color: white;
         }
 
+        /* Mobile: Hide sidebar by default, show as bottom nav */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                padding: 15px;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                z-index: 1000;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            }
+
+            .sidebar h2 {
+                display: none;
+            }
+
+            .nav-section {
+                margin-bottom: 0;
+            }
+
+            .nav-section-title {
+                display: none;
+            }
+
+            .nav-link {
+                display: inline-block;
+                padding: 8px 12px;
+                margin: 0 5px 5px 0;
+                font-size: 13px;
+            }
+
+            .container {
+                padding: 20px;
+                padding-bottom: 120px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+
         .nav-section {
             margin-bottom: 25px;
         }
@@ -206,6 +252,16 @@
             gap: 10px;
         }
 
+        @media (max-width: 768px) {
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn-open, .btn-copy {
+                width: 100%;
+            }
+        }
+
         .error {
             background: #fee;
             border-left: 4px solid #e53e3e;
@@ -282,26 +338,6 @@
                     button.textContent = originalText;
                 }, 2000);
             });
-        }
-
-        function tryNativeApp(webUrl) {
-            // Try to convert web URL to app URL
-            // Google Calendar: googlecalendar:// (won't work with params, but we try)
-            // Apple Calendar: calshow:// (works!)
-
-            if (webUrl.includes('calendar.google.com')) {
-                // Try Google Calendar app (will likely fail, but worth trying)
-                const appUrl = 'googlecalendar://';
-                window.location.href = appUrl;
-
-                // Fallback to web after 1 second
-                setTimeout(() => {
-                    window.open(webUrl, '_blank');
-                }, 1000);
-            } else {
-                // For other apps, just open web
-                window.open(webUrl, '_blank');
-            }
         }
     </script>
 </body>
