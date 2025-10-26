@@ -5,6 +5,8 @@ import (
 )
 
 var Templates *template.Template
+var LocalURL string
+var MobileURL string
 
 type PageData struct {
 	Platform     string
@@ -16,4 +18,6 @@ type PageData struct {
 	Error        string
 	Event        interface{}
 	TestCases    interface{}
+	LocalURL     string
+	MobileURL    string
 }

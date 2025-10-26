@@ -20,6 +20,8 @@ func Stub(platform, appType string) http.HandlerFunc {
 			AppType:     appType,
 			CurrentPage: currentPage,
 			IsStub:      true,
+			LocalURL:    LocalURL,
+			MobileURL:   MobileURL,
 		})
 	}
 }

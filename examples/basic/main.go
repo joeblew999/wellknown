@@ -44,9 +44,13 @@ func main() {
 	addr := ":" + *port
 	localIP := getLocalIP()
 
+	// Set global URLs for templates
+	handlers.LocalURL = "http://localhost" + addr
+	handlers.MobileURL = "http://" + localIP + addr
+
 	fmt.Fprintf(os.Stderr, "🚀 wellknown demo server starting...\n")
-	fmt.Fprintf(os.Stderr, "💻 Local:  http://localhost%s\n", addr)
-	fmt.Fprintf(os.Stderr, "📱 Mobile: http://%s%s\n", localIP, addr)
+	fmt.Fprintf(os.Stderr, "💻 Local:  %s\n", handlers.LocalURL)
+	fmt.Fprintf(os.Stderr, "📱 Mobile: %s\n", handlers.MobileURL)
 	fmt.Fprintf(os.Stderr, "\n💡 Press Ctrl+C to stop\n\n")
 
 	if err := http.ListenAndServe(addr, nil); err != nil {
