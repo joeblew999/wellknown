@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "embed"
+	"embed"
 	"flag"
 	"fmt"
 	"html/template"
@@ -14,8 +14,8 @@ import (
 	"github.com/joeblew999/wellknown/pkg/types"
 )
 
-//go:embed index.html
-var indexHTML string
+//go:embed templates/*
+var templatesFS embed.FS
 
 var (
 	port = flag.String("port", "8080", "Port to run the web server on")
@@ -30,7 +30,7 @@ type PageData struct {
 func main() {
 	flag.Parse()
 
-	tmpl := template.Must(template.New("index").Parse(indexHTML))
+	tmpl := template.Must(template.ParseFS(templatesFS, "templates/index.html"))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
