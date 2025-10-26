@@ -143,12 +143,55 @@ event := calendar.NewEvent().
 
 ## Testing Strategy
 
-**See**: `docs/testing-with-goup-util.md` for complete testing guide
+### Test Pyramid
 
-**Summary**:
-- **Unit tests**: Standard Go tests for URL generation
-- **Integration tests**: Gio-based test app using goup-util
-- **Manual verification**: Open deep links and verify they work
+1. **Unit Tests** (Fast, Automated)
+   - Test URL generation determinism
+   - Test time formatting
+   - Test validation logic
+   - Run: `go test ./pkg/...`
+
+2. **Web Demo Testing** (Interactive, Playwright MCP)
+   - Start web demo: `go run ./examples/basic/main.go`
+   - Use Playwright MCP to automate browser testing
+   - Capture screenshots: Saved to `.playwright-mcp/`
+   - **IMPORTANT**: Screenshots can be copied to `docs/` and referenced in README.md
+
+3. **Deep Link Verification** (Manual, Real Device)
+   - **Problem**: Deep links can't be fully tested without actual device
+   - **Solution**: Use web fallback URLs for testing
+   - **Approach**:
+     - Generate Google Calendar URL: `googlecalendar://...`
+     - Convert to web URL: `https://calendar.google.com/calendar/render?action=TEMPLATE&...`
+     - Test web URL in browser first
+     - Then test deep link on mobile device
+
+4. **QR Code Testing** (Optional)
+   - Generate QR code from deep link
+   - Scan with mobile device
+   - Verify app opens correctly
+
+### Screenshot Workflow
+
+When testing with Playwright MCP:
+1. Playwright saves screenshots to `.playwright-mcp/`
+2. Copy useful screenshots to `docs/screenshots/`
+3. Reference in README.md to show working demos
+4. Commit screenshots to prove functionality
+
+Example:
+```bash
+# After Playwright test
+cp .playwright-mcp/wellknown-demo-success.png docs/screenshots/
+# Add to README: ![Demo](docs/screenshots/wellknown-demo-success.png)
+```
+
+### URL Format Validation
+
+**Critical**: Always verify URLs against official documentation
+- Google Calendar: Check `action=CREATE` vs `action=TEMPLATE`
+- URL encoding: Use `url.PathEscape()` for `%20` or `url.QueryEscape()` for `+`
+- Test both native app URL and web fallback URL
 
 ---
 

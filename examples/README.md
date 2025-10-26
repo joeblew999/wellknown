@@ -5,7 +5,7 @@ This directory contains example programs demonstrating the wellknown library.
 ## Examples
 
 ### 1. Basic (`./basic`)
-Demonstrates native deep link generation for:
+web demo that demonstrates native deep link generation for:
 - Google Calendar events
 - Apple Calendar events
 - Google Maps navigation
