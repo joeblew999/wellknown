@@ -8,13 +8,12 @@
 
 ### ✅ MUST DO:
 1. **ALWAYS verify module name is `joeblew999`** (NOT `joeblew99`!) - see Project Overview below
-2. **MOBILE-FIRST**: This library is FOR mobile deep links - iOS and Android apps
-3. **UPDATE STATUS.md** whenever making progress or completing tasks
-4. **Test on actual mobile devices** when possible (see docs/testing-with-goup-util.md)
+**Module**: `github.com/joeblew999/wellknown` ⚠️ NOTE: `999` not `99`!
+**Path**: `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
+2. **UPDATE STATUS.md** whenever making progress or completing tasks
 
 ### ❌ NEVER DO:
 1. **NEVER use wrong module name** (`joeblew99` is WRONG, must be `joeblew999`)
-2. **NEVER forget this is mobile-focused** - deep links are for mobile apps
 3. **NEVER use `docs/` folder** for Claude tracking documents (user-facing docs only)
 4. **NEVER add external dependencies** to core library (stdlib only)
 
@@ -27,11 +26,7 @@
 
 ## Project Overview
 
-**What**: Universal Go library for generating and opening deep links across Google and Apple **MOBILE** app ecosystems
-**Target Platforms**: iOS and Android (mobile-first!)
-**Language**: Go (pure, zero external dependencies for core library)
-**Module**: `github.com/joeblew999/wellknown` ⚠️ NOTE: `999` not `99`!
-**Path**: `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
+**What**: Universal Go library for generating and opening deep links across Google and Apple **Web, Deckstop and Mobile** app ecosystems
 
 **Key Principle**: Deterministic URL generation (same input → same output every time)
 
@@ -63,15 +58,15 @@ wellknown/
 │   ├── wellknown/           # CLI tool
 │   └── wellknown-mcp/       # MCP server
 ├── pkg/
-│   ├── deeplink/
-│   │   ├── google/          # calendar.go + calendar.tmpl (co-located!)
-│   │   ├── apple/           # maps.go + maps.tmpl (co-located!)
-│   │   └── web/             # Web fallbacks
+│   ├── types/               # Shared data structures (CalendarEvent, etc.)
+│   ├── google/              # calendar.go + calendar.tmpl (co-located!)
+│   ├── apple/               # calendar.go + calendar.tmpl (co-located!)
+│   ├── web/                 # Web fallbacks
 │   ├── platform/            # Platform detection
 │   └── opener/              # URL opener
 ├── internal/
-│   ├── url/                 # URL building utilities
-│   └── template/            # Template renderer/loader
+│   ├── url/                 # URL building utilities (if needed)
+│   └── template/            # Template renderer/loader (if needed)
 ├── examples/                # With go.work support
 ├── tests/
 │   ├── testapp/            # Gio-based test application
@@ -99,11 +94,13 @@ var calendarTemplate string
 
 ### API Design Patterns
 
-**Functional Options**:
+**Simple Function Calls**:
 ```go
-url := google.Calendar(event,
-    deeplink.WithTemplate("/custom/template.tmpl"),
-    deeplink.WithPlatform("ios"))
+import "github.com/joeblew999/wellknown/pkg/google"
+import "github.com/joeblew999/wellknown/pkg/types"
+
+event := types.CalendarEvent{...}
+url := google.Calendar(event)
 ```
 
 **Builder Pattern**:
@@ -172,12 +169,17 @@ go test ./...
 
 ### Creating New Deep Link Support
 
-1. Create package: `pkg/deeplink/[platform]/[app].go`
-2. Create template: `pkg/deeplink/[platform]/[app].tmpl` (co-located!)
-3. Implement interface with `go:embed` for template
-4. Add unit tests: `[app]_test.go`
+1. Create package: `pkg/[platform]/[service].go`
+2. Create template: `pkg/[platform]/[service].tmpl` (co-located!)
+3. Implement with `go:embed` for template
+4. Add unit tests: `[service]_test.go`
 5. Add to test app UI
 6. Update STATUS.md
+
+Example: Adding Apple Maps support
+- Create: `pkg/apple/maps.go`
+- Create: `pkg/apple/maps.tmpl`
+- Test: `pkg/apple/maps_test.go`
 
 ---
 
