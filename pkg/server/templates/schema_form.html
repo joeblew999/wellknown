@@ -1,7 +1,10 @@
 {{define "schema_form"}}
 {{/* Schema-based dynamic form template - generates forms from JSON Schema */}}
 
-<form method="POST" action="/{{.Platform}}/{{.AppType}}">
+<h2>Create Custom {{.Platform | title}} {{.AppType | title}} Event</h2>
+<p style="color: #666; margin-bottom: 20px;">📝 This form is dynamically generated from JSON Schema</p>
+
+<form method="POST" action="/{{.Platform}}/{{.AppType}}-schema">
     {{/* Dynamically generated form fields from schema */}}
     {{.SchemaFormHTML}}
 

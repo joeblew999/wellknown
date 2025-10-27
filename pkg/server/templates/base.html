@@ -467,6 +467,8 @@
                 {{template "stub" .}}
             {{else if eq .TemplateName "custom"}}
                 {{template "custom" .}}
+            {{else if eq .TemplateName "schema_form"}}
+                {{template "schema_form" .}}
             {{else if eq .TemplateName "showcase"}}
                 {{template "showcase" .}}
             {{else}}
