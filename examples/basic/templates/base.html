@@ -481,6 +481,9 @@
         </div>
     </div>
 
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
     <script>
         function copyURL(url, button) {
             navigator.clipboard.writeText(url).then(() => {
@@ -489,6 +492,24 @@
                 setTimeout(() => {
                     button.textContent = originalText;
                 }, 2000);
+            });
+        }
+
+        function generateQR(url, elementId) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+
+            // Clear existing QR code
+            container.innerHTML = '';
+
+            // Generate new QR code
+            new QRCode(container, {
+                text: url,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
             });
         }
 

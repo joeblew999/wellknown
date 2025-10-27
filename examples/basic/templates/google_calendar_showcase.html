@@ -3,20 +3,38 @@
     Click any example below to test the generated URLs:
 </p>
 
-{{range .TestCases}}
+{{range $index, $case := .TestCases}}
 <div class="showcase-item">
-    <h3>{{.Name}}</h3>
+    <h3>{{$case.Name}}</h3>
     <div class="details">
-        <strong>Title:</strong> {{.Event.Title}}<br>
-        <strong>Time:</strong> {{.Event.StartTime.Format "2006-01-02 15:04"}} - {{.Event.EndTime.Format "15:04"}}<br>
-        {{if .Event.Location}}<strong>Location:</strong> {{.Event.Location}}<br>{{end}}
-        {{if .Event.Description}}<strong>Description:</strong> {{.Event.Description}}<br>{{end}}
+        <strong>Title:</strong> {{$case.Event.Title}}<br>
+        <strong>Time:</strong> {{$case.Event.StartTime.Format "2006-01-02 15:04"}} - {{$case.Event.EndTime.Format "15:04"}}<br>
+        {{if $case.Event.Location}}<strong>Location:</strong> {{$case.Event.Location}}<br>{{end}}
+        {{if $case.Event.Description}}<strong>Description:</strong> {{$case.Event.Description}}<br>{{end}}
     </div>
-    <div class="url">{{.ExpectedURL}}</div>
+    <div class="url">{{$case.ExpectedURL}}</div>
     <div class="actions">
-        <button class="btn-open" onclick="window.open('{{.ExpectedURL}}', '_blank')">Open in Calendar</button>
-        <button class="btn-copy" onclick="copyURL('{{.ExpectedURL}}', this)">Copy URL</button>
+        <button class="btn-open" onclick="window.open('{{$case.ExpectedURL}}', '_blank')">Open in Calendar</button>
+        <button class="btn-copy" onclick="copyURL('{{$case.ExpectedURL}}', this)">Copy URL</button>
+    </div>
+
+    <div style="margin-top: 15px; text-align: center;">
+        <div id="qrcode-showcase-{{$index}}" class="qr-container" data-url="{{$case.ExpectedURL}}" style="display: inline-block;"></div>
+        <p style="font-size: 11px; color: #666; margin-top: 5px;">Scan to add to calendar</p>
     </div>
 </div>
 {{end}}
+
+<script>
+    // Generate all QR codes after DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        const qrContainers = document.querySelectorAll('.qr-container');
+        qrContainers.forEach(container => {
+            const url = container.getAttribute('data-url');
+            if (url) {
+                generateQR(url, container.id);
+            }
+        });
+    });
+</script>
 {{end}}
