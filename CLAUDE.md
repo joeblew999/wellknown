@@ -26,7 +26,7 @@
 
 ## Project Overview
 
-**What**: Universal Go library for generating and opening deep links across Google and Apple **Web, Deckstop and Mobile** app ecosystems
+**What**: Universal Go library for generating and opening deep links across Google and Apple **Web, Desktop and Mobile** app ecosystems
 
 **Key Principle**: Deterministic URL generation (same input → same output every time)
 
@@ -70,43 +70,68 @@
 
 ```
 wellknown/
-├── cmd/
-│   ├── wellknown/           # CLI tool
-│   └── wellknown-mcp/       # MCP server
-├── pkg/
-│   ├── types/               # Shared data structures (CalendarEvent, etc.)
-│   ├── google/              # calendar.go + calendar.tmpl (co-located!)
-│   ├── apple/               # calendar.go + calendar.tmpl (co-located!)
-│   ├── web/                 # Web fallbacks
-│   ├── platform/            # Platform detection
-│   └── opener/              # URL opener
-├── internal/
-│   ├── url/                 # URL building utilities (if needed)
-│   └── template/            # Template renderer/loader (if needed)
-├── examples/                # With go.work support
-├── tests/
-│   ├── testapp/            # Gio-based test application
-│   └── integration/
-├── docs/                    # User-facing documentation
-│   └── testing-with-goup-util.md  # How to test with goup-util
-├── CLAUDE.md               # This file
-├── STATUS.md               # Project status tracking
+├── pkg/                     # Core library (zero external dependencies)
+│   ├── types/              # Shared data structures (CalendarEvent, etc.)
+│   ├── google/             # Google service implementations
+│   │   ├── calendar.go
+│   │   └── calendar_examples.go
+│   └── apple/              # Apple service implementations
+│       ├── calendar.go
+│       └── calendar_examples.go
+├── examples/
+│   ├── basic/              # Web demo (air hot-reload)
+│   │   ├── main.go
+│   │   ├── handlers/
+│   │   │   ├── handlers.go         # Shared types (PageData)
+│   │   │   ├── generic.go          # Service registry, factories
+│   │   │   ├── google_calendar.go  # Google Calendar service registration
+│   │   │   ├── apple_calendar.go   # Apple Calendar service registration
+│   │   │   └── stub.go             # Stub handler for unimplemented
+│   │   ├── templates/
+│   │   │   ├── base.html           # Layout with nav
+│   │   │   ├── custom.html         # Generic form template
+│   │   │   ├── showcase.html       # Generic showcase template
+│   │   │   └── stub.html           # Coming soon page
+│   │   └── .air.toml
+│   ├── mcp/                # MCP server example
+│   └── webview/            # Webview example
+├── docs/                   # User-facing documentation
+├── CLAUDE.md              # This file (AI agent instructions)
+├── STATUS.md              # Project status tracking
 └── go.mod
 ```
 
-**Key Decision**: Templates co-located with implementations (e.g., `calendar.go` + `calendar.tmpl` in same directory)
+**Key Decisions**:
+- **No embedded templates**: Web demo uses HTML templates, not go:embed
+- **Service registry pattern**: Services self-register with `RegisterService()`
+- **Generic templates**: `custom.html` and `showcase.html` work for all services
 
-### Template Strategy
+### Web Demo Architecture Evolution (Phase 3 & 4 Refactoring)
 
-- **Default templates**: Embedded via `go:embed` for zero-config usage
-- **Custom templates**: Users can override with their own template files
-- **Template engine**: Go's `text/template` from stdlib (zero deps)
+**Phase 1-2: Template & Handler Generalization** (Completed)
+- Created generic `custom.html` and `showcase.html` templates
+- Built handler factories: `CalendarHandler(config)`, `ShowcaseHandler(config)`
+- Reduced code duplication from 125 lines to 19 lines per service (84% reduction)
 
-Example:
-```go
-//go:embed calendar.tmpl
-var calendarTemplate string
-```
+**Phase 3: Service Registry & Auto-Registration** (Completed)
+- Created `ServiceRegistry` pattern in `handlers/generic.go`
+- Services self-register with `RegisterService(ServiceConfig)`
+- Routes auto-create via `RegisterRoutes()` - zero manual registration
+- Example: Adding Apple Calendar auto-created `/apple/calendar` and `/apple/calendar/showcase`
+
+**Phase 4: Type Safety Improvements** (Completed)
+- Changed `PageData.Event` from `interface{}` to `*types.CalendarEvent`
+- Added `ServiceExample` interface for examples
+- Improved compile-time type checking
+- Better IDE autocomplete and error detection
+
+**Result**: Adding a new service now requires only ~15-19 lines of configuration code!
+
+**Current Template Strategy:**
+- **Generic HTML templates**: `custom.html` and `showcase.html` work for all services
+- **Conditional rendering**: Templates use `{{if eq .AppType "calendar"}}` for service-specific sections
+- **Go's html/template**: Standard library, zero external dependencies
+- **Template loading**: All templates loaded via `template.ParseGlob("templates/*.html")`
 
 ### API Design Patterns
 
@@ -255,40 +280,93 @@ air
 **Web Demo Architecture:**
 ```
 examples/basic/
-├── main.go                    # Entry point, route registration
+├── main.go                    # Entry point (calls RegisterRoutes())
 ├── handlers/
-│   ├── handlers.go           # Shared types, globals (Templates, URLs)
-│   ├── google_calendar.go    # Google Calendar handler
-│   └── stub.go               # Generic stub handler for unimplemented
+│   ├── handlers.go           # PageData, ServiceExample interface
+│   ├── generic.go            # ServiceRegistry, factories, RegisterRoutes()
+│   ├── google_calendar.go    # 19 lines - RegisterService(config)
+│   ├── apple_calendar.go     # 19 lines - RegisterService(config)
+│   └── stub.go               # Generic stub handler
 ├── templates/
 │   ├── base.html             # Layout with nav, CSS, JS
-│   ├── google_calendar_custom.html    # Custom event form
-│   ├── google_calendar_showcase.html  # Test case showcase
+│   ├── custom.html           # Generic form (all services)
+│   ├── showcase.html         # Generic showcase (all services)
 │   └── stub.html             # Coming soon page
-├── .air.toml                 # Air configuration
+├── .air.toml                 # Air hot-reload configuration
 └── README.md                 # Usage instructions
 ```
 
 **Key Patterns:**
-- **Templates**: Go `html/template` with base template + named templates
-- **Handlers**: Separate files per platform/service for scalability
+- **Service Registry**: Services self-register, routes auto-created
+- **Generic Templates**: One template works for all services (conditional rendering)
+- **Handler Factories**: `CalendarHandler(config)`, `ShowcaseHandler(config)`
+- **Type Safety**: PageData uses `*types.CalendarEvent` not `interface{}`
+- **Adding Services**: Only ~15-19 lines of config code needed!
 - **Mobile URLs**: Auto-detected local network IP for easy mobile testing
 - **Responsive**: Hamburger menu on mobile (≤768px), fixed sidebar on desktop
 - **Air Config**: Watches handlers/ and templates/ directories
 
-### Creating New Deep Link Support
+### Adding a New Service (Step-by-Step)
 
-1. Create package: `pkg/[platform]/[service].go`
-2. Create template: `pkg/[platform]/[service].tmpl` (co-located!)
-3. Implement with `go:embed` for template
-4. Add unit tests: `[service]_test.go`
-5. Add to test app UI
-6. Update STATUS.md
+**Example: Adding Apple Maps**
 
-Example: Adding Apple Maps support
-- Create: `pkg/apple/maps.go`
-- Create: `pkg/apple/maps.tmpl`
-- Test: `pkg/apple/maps_test.go`
+**Step 1:** Create core implementation in `pkg/apple/maps.go`
+```go
+package apple
+
+import "github.com/joeblew999/wellknown/pkg/types"
+
+func Maps(location types.Location) (string, error) {
+    // Implementation
+    return fmt.Sprintf("maps://?q=%s", url.QueryEscape(location.Address)), nil
+}
+```
+
+**Step 2:** Create examples in `pkg/apple/maps_examples.go`
+```go
+package apple
+
+type MapsExample struct {
+    Name        string
+    Description string
+    Location    types.Location
+}
+
+func (e MapsExample) GetName() string { return e.Name }
+func (e MapsExample) GetDescription() string { return e.Description }
+
+var MapsExamples = []MapsExample{...}
+```
+
+**Step 3:** Register service in `examples/basic/handlers/apple_maps.go` (**only ~15-19 lines!**)
+```go
+package handlers
+
+import "github.com/joeblew999/wellknown/pkg/apple"
+
+var AppleMapsService = RegisterService(ServiceConfig{
+    Platform:  "apple",
+    AppType:   "maps",
+    Examples:  apple.MapsExamples,
+    Generator: apple.Maps,  // Adapt if different signature
+})
+
+var AppleMaps = AppleMapsService.CustomHandler
+var AppleMapsShowcase = AppleMapsService.ShowcaseHandler
+```
+
+**Step 4:** Done! Routes auto-register
+- `/apple/maps` - Custom form
+- `/apple/maps/showcase` - Examples showcase
+- Navigation sidebar automatically shows links (if already in base.html)
+
+**That's it!** The service registry handles:
+- ✅ Route registration
+- ✅ Handler creation
+- ✅ Template rendering
+- ✅ QR code generation
+
+**Optional:** Add unit tests in `pkg/apple/maps_test.go`
 
 ---
 
@@ -362,17 +440,17 @@ func Calendar(event Event, opts ...Option) (string, error) {
 
 ---
 
-## Next Steps for Implementation
+## Project Status and Roadmap
 
-See STATUS.md for current tasks and milestones.
+**For current status, completed work, and next tasks**: See [STATUS.md](STATUS.md)
 
-Key phases:
-1. Core library structure (pkg/deeplink/)
-2. Template system (internal/template/)
-3. Unit tests
-4. Test app (tests/testapp/)
-5. MCP server (cmd/wellknown-mcp/)
-6. CLI tool (cmd/wellknown/)
+**Recent major milestones:**
+- ✅ Web demo with Air hot-reload
+- ✅ Phase 3 & 4 refactoring (service registry, type safety)
+- ✅ Google Calendar (web URL approach)
+- ✅ Apple Calendar (ICS data URI approach)
+- ✅ Generic template system (custom.html, showcase.html)
+- ✅ Auto-registration pattern (~15 lines to add new service)
 
 ---
 
@@ -384,5 +462,5 @@ Key phases:
 
 ---
 
-**Last Updated**: 2025-10-27
+**Last Updated**: 2025-10-27 (Comprehensive cleanup after Phase 3 & 4 refactoring)
 **Maintained by**: Claude (AI assistant)
