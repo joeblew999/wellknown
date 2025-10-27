@@ -34,13 +34,17 @@
 
 ## Supported Deep Links
 
-### ⚠️ CRITICAL: Google Calendar Native Deep Links Are NOT Supported!
+### ⚠️ CRITICAL: Google Calendar Deep Link Strategy
 
-**Research Finding (2025-10-26):**
-- `comgooglecalendar://` exists but does NOT support event parameters
+**Research Finding (2025-10-26, Verified 2025-10-27):**
+- `googlecalendar://` exists and opens the app but does NOT support event parameters
 - Google does not document any way to pass event data via native deep link
-- **Verified**: Web URL works, native deep link does not
-- **Decision**: Our library uses web URLs as the primary approach for Google Calendar
+- **Solution**: Use web URLs (`https://calendar.google.com/calendar/render?action=TEMPLATE&...`)
+- **How it works**:
+  - Desktop: Opens in browser
+  - Mobile: Opens in browser, then OS offers to open in Google Calendar app with event data
+  - **Tested and working** on both iOS and Android mobile devices
+- **Decision**: Our library uses web URLs as the universal approach for Google Calendar
 
 ### Google Ecosystem
 - Calendar: ❌ No native deep link - **Use `https://calendar.google.com` instead**
@@ -160,19 +164,23 @@ event := calendar.NewEvent().
    - Run: `go test ./pkg/...`
 
 2. **Web Demo Testing** (Interactive, Playwright MCP)
-   - Start web demo: `go run ./examples/basic/main.go`
+   - **Development mode**: `cd examples/basic && air` (hot-reload on code changes)
+   - **Standard mode**: `go run ./examples/basic/main.go`
+   - **URLs displayed on startup**:
+     - Desktop: `http://localhost:8080`
+     - Mobile: `http://192.168.1.84:8080` (auto-detected local network IP)
    - Use Playwright MCP to automate browser testing
    - Capture screenshots: Saved to `.playwright-mcp/`
    - **IMPORTANT**: Screenshots can be copied to `docs/` and referenced in README.md
 
 3. **Deep Link Verification** (Manual, Real Device)
-   - **Problem**: Deep links can't be fully tested without actual device
-   - **Solution**: Use web fallback URLs for testing
-   - **Approach**:
-     - Generate Google Calendar URL: `googlecalendar://...`
-     - Convert to web URL: `https://calendar.google.com/calendar/render?action=TEMPLATE&...`
-     - Test web URL in browser first
-     - Then test deep link on mobile device
+   - **Google Calendar**: Use web URL - mobile OS automatically offers to open in app
+   - **Testing workflow**:
+     1. Access mobile URL: `http://192.168.1.84:8080` from phone
+     2. Click "Open in Calendar" button
+     3. Browser opens URL, then OS prompts to open in Google Calendar app
+     4. Verify event data (title, time, location, description) is correct
+   - **Verified working** on iOS and Android mobile devices (2025-10-27)
 
 4. **QR Code Testing** (Optional)
    - Generate QR code from deep link
@@ -216,7 +224,47 @@ go work use . examples/some-example
 
 # Run tests
 go test ./...
+
+# Install Air for hot-reload (first time only)
+go install github.com/air-verse/air@latest
 ```
+
+### Web Demo Development
+
+**Starting the web demo with hot-reload:**
+```bash
+cd examples/basic
+air
+```
+
+**What Air does:**
+- Watches `.go`, `.html`, `.tpl`, `.tmpl` files
+- Automatically rebuilds and restarts server on changes
+- No manual restarts needed during development
+
+**Web Demo Architecture:**
+```
+examples/basic/
+├── main.go                    # Entry point, route registration
+├── handlers/
+│   ├── handlers.go           # Shared types, globals (Templates, URLs)
+│   ├── google_calendar.go    # Google Calendar handler
+│   └── stub.go               # Generic stub handler for unimplemented
+├── templates/
+│   ├── base.html             # Layout with nav, CSS, JS
+│   ├── google_calendar_custom.html    # Custom event form
+│   ├── google_calendar_showcase.html  # Test case showcase
+│   └── stub.html             # Coming soon page
+├── .air.toml                 # Air configuration
+└── README.md                 # Usage instructions
+```
+
+**Key Patterns:**
+- **Templates**: Go `html/template` with base template + named templates
+- **Handlers**: Separate files per platform/service for scalability
+- **Mobile URLs**: Auto-detected local network IP for easy mobile testing
+- **Responsive**: Hamburger menu on mobile (≤768px), fixed sidebar on desktop
+- **Air Config**: Watches handlers/ and templates/ directories
 
 ### Creating New Deep Link Support
 
@@ -326,5 +374,5 @@ Key phases:
 
 ---
 
-**Last Updated**: 2025-10-23
+**Last Updated**: 2025-10-27
 **Maintained by**: Claude (AI assistant)
