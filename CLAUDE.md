@@ -173,12 +173,13 @@ event := calendar.NewEvent().
    - **URLs displayed on startup**:
      - Desktop: `http://localhost:8080`
      - Mobile: `http://192.168.1.84:8080` (auto-detected local network IP)
-   - **Browser selection**:
-     - **Apple services (Calendar, Maps)**: Use Safari/WebKit for testing
-       - Command: `open -a Safari http://localhost:8080/apple/calendar`
-       - Playwright MCP should be configured with `browser: "webkit"` for Apple features
-     - **Google services**: Chrome/Chromium works fine
-   - Use Playwright MCP to automate browser testing
+   - **🚨 CRITICAL - Browser Selection for Claude (AI Agent)**:
+     - **When testing Apple services** (Calendar, Maps):
+       - ❌ DO NOT use Playwright MCP if it's configured for Chrome
+       - ✅ USE: `open -a Safari http://localhost:8080/apple/calendar`
+       - **Reason**: Apple Calendar uses data URI ICS format best tested in Safari
+     - **When testing Google services**: Playwright MCP with Chrome is fine
+   - Use Playwright MCP to automate browser testing (Google services only)
    - Capture screenshots: Saved to `.playwright-mcp/`
    - **IMPORTANT**: Screenshots can be copied to `docs/` and referenced in README.md
 
