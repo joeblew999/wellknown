@@ -296,16 +296,25 @@ go install github.com/air-verse/air@latest
 
 ### Web Demo Development
 
+**🚨 CRITICAL: ALWAYS use Air for development (NEVER use `go run` directly)**
+
 **Starting the web demo with hot-reload:**
 ```bash
-cd examples/basic
-air
+make dev
+# This runs Air from project root with proper configuration
 ```
 
 **What Air does:**
-- Watches `.go`, `.html`, `.tpl`, `.tmpl` files
+- Watches `.go`, `.html`, `.tpl`, `.tmpl` files in `pkg/` and `cmd/`
 - Automatically rebuilds and restarts server on changes
 - No manual restarts needed during development
+- Configured via `.air.toml` at project root
+
+**Why Air is required:**
+- Hot-reload on file changes (edit code → see changes immediately)
+- Watches both `pkg/` and `cmd/` directories
+- Prevents multiple server instances from running
+- Consistent development experience
 
 **Web Demo Architecture:**
 ```

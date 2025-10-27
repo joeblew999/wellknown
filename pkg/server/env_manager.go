@@ -80,7 +80,12 @@ func (em *EnvManager) load() error {
 
 		// Detect section headers: # === Section Name ===
 		if strings.HasPrefix(line, "# ===") && strings.HasSuffix(line, "===") {
-			sectionName := strings.TrimSpace(strings.Trim(strings.Trim(line, "#"), "="))
+			// Remove "# ===" prefix and "===" suffix
+			sectionName := line
+			sectionName = strings.TrimPrefix(sectionName, "# ===")
+			sectionName = strings.TrimSuffix(sectionName, "===")
+			sectionName = strings.TrimSpace(sectionName)
+			fmt.Printf("DEBUG EnvManager: Found section header: '%s' -> parsed as: '%s'\n", line, sectionName)
 			currentSection = &EnvSection{
 				Name:      sectionName,
 				Variables: make(map[string]string),

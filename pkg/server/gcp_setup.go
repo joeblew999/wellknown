@@ -192,10 +192,14 @@ func loadGCPEnvStatus() {
 
 	// Get GCP section variables
 	vars := em.GetSection("Google Cloud Platform (GCP)")
+	log.Printf("DEBUG: EnvManager returned %d variables for GCP section: %+v", len(vars), vars)
 
 	if projectID, ok := vars["GCP_PROJECT_ID"]; ok && projectID != "" {
 		gcpSetupStatus.ProjectID = projectID
 		gcpSetupStatus.ProjectDone = true
+		log.Printf("DEBUG: Found GCP_PROJECT_ID=%s", projectID)
+	} else {
+		log.Printf("DEBUG: GCP_PROJECT_ID not found or empty. ok=%v", ok)
 	}
 
 	if clientID, ok := vars["GOOGLE_CLIENT_ID"]; ok {
