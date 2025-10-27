@@ -39,3 +39,5 @@ examples/basic/tmp/
 
 # External source code for reference (not part of our codebase)
 .src/
+tmp/
+bin/
