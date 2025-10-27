@@ -2,19 +2,21 @@
 
 This directory contains example programs demonstrating the wellknown library.
 
+**Note**: The main test server has been moved to `cmd/wellknown-server/` as it's essential infrastructure, not just an example.
+
 ## Examples
 
-### 1. Basic (`./basic`)
-web demo that demonstrates link generation for
+### 1. MCP Server (`./mcp`)
+Demonstrates Model Context Protocol (MCP) integration for AI assistants.
+Allows Claude Code to generate deep links via MCP tools.
 
-### 2. WebView (`./mcp`)
-Demonstrates claude code calling out to the MCP.
+### 2. WebView (`./webview`)
+Demonstrates embedding the deep link test UI in a native webview.
+Shows how to integrate wellknown server in desktop/mobile apps.
 
-### 3. WebView (`./webview`)
-Demonstrates web gui running inside a webview.
-
-### 4. Custom (`./custom`)
-Demonstrates custom url schema.
+### 3. Custom Schemes (`./custom`)
+Demonstrates custom URL schemes and service registration.
+Example of extending wellknown for proprietary deep link formats.
 
 ## Workspace Setup
 

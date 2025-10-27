@@ -1,0 +1,536 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wellknown - Google Calendar Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            margin: 0;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px 20px 60px 20px;
+            height: 100vh;
+            overflow-y: auto;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        .sidebar h2 {
+            font-size: 20px;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        /* Hamburger menu button (mobile only) */
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: #2c3e50;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 5px 0;
+            transition: 0.3s;
+        }
+
+        /* Mobile: Hamburger menu */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .hamburger {
+                display: block;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 250px;
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .sidebar h2 {
+                display: block;
+            }
+
+            .nav-section {
+                margin-bottom: 25px;
+            }
+
+            .nav-section-title {
+                display: block;
+            }
+
+            .nav-link {
+                display: block;
+            }
+
+            .container {
+                margin-left: 0 !important;
+                padding: 70px 20px 120px 20px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+
+        .nav-section {
+            margin-bottom: 25px;
+        }
+
+        .nav-section-title {
+            font-size: 12px;
+            color: #95a5a6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 10px 15px;
+            color: #ecf0f1;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background: #34495e;
+        }
+
+        .nav-link.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .container {
+            flex: 1;
+            margin-left: 250px;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 900px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="datetime-local"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        input[type="datetime-local"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button, .btn {
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+        }
+
+        button:hover, .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active, .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-open {
+            background: #48bb78;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-open:hover {
+            box-shadow: 0 10px 20px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-copy {
+            background: #6c757d;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-copy:hover {
+            box-shadow: 0 10px 20px rgba(108, 117, 125, 0.4);
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f7ff;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .url {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn-open, .btn-copy {
+                width: 100%;
+            }
+        }
+
+        .error {
+            background: #fee;
+            border-left: 4px solid #e53e3e;
+            padding: 12px 16px;
+            border-radius: 4px;
+            color: #c53030;
+            margin-top: 20px;
+        }
+
+        .showcase-item {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .showcase-item h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .showcase-item .details {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <button class="hamburger" onclick="toggleMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <div class="sidebar" id="sidebar">
+        <h2>📅 wellknown</h2>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Google Calendar</div>
+            <a href="/google/calendar" class="nav-link {{if and (eq .Platform "google") (eq .AppType "calendar") (eq .CurrentPage "custom")}}active{{end}}">Custom</a>
+            <a href="/google/calendar-schema" class="nav-link {{if and (eq .Platform "google") (eq .AppType "calendar") (eq .CurrentPage "schema")}}active{{end}}">Custom (Schema)</a>
+            <a href="/google/calendar/showcase" class="nav-link {{if and (eq .Platform "google") (eq .AppType "calendar") (eq .CurrentPage "showcase")}}active{{end}}">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Google Maps</div>
+            <a href="/google/maps" class="nav-link {{if and (eq .Platform "google") (eq .AppType "maps") (eq .CurrentPage "custom")}}active{{end}}">Custom</a>
+            <a href="/google/maps/showcase" class="nav-link {{if and (eq .Platform "google") (eq .AppType "maps") (eq .CurrentPage "showcase")}}active{{end}}">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Google Drive</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Apple Calendar</div>
+            <a href="/apple/calendar" class="nav-link {{if and (eq .Platform "apple") (eq .AppType "calendar") (eq .CurrentPage "custom")}}active{{end}}">Custom</a>
+            <a href="/apple/calendar/showcase" class="nav-link {{if and (eq .Platform "apple") (eq .AppType "calendar") (eq .CurrentPage "showcase")}}active{{end}}">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Apple Maps</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Apple Mail</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Microsoft Teams</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Slack</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Zoom</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Spotify</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">YouTube</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">WhatsApp</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Telegram</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Discord</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Notion</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">LinkedIn</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Twitter/X</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Dropbox</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Evernote</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Trello</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">GitHub</div>
+            <a href="#" class="nav-link">Custom</a>
+            <a href="#" class="nav-link">Showcase</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content">
+            {{if .IsStub}}
+                {{template "stub" .}}
+            {{else if eq .TemplateName "custom"}}
+                {{template "custom" .}}
+            {{else if eq .TemplateName "showcase"}}
+                {{template "showcase" .}}
+            {{else}}
+                <div style="padding: 40px; text-align: center;">
+                    <p style="color: #999;">Template "{{.TemplateName}}" not found</p>
+                </div>
+            {{end}}
+
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #999; font-size: 12px;">
+                <p>💻 Desktop: <code style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px;">{{.LocalURL}}</code></p>
+                <p style="margin-top: 5px;">📱 Mobile: <code style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px;">{{.MobileURL}}</code></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <script>
+        function copyURL(url, button) {
+            navigator.clipboard.writeText(url).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        function generateQR(url, elementId) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+
+            // Clear existing QR code
+            container.innerHTML = '';
+
+            // Generate new QR code
+            new QRCode(container, {
+                text: url,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Close sidebar when clicking a link on mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth <= 768) {
+                        document.getElementById('sidebar').classList.remove('open');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+{{end}}

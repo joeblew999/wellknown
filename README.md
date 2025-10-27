@@ -36,8 +36,63 @@ The library also provides safe fallbacks to open the **web equivalents** when na
 go get github.com/joeblew999/wellknown
 ```
 
-## Examples
 
-There are 2 examples in the examples folder.
+---
+
+## 🧪 Testing Server
+
+The wellknown library includes a web server for testing deep links on real devices. This is **essential infrastructure**, not just a demo, because deep links can only be properly tested in a browser on mobile devices.
+
+### Running the Test Server
+
+The server is located in `cmd/server/`:
+
+```bash
+# Development mode with hot-reload (recommended)
+cd cmd/server
+air
+
+# Or standard mode
+cd cmd/server
+go run main.go
+
+# Or build and run
+go build -o server ./cmd/server
+./wellknown-server
+```
+
+### Features
+
+- **Live Testing**: Test deep links on real iOS/Android devices
+- **Showcase Pages**: Pre-built examples for each service (Google Calendar, Apple Calendar, etc.)
+- **Custom Forms**: Create your own deep links with custom parameters
+- **QR Codes**: Generate QR codes for easy mobile testing (coming soon)
+- **Hot Reload**: Air automatically rebuilds when code changes
+
+### Mobile Testing
+
+When the server starts, it displays both local and network URLs:
+
+```
+🚀 wellknown demo server starting...
+💻 Local:  http://localhost:8080
+📱 Mobile: http://192.168.1.84:8080
+```
+
+Scan the mobile URL from your phone to test deep links on actual devices.
+
+---
+
+## 📦 Package Structure
+
+```
+wellknown/
+├── pkg/
+│   ├── google/calendar/  # Google Calendar (URL-based, 5 fields)
+│   ├── apple/calendar/   # Apple Calendar (ICS-based, full RFC 5545)
+│   └── server/           # Web server for testing (embedded templates)
+├── cmd/
+│   └── wellknown-server/ # Test server binary (18 lines)
+└── examples/             # Additional examples (MCP, WebView, Custom)
 
 

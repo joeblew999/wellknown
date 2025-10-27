@@ -1,0 +1,47 @@
+package calendar
+
+// Schema defines the JSON Schema for Google Calendar events.
+// Google Calendar URLs support only 5 basic fields due to URL length limitations.
+const Schema = `{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Google Calendar Event",
+  "description": "Create a Google Calendar event with basic fields (limited by URL length)",
+  "properties": {
+    "title": {
+      "type": "string",
+      "title": "Event Title",
+      "description": "Name of the event",
+      "minLength": 1,
+      "maxLength": 200,
+      "examples": ["Team Meeting", "Client Call", "Lunch Break"]
+    },
+    "start": {
+      "type": "string",
+      "format": "datetime-local",
+      "title": "Start Time",
+      "description": "When the event begins"
+    },
+    "end": {
+      "type": "string",
+      "format": "datetime-local",
+      "title": "End Time",
+      "description": "When the event ends"
+    },
+    "location": {
+      "type": "string",
+      "title": "Location",
+      "description": "Where the event takes place (optional)",
+      "maxLength": 200,
+      "examples": ["Conference Room A", "123 Main St", "Zoom"]
+    },
+    "description": {
+      "type": "string",
+      "title": "Description",
+      "description": "Details about the event (optional)",
+      "maxLength": 1000,
+      "examples": ["Quarterly planning meeting", "Discuss project roadmap"]
+    }
+  },
+  "required": ["title", "start", "end"]
+}`

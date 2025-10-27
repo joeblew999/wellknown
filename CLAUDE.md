@@ -70,31 +70,35 @@
 
 ```
 wellknown/
-├── pkg/                     # Core library (zero external dependencies)
-│   ├── types/              # Shared data structures (CalendarEvent, etc.)
-│   ├── examples/           # Shared test data for all platforms
-│   │   └── calendar.go    # CalendarExample type + shared examples
-│   ├── google/             # Google service implementations
-│   │   └── calendar.go
-│   └── apple/              # Apple service implementations
-│       └── calendar.go
-├── examples/
-│   ├── basic/              # Web demo (air hot-reload)
-│   │   ├── main.go
-│   │   ├── handlers/
-│   │   │   ├── handlers.go         # Shared types (PageData)
-│   │   │   ├── generic.go          # Service registry, factories
-│   │   │   ├── google_calendar.go  # Google Calendar service registration
-│   │   │   ├── apple_calendar.go   # Apple Calendar service registration
-│   │   │   └── stub.go             # Stub handler for unimplemented
-│   │   ├── templates/
-│   │   │   ├── base.html           # Layout with nav
-│   │   │   ├── custom.html         # Generic form template
-│   │   │   ├── showcase.html       # Generic showcase template
-│   │   │   └── stub.html           # Coming soon page
-│   │   └── .air.toml
-│   ├── mcp/                # MCP server example
-│   └── webview/            # Webview example
+├── pkg/                     # Core library
+│   ├── types/              # Shared low-level types only (errors, etc.)
+│   ├── google/calendar/    # Google Calendar (platform-specific)
+│   │   ├── event.go               # 5-field Event (Title, StartTime, EndTime, Location, Description)
+│   │   ├── examples.go            # 6 basic examples
+│   │   ├── testdata.go            # Comprehensive test cases
+│   │   └── event_test.go          # 24 passing tests
+│   ├── apple/calendar/     # Apple Calendar (platform-specific)
+│   │   ├── types.go               # ICS types (RecurrenceRule, Attendee, Organizer, Reminder, etc.)
+│   │   ├── event.go               # Full ICS Event with 15+ fields
+│   │   ├── examples.go            # 6 examples (basic + advanced features)
+│   │   └── event_test.go          # 12 passing tests
+│   └── server/             # Web server for testing deep links
+│       ├── server.go              # Server type with embedded templates
+│       ├── handlers.go            # PageData, handler types
+│       ├── generic.go             # Service registry, handler factories
+│       ├── google_calendar.go     # Google Calendar service (19 lines)
+│       ├── apple_calendar.go      # Apple Calendar service (19 lines)
+│       ├── stub.go                # Stub handler for unimplemented services
+│       └── templates/             # Embedded HTML templates
+│           ├── base.html          # Layout with navigation
+│           ├── custom.html        # Generic custom form template
+│           ├── showcase.html      # Generic showcase template
+│           └── stub.html          # Coming soon page
+├── cmd/
+│   ├── wellknown-server/   # Test server binary (18 lines of code)
+│   │   ├── main.go                # Imports pkg/server, starts server
+│   │   └── .air.toml              # Air hot-reload config
+│   └── wellknown-mcp/      # MCP server (future)
 ├── docs/                   # User-facing documentation
 ├── CLAUDE.md              # This file (AI agent instructions)
 ├── STATUS.md              # Project status tracking
@@ -102,15 +106,18 @@ wellknown/
 ```
 
 **Key Decisions**:
-- **No embedded templates**: Web demo uses HTML templates, not go:embed
+- **Server in pkg/**: The web server is essential for testing, not just a demo - moved to `pkg/server/`
+- **Embedded templates**: Server uses `//go:embed` to embed all HTML templates (zero external files needed)
+- **Minimal cmd/**: `cmd/wellknown-server/main.go` is just 18 lines that import and start `pkg/server`
 - **Service registry pattern**: Services self-register with `RegisterService()`
-- **Generic templates**: `custom.html` and `showcase.html` work for all services
-- **Shared examples**: `pkg/examples/` contains test data used by ALL platforms
-  - **Why**: Google Calendar and Apple Calendar support the same basic fields
-  - **Benefit**: Single source of truth ensures consistency
-  - **Future**: If platforms diverge (ICS-only features), we can add platform-specific examples
+- **Generic templates**: `custom.html` and `showcase.html` work for all services via template conditionals
+- **Full platform separation**: Each platform has completely separate Event types, examples, and generators
+  - **Why**: Google Calendar URL vs Apple Calendar ICS have fundamentally different capabilities
+  - **Google**: 5 basic fields only (Title, StartTime, EndTime, Location, Description) - limited by URL length
+  - **Apple**: Full ICS spec with recurring events, attendees, reminders, priority, status, etc.
+  - **Benefit**: Each platform can use its full feature set without compromise
 
-### Web Demo Architecture Evolution (Phase 3 & 4 Refactoring)
+### Web Demo Architecture Evolution (Completed Phases)
 
 **Phase 1-2: Template & Handler Generalization** (Completed)
 - Created generic `custom.html` and `showcase.html` templates
@@ -129,7 +136,21 @@ wellknown/
 - Improved compile-time type checking
 - Better IDE autocomplete and error detection
 
-**Result**: Adding a new service now requires only ~15-19 lines of configuration code!
+**Phase 5: Full Platform Separation** (Completed 2025-10-27)
+- **Problem**: Google Calendar URL and Apple Calendar ICS have different capabilities
+- **Solution**: Complete separation of Event types, examples, and generation logic
+- **Google Calendar**: `pkg/google/calendar/event.go` with 5-field Event type
+  - GenerateURL() returns Google Calendar web URL
+  - Examples show basic calendar functionality only
+- **Apple Calendar**: `pkg/apple/calendar/event.go` with full ICS Event type
+  - types.go defines RecurrenceRule, Attendee, Organizer, Reminder, EventStatus
+  - GenerateDataURI() returns base64-encoded ICS data URI
+  - GenerateICS() returns RFC 5545 iCalendar format
+  - Examples showcase both basic AND advanced features (recurring, attendees, reminders)
+- **Handler updates**: CalendarGenerator now accepts `interface{}` with platform-specific type assertions
+- **Result**: Each platform can evolve independently with full access to its native features
+
+**Result**: Adding a new service requires ~19 lines + platform-specific Event implementation!
 
 **Current Template Strategy:**
 - **Generic HTML templates**: `custom.html` and `showcase.html` work for all services

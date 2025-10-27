@@ -1,0 +1,83 @@
+{{define "custom"}}
+{{/* Generic custom form template - works for calendar events and other services */}}
+
+{{if eq .AppType "calendar"}}
+<form method="POST" action="/{{.Platform}}/{{.AppType}}">
+    <div class="form-group">
+        <label for="title">Event Title *</label>
+        <input type="text" id="title" name="title" required placeholder="Team Meeting"
+               {{if .Event}}value="{{.Event.Title}}"{{end}}>
+    </div>
+
+    <div class="form-group">
+        <label for="start_time">Start Time *</label>
+        <input type="datetime-local" id="start_time" name="start_time"
+               {{if .Event}}value="{{.Event.StartTime.Format "2006-01-02T15:04"}}"{{else}}value="2025-10-26T14:00"{{end}} required>
+    </div>
+
+    <div class="form-group">
+        <label for="end_time">End Time *</label>
+        <input type="datetime-local" id="end_time" name="end_time"
+               {{if .Event}}value="{{.Event.EndTime.Format "2006-01-02T15:04"}}"{{else}}value="2025-10-26T15:00"{{end}} required>
+    </div>
+
+    <div class="form-group">
+        <label for="location">Location</label>
+        <input type="text" id="location" name="location" placeholder="Conference Room A"
+               {{if .Event}}value="{{.Event.Location}}"{{end}}>
+    </div>
+
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" placeholder="Quarterly planning meeting">{{if .Event}}{{.Event.Description}}{{end}}</textarea>
+    </div>
+
+    <button type="submit" class="btn-primary">Generate {{.Platform | title}} Calendar URL</button>
+</form>
+{{else}}
+{{/* Placeholder for other service types (maps, etc.) */}}
+<div style="padding: 40px; text-align: center; background: #f9f9f9; border-radius: 8px;">
+    <p style="color: #666;">Custom form for {{.Platform | title}} {{.AppType | title}} is not yet implemented.</p>
+</div>
+{{end}}
+
+{{if .Error}}
+<div class="error">
+    <strong>Error:</strong> {{.Error}}
+</div>
+{{end}}
+
+{{if .GeneratedURL}}
+<div class="result">
+    <h3>✅ Generated URL</h3>
+    <div class="url">{{.GeneratedURL}}</div>
+    <div class="actions">
+        {{if eq .AppType "calendar"}}
+        <button class="btn-open" onclick="window.open('{{.GeneratedURL}}', '_blank')">Open in Calendar</button>
+        {{else}}
+        <button class="btn-open" onclick="window.open('{{.GeneratedURL}}', '_blank')">Open</button>
+        {{end}}
+        <button class="btn-copy" onclick="copyURL('{{.GeneratedURL}}', this)">Copy URL</button>
+    </div>
+
+    <div style="margin-top: 20px; text-align: center;">
+        <h4 style="margin-bottom: 10px;">📱 QR Code</h4>
+        <div id="qrcode-custom" class="qr-container" data-url="{{.GeneratedURL}}" style="display: inline-block;"></div>
+        <p style="font-size: 12px; color: #666; margin-top: 10px;">
+            {{if eq .AppType "calendar"}}Scan with your phone to add to calendar{{else}}Scan with your phone{{end}}
+        </p>
+    </div>
+
+    <script>
+        // Generate QR code when page loads
+        if (typeof generateQR === 'function') {
+            generateQR('{{.GeneratedURL}}', 'qrcode-custom');
+        } else {
+            document.addEventListener('DOMContentLoaded', function() {
+                generateQR('{{.GeneratedURL}}', 'qrcode-custom');
+            });
+        }
+    </script>
+</div>
+{{end}}
+{{end}}
