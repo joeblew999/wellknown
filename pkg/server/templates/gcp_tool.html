@@ -1,0 +1,729 @@
+{{define "gcp_tool"}}
+<style>
+    .gcp-tool-header {
+        margin-bottom: 30px;
+    }
+
+    .gcp-tool-header h1 {
+        font-size: 32px;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .gcp-tool-header .subtitle {
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .gcp-info-box {
+        background: #e3f2fd;
+        padding: 10px 15px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        font-size: 14px;
+    }
+
+    .gcp-info-box code {
+        background: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: monospace;
+    }
+
+    .gcp-btn-group {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .gcp-btn {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .gcp-btn:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .gcp-btn-success { background: #28a745; }
+    .gcp-btn-success:hover { background: #218838; }
+
+    .gcp-btn-danger { background: #dc3545; }
+    .gcp-btn-danger:hover { background: #c82333; }
+
+    .gcp-btn-warning { background: #ff6b6b; }
+    .gcp-btn-warning:hover { background: #ee5a52; }
+
+    .gcp-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .progress-bar {
+        background: #f0f0f0;
+        height: 8px;
+        border-radius: 4px;
+        margin-bottom: 40px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+
+    .step {
+        background: #f9f9f9;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-left: 4px solid #ddd;
+        transition: all 0.3s ease;
+    }
+
+    .step.active {
+        border-left-color: #667eea;
+        background: #f5f7ff;
+    }
+
+    .step.completed {
+        border-left-color: #4caf50;
+        background: #f0f8f0;
+    }
+
+    .step-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #ddd;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 12px;
+    }
+
+    .step.active .step-number {
+        background: #667eea;
+    }
+
+    .step.completed .step-number {
+        background: #4caf50;
+    }
+
+    .step.completed .step-number::before {
+        content: "✓";
+    }
+
+    .step-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .step-content {
+        margin-left: 44px;
+    }
+
+    .step-description {
+        color: #666;
+        margin-bottom: 15px;
+        line-height: 1.6;
+    }
+
+    .input-group {
+        margin-bottom: 15px;
+    }
+
+    .input-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+        font-weight: 500;
+    }
+
+    .input-group input {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+
+    .status-pending {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .status-done {
+        background: #e7f5e9;
+        color: #2e7d32;
+    }
+
+    .success-message {
+        background: #e7f5e9;
+        border: 2px solid #4caf50;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .success-message h2 {
+        color: #2e7d32;
+        margin-bottom: 10px;
+    }
+
+    .code-block {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 6px;
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-size: 14px;
+        margin: 15px 0;
+        overflow-x: auto;
+    }
+
+    .info-box {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 4px;
+    }
+
+    .info-box strong {
+        color: #1565c0;
+    }
+
+    #projectsModal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        z-index: 1000;
+        padding: 20px;
+        overflow: auto;
+    }
+
+    .modal-content {
+        max-width: 900px;
+        margin: 40px auto;
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .modal-close-btn {
+        background: #ccc;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+
+<div class="gcp-tool-header">
+    <h1>🔗 Wellknown GCP OAuth Setup</h1>
+    <p class="subtitle">Interactive setup wizard - no gcloud CLI needed!</p>
+    <div class="gcp-info-box">
+        📁 <strong>Config file:</strong> <code>{{.GCPStatus.EnvPath}}</code>
+    </div>
+</div>
+
+<div class="gcp-btn-group">
+    <button class="gcp-btn gcp-btn-success" onclick="showProjectsList()">
+        📋 View All GCP Projects
+    </button>
+    <button class="gcp-btn gcp-btn-danger" onclick="resetSetup()">
+        🔄 Reset Setup
+    </button>
+    <button class="gcp-btn gcp-btn-warning" onclick="openDeleteProject()" id="deleteBtn" disabled>
+        🗑️ Open GCP Console to Delete
+    </button>
+</div>
+
+<!-- Projects List Modal -->
+<div id="projectsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 style="margin: 0;">📋 Your GCP Projects</h2>
+            <button onclick="closeProjectsList()" class="modal-close-btn">Close</button>
+        </div>
+        <div id="projectsListContent">Loading...</div>
+    </div>
+</div>
+
+<div class="progress-bar">
+    <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+</div>
+
+<!-- Step 1: Project ID -->
+<div class="step" id="step1" data-step="1">
+    <div class="step-header">
+        <div class="step-number">1</div>
+        <div class="step-title">
+            Set Project ID
+            <span class="status-badge status-pending" id="status1">Pending</span>
+        </div>
+    </div>
+    <div class="step-content">
+        <p class="step-description">
+            Choose a unique project ID and a display name for your project.
+        </p>
+        <div class="input-group">
+            <label>Project ID (6-30 chars, lowercase, numbers, hyphens):</label>
+            <input type="text" id="projectId" placeholder="wellknown-cal-dev"
+                   value="{{.GCPStatus.ProjectID}}">
+        </div>
+        <div class="input-group">
+            <label>Project Name (display name in console):</label>
+            <input type="text" id="projectName" placeholder="Same as Project ID"
+                   value="{{.GCPStatus.ProjectID}}">
+        </div>
+        <button class="gcp-btn" onclick="saveProject()">Save & Continue</button>
+    </div>
+</div>
+
+<!-- Step 2: Create Project -->
+<div class="step" id="step2" data-step="2">
+    <div class="step-header">
+        <div class="step-number">2</div>
+        <div class="step-title">
+            Create GCP Project
+            <span class="status-badge status-pending" id="status2">Pending</span>
+        </div>
+    </div>
+    <div class="step-content">
+        <p class="step-description">
+            Click the button below to open Google Cloud Console with your project ID pre-filled.
+            Just click the blue "CREATE" button in the console.
+        </p>
+        <div class="info-box">
+            <strong>Note:</strong> You'll need a Google account and billing enabled (free tier is fine - no charges for our usage).
+        </div>
+        <a href="#" class="gcp-btn" id="createProjectBtn" onclick="openProjectCreate(); return false;">
+            Open GCP Console →
+        </a>
+        <button class="gcp-btn gcp-btn-success" onclick="markProjectDone()" style="margin-left: 10px;">
+            Mark as Done
+        </button>
+    </div>
+</div>
+
+<!-- Step 3: Enable APIs -->
+<div class="step" id="step3" data-step="3">
+    <div class="step-header">
+        <div class="step-number">3</div>
+        <div class="step-title">
+            Enable APIs
+            <span class="status-badge status-pending" id="status3">Pending</span>
+        </div>
+    </div>
+    <div class="step-content">
+        <p class="step-description">
+            Enable Google Calendar API and OAuth2 API (just click "ENABLE" for each).
+        </p>
+        <a href="#" class="gcp-btn" id="enableCalendarBtn" onclick="openEnableAPI('calendar-json'); return false;">
+            Enable Calendar API →
+        </a>
+        <a href="#" class="gcp-btn" id="enableOAuthBtn" onclick="openEnableAPI('oauth2'); return false;" style="margin-left: 10px;">
+            Enable OAuth2 API →
+        </a>
+        <button class="gcp-btn gcp-btn-success" onclick="markAPIDone()" style="margin-left: 10px;">
+            Mark as Done
+        </button>
+    </div>
+</div>
+
+<!-- Step 4: OAuth Consent -->
+<div class="step" id="step4" data-step="4">
+    <div class="step-header">
+        <div class="step-number">4</div>
+        <div class="step-title">
+            Configure OAuth Consent
+            <span class="status-badge status-pending" id="status4">Pending</span>
+        </div>
+    </div>
+    <div class="step-content">
+        <p class="step-description">
+            Configure the OAuth consent screen. Select "External" and fill in your email.
+            Click "Save and Continue" through all 4 steps.
+        </p>
+        <a href="#" class="gcp-btn" id="consentBtn" onclick="openConsent(); return false;">
+            Open OAuth Consent →
+        </a>
+        <button class="gcp-btn gcp-btn-success" onclick="markConsentDone()" style="margin-left: 10px;">
+            Mark as Done
+        </button>
+    </div>
+</div>
+
+<!-- Step 5: Create OAuth Credentials -->
+<div class="step" id="step5" data-step="5">
+    <div class="step-header">
+        <div class="step-number">5</div>
+        <div class="step-title">
+            Create OAuth Credentials
+            <span class="status-badge status-pending" id="status5">Pending</span>
+        </div>
+    </div>
+    <div class="step-content">
+        <p class="step-description">
+            Create OAuth 2.0 credentials. After clicking CREATE, copy the credentials from the popup.
+        </p>
+        <div class="info-box">
+            <strong>Redirect URIs to add:</strong><br>
+            • http://localhost:8090/auth/google/callback<br>
+            • http://127.0.0.1:8090/auth/google/callback
+        </div>
+        <a href="#" class="gcp-btn" id="credsBtn" onclick="openCredentials(); return false;">
+            Create OAuth Client →
+        </a>
+
+        <div style="margin-top: 20px;">
+            <div class="input-group">
+                <label>Client ID:</label>
+                <input type="text" id="clientId" placeholder="your-id.apps.googleusercontent.com"
+                       value="{{.GCPStatus.ClientID}}">
+            </div>
+            <div class="input-group">
+                <label>Client Secret:</label>
+                <input type="text" id="clientSecret" placeholder="your-secret"
+                       value="{{.GCPStatus.ClientSecret}}">
+            </div>
+            <button class="gcp-btn gcp-btn-success" onclick="saveCreds()">Save Credentials</button>
+        </div>
+    </div>
+</div>
+
+<!-- Success Message -->
+<div class="success-message" id="successMessage" style="display: none;">
+    <h2>🎉 Setup Complete!</h2>
+    <p>Your .env file has been generated at: <code>{{.GCPStatus.EnvPath}}</code></p>
+    <div class="code-block">
+make pb-server
+# Or: cd pb/base && source .env && go run main.go serve
+    </div>
+    <p style="margin-top: 15px;">
+        Then open: <a href="http://localhost:8090" target="_blank">http://localhost:8090</a>
+    </p>
+</div>
+
+<script>
+    let status = {{.GCPStatus}};
+
+    async function resetSetup() {
+        if (!confirm('⚠️ This will reset all setup progress and delete the .env file. Are you sure?')) {
+            return;
+        }
+
+        const resp = await fetch('/api/gcp-setup/reset', { method: 'POST' });
+        const data = await resp.json();
+
+        if (resp.ok) {
+            alert('✅ Reset complete!');
+            location.reload();
+        } else {
+            alert('❌ Failed to reset: ' + (data.message || 'Unknown error'));
+        }
+    }
+
+    function openDeleteProject() {
+        const projectId = document.getElementById('projectId').value || status.project_id;
+        if (!projectId) {
+            alert('⚠️ Please save a project ID first (Step 1)');
+            return;
+        }
+
+        if (confirm(`🗑️ Open GCP Console to delete project "${projectId}"?\n\nYou'll need to:\n1. Click "Shut Down" in the console\n2. Type the project ID to confirm\n3. Click "Shut Down" again\n\nAfter deletion, come back and click "🔄 Reset Setup" to clear the local config.`)) {
+            window.open(`https://console.cloud.google.com/home/dashboard?project=${projectId}`, '_blank');
+        }
+    }
+
+    async function showProjectsList() {
+        document.getElementById('projectsModal').style.display = 'block';
+        document.getElementById('projectsListContent').innerHTML = 'Loading...';
+
+        try {
+            const resp = await fetch('/api/gcp-setup/list-projects');
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                const error = data;
+                if (error.error === 'not_authenticated') {
+                    document.getElementById('projectsListContent').innerHTML =
+                        `<div style="padding: 20px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                            <h3 style="margin-top: 0; color: #856404;">🔐 Authentication Required</h3>
+                            <p style="color: #856404; margin-bottom: 10px;">${error.message}</p>
+                            <p style="color: #856404; margin-bottom: 15px;"><strong>Hint:</strong> ${error.hint}</p>
+                            <p style="color: #666; font-size: 14px;"><strong>Note:</strong> In web mode (no gcloud), you can still create projects manually via the wizard. This feature is only for viewing existing projects programmatically.</p>
+                        </div>`;
+                } else {
+                    document.getElementById('projectsListContent').innerHTML =
+                        `<div style="color: #dc3545;">❌ Failed to load projects: ${error.message || 'Unknown error'}</div>`;
+                }
+                return;
+            }
+
+            if (data.count === 0) {
+                document.getElementById('projectsListContent').innerHTML =
+                    `<div style="color: #666;">No projects found. Create one using this wizard!</div>`;
+                return;
+            }
+
+            let html = `<div style="color: #666; margin-bottom: 15px;">Found ${data.count} project(s):</div>`;
+            html += `<table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f0f0f0; text-align: left;">
+                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Project ID</th>
+                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Name</th>
+                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">State</th>
+                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Created</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            data.projects.forEach(p => {
+                const date = p.create_time ? new Date(p.create_time).toLocaleDateString() : 'N/A';
+                const stateColor = p.state === 'ACTIVE' ? '#28a745' : '#999';
+                html += `<tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px; font-family: monospace;">${p.project_id}</td>
+                    <td style="padding: 10px;">${p.project_name || 'N/A'}</td>
+                    <td style="padding: 10px; color: ${stateColor}; font-weight: bold;">${p.state}</td>
+                    <td style="padding: 10px; color: #666;">${date}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+            document.getElementById('projectsListContent').innerHTML = html;
+        } catch (err) {
+            document.getElementById('projectsListContent').innerHTML =
+                `<div style="color: #dc3545;">❌ Error: ${err.message}</div>`;
+        }
+    }
+
+    function closeProjectsList() {
+        document.getElementById('projectsModal').style.display = 'none';
+    }
+
+    function updateUI() {
+        // Update progress bar
+        let progress = 0;
+        if (status.project_done) progress += 20;
+        if (status.api_done) progress += 20;
+        if (status.consent_done) progress += 20;
+        if (status.creds_done) progress += 40;
+
+        document.getElementById('progressBar').style.width = progress + '%';
+
+        // Update step states
+        updateStep(1, status.project_id !== '' && status.project_id !== 'your-project-id');
+        updateStep(2, status.project_done);
+        updateStep(3, status.api_done);
+        updateStep(4, status.consent_done);
+        updateStep(5, status.creds_done);
+
+        // Show success if all done
+        if (progress === 100) {
+            document.getElementById('successMessage').style.display = 'block';
+        }
+    }
+
+    function updateStep(num, isDone) {
+        const step = document.getElementById('step' + num);
+        const statusBadge = document.getElementById('status' + num);
+
+        if (isDone) {
+            step.classList.add('completed');
+            step.classList.remove('active');
+            statusBadge.textContent = 'Done';
+            statusBadge.className = 'status-badge status-done';
+        } else if (shouldBeActive(num)) {
+            step.classList.add('active');
+            step.classList.remove('completed');
+        }
+    }
+
+    function shouldBeActive(num) {
+        if (num === 1) return !status.project_done;
+        if (num === 2) return status.project_id && !status.project_done;
+        if (num === 3) return status.project_done && !status.api_done;
+        if (num === 4) return status.api_done && !status.consent_done;
+        if (num === 5) return status.consent_done && !status.creds_done;
+        return false;
+    }
+
+    async function saveProject() {
+        const projectId = document.getElementById('projectId').value;
+        const projectName = document.getElementById('projectName').value;
+        if (!projectId) {
+            alert('Please enter a project ID');
+            return;
+        }
+
+        const resp = await fetch('/api/gcp-setup/save-project', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({project_id: projectId, project_name: projectName})
+        });
+
+        if (resp.ok) {
+            status = (await resp.json()).status || status;
+            status.project_done = true;
+            updateUI();
+        }
+    }
+
+    async function saveCreds() {
+        const clientId = document.getElementById('clientId').value;
+        const clientSecret = document.getElementById('clientSecret').value;
+
+        if (!clientId || !clientSecret) {
+            alert('Please enter both credentials');
+            return;
+        }
+
+        const resp = await fetch('/api/gcp-setup/save-creds', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({client_id: clientId, client_secret: clientSecret})
+        });
+
+        if (resp.ok) {
+            status = (await resp.json()).status || status;
+            status.creds_done = true;
+            updateUI();
+        }
+    }
+
+    function openProjectCreate() {
+        const projectId = document.getElementById('projectId').value || status.project_id;
+        const projectName = document.getElementById('projectName').value || 'Wellknown Calendar OAuth';
+        if (!projectId) {
+            alert('⚠️ Please enter a project ID first');
+            return;
+        }
+        const encodedName = encodeURIComponent(projectName);
+        window.open(`https://console.cloud.google.com/projectcreate?project=${projectId}&name=${encodedName}`, '_blank');
+    }
+
+    function openEnableAPI(apiName) {
+        const projectId = document.getElementById('projectId').value || status.project_id;
+        if (!projectId) {
+            alert('⚠️ Please save a project ID first (Step 1)');
+            return;
+        }
+        window.open(`https://console.cloud.google.com/apis/library/${apiName}.googleapis.com?project=${projectId}`, '_blank');
+    }
+
+    function openConsent() {
+        const projectId = document.getElementById('projectId').value || status.project_id;
+        if (!projectId) {
+            alert('⚠️ Please save a project ID first (Step 1)');
+            return;
+        }
+        window.open(`https://console.cloud.google.com/apis/credentials/consent?project=${projectId}`, '_blank');
+    }
+
+    function openCredentials() {
+        const projectId = document.getElementById('projectId').value || status.project_id;
+        if (!projectId) {
+            alert('⚠️ Please save a project ID first (Step 1)');
+            return;
+        }
+        window.open(`https://console.cloud.google.com/apis/credentials/oauthclient?project=${projectId}`, '_blank');
+    }
+
+    async function markProjectDone() {
+        status.project_done = true;
+        await fetch('/api/gcp-setup/save-project', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({project_id: status.project_id})
+        });
+        updateUI();
+    }
+
+    async function markAPIDone() {
+        status.api_done = true;
+        updateUI();
+    }
+
+    async function markConsentDone() {
+        status.consent_done = true;
+        updateUI();
+    }
+
+    // Initialize UI on load
+    updateUI();
+
+    // Enable/disable delete button based on project ID
+    const deleteBtn = document.getElementById('deleteBtn');
+    if (status.project_id && status.project_id !== '') {
+        deleteBtn.disabled = false;
+        deleteBtn.style.opacity = '1';
+        deleteBtn.style.cursor = 'pointer';
+    }
+
+    // Auto-sync Project Name with Project ID
+    const projectIdInput = document.getElementById('projectId');
+    const projectNameInput = document.getElementById('projectName');
+    let userEditedName = false;
+
+    projectNameInput.addEventListener('input', function() {
+        userEditedName = true;
+    });
+
+    projectIdInput.addEventListener('input', function() {
+        if (!userEditedName) {
+            projectNameInput.value = projectIdInput.value;
+        }
+    });
+</script>
+{{end}}

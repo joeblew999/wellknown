@@ -37,10 +37,20 @@ func handleGCPSetup(w http.ResponseWriter, r *http.Request) {
 	// Load current status from .env
 	loadGCPEnvStatus()
 
-	// Render template
-	if err := Templates.ExecuteTemplate(w, "gcp_setup.html", gcpSetupStatus); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	// Render template using base template with navigation
+	err := Templates.ExecuteTemplate(w, "base", PageData{
+		Platform:     "tools",
+		AppType:      "gcp-setup",
+		CurrentPage:  "gcp-setup",
+		TemplateName: "gcp_tool",
+		GCPStatus:    gcpSetupStatus,
+		LocalURL:     LocalURL,
+		MobileURL:    MobileURL,
+		Navigation:   GetNavigation(r.URL.Path),
+	})
+	if err != nil {
+		log.Printf("Template execution error: %v", err)
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 	}
 }
 

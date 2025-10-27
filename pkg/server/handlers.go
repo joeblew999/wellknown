@@ -43,4 +43,5 @@ type PageData struct {
 	FormData         map[string]interface{} // Form data for pre-filling after validation errors
 	ValidationErrors schema.ValidationErrors // Field-level validation errors
 	Navigation       []NavSection      // Server-generated navigation
+	GCPStatus        GCPSetupStatus    // GCP setup status (for tools/gcp-setup page)
 }
