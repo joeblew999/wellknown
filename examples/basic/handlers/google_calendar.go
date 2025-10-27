@@ -88,8 +88,9 @@ func GoogleCalendar(w http.ResponseWriter, r *http.Request) {
 
 		log.Printf("SUCCESS! Generated URL: %s", url)
 
-		// Google Calendar app URL (won't work with params, but worth trying)
-		appURL := "googlecalendar://"
+		// Use the same web URL - mobile browsers will offer to open in the Google Calendar app
+		// The web URL works on both desktop and mobile, and mobile can deep link to the app
+		appURL := url
 
 		Templates.ExecuteTemplate(w, "base", PageData{
 			Platform:     "google",
@@ -110,13 +111,13 @@ func GoogleCalendar(w http.ResponseWriter, r *http.Request) {
 func GoogleCalendarShowcase(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
 
+	// Note: AppURL is set per test case in the template (each has its own URL)
 	Templates.ExecuteTemplate(w, "base", PageData{
 		Platform:     "google",
 		AppType:      "calendar",
 		CurrentPage:  "showcase",
 		TemplateName: "google_calendar_showcase",
 		TestCases:    google.CalendarEvents,
-		AppURL:       "googlecalendar://",
 		LocalURL:     LocalURL,
 		MobileURL:    MobileURL,
 	})

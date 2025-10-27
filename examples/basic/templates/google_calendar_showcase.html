@@ -14,10 +14,7 @@
     </div>
     <div class="url">{{.ExpectedURL}}</div>
     <div class="actions">
-        {{if $.AppURL}}
-        <button class="btn-open" onclick="window.location.href='{{$.AppURL}}'; setTimeout(() => window.open('{{.ExpectedURL}}', '_blank'), 1000);">Open in App</button>
-        {{end}}
-        <button class="btn-open" onclick="window.open('{{.ExpectedURL}}', '_blank')">Open in Web</button>
+        <button class="btn-open" onclick="window.open('{{.ExpectedURL}}', '_blank')">Open in Calendar</button>
         <button class="btn-copy" onclick="copyURL('{{.ExpectedURL}}', this)">Copy URL</button>
     </div>
 </div>
