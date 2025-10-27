@@ -49,6 +49,13 @@ func RegisterRoutes(mux *http.ServeMux) {
 		HasShowcase: true,
 	})
 
+	// Tools - GCP OAuth Setup
+	mux.HandleFunc("/tools/gcp-setup", handleGCPSetup)
+	mux.HandleFunc("/api/gcp-setup/status", handleGCPSetupStatus)
+	mux.HandleFunc("/api/gcp-setup/save-project", handleGCPSaveProject)
+	mux.HandleFunc("/api/gcp-setup/save-creds", handleGCPSaveCreds)
+	mux.HandleFunc("/api/gcp-setup/reset", handleGCPReset)
+
 	// Homepage - shows all available services
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {

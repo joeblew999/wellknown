@@ -1,4 +1,4 @@
-.PHONY: help install-tools dev build test clean run gcp-setup gcp-setup-cli gcp-setup-dev pb-server pb-build
+.PHONY: help install-tools dev build test clean run pb-server pb-build
 
 help:
 	@echo "Development:"
@@ -9,10 +9,8 @@ help:
 	@echo "  make run           - Run server"
 	@echo "  make clean         - Clean artifacts"
 	@echo ""
-	@echo "Google Cloud Integration:"
-	@echo "  make gcp-setup     - Interactive web-based OAuth setup (NO gcloud needed!)"
-	@echo "  make gcp-setup-dev - Start web setup with hot-reload (for development)"
-	@echo "  make gcp-setup-cli - Automated CLI setup (requires gcloud CLI)"
+	@echo "NOTE: GCP OAuth setup is now integrated into the main server!"
+	@echo "      Access it at: http://localhost:8080/tools/gcp-setup"
 	@echo ""
 	@echo "Pocketbase Server:"
 	@echo "  make pb-server     - Run Pocketbase server (requires .env setup)"
@@ -42,30 +40,6 @@ clean:
 
 run: build
 	./bin/wellknown-server
-
-gcp-setup:
-	@echo "🚀 Web-Based OAuth Setup Dashboard"
-	@echo "===================================="
-	@echo ""
-	@echo "Starting web server on http://localhost:3030"
-	@echo ""
-	cd tools/gcp-setup && go run main.go --web
-
-gcp-setup-dev:
-	@which air > /dev/null || (echo "Run: make install-tools" && exit 1)
-	@echo "🚀 GCP Setup with Hot-Reload (Development Mode)"
-	@echo "================================================="
-	@echo ""
-	@echo "Web server: http://localhost:3030"
-	@echo "Watching: *.go, *.html files"
-	@echo ""
-	cd tools/gcp-setup && air
-
-gcp-setup-cli:
-	@echo "🚀 Automated GCP Setup (requires gcloud CLI)"
-	@echo "See: tools/gcp-setup/README.md for prerequisites"
-	@echo ""
-	cd tools/gcp-setup && go run main.go --cli
 
 pb-server:
 	@if [ ! -f pb/base/.env ]; then \

@@ -61,6 +61,18 @@ func buildNavigation(currentPath string) []NavSection {
 		}
 	}
 
+	// Add Tools section at the end
+	sections = append(sections, NavSection{
+		Title: "Tools",
+		Links: []NavLink{
+			{
+				Label:    "GCP OAuth Setup",
+				URL:      "/tools/gcp-setup",
+				IsActive: currentPath == "/tools/gcp-setup",
+			},
+		},
+	})
+
 	return sections
 }
 
