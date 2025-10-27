@@ -1,0 +1,30 @@
+{
+  "name": "wellknown-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-end tests for wellknown GCP OAuth setup wizard using Bun + Playwright",
+  "scripts": {
+    "test": "bun run playwright test",
+    "test:ui": "bun run playwright test --ui",
+    "test:debug": "bun run playwright test --debug",
+    "test:headed": "bun run playwright test --headed",
+    "test:report": "bun run playwright show-report",
+    "codegen": "bun run playwright codegen http://localhost:8080/tools/gcp-setup",
+    "install:browsers": "bun run playwright install --with-deps"
+  },
+  "keywords": [
+    "bun",
+    "playwright",
+    "e2e",
+    "testing",
+    "gcp",
+    "oauth"
+  ],
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "trustedDependencies": [
+    "@playwright/test"
+  ]
+}

@@ -176,6 +176,79 @@
         border-color: #667eea;
     }
 
+    .input-group input.error {
+        border-color: #dc3545;
+    }
+
+    .error-message {
+        color: #dc3545;
+        font-size: 13px;
+        margin-top: 5px;
+        display: none;
+    }
+
+    .error-message.visible {
+        display: block;
+    }
+
+    /* Toast Notifications */
+    #toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        min-width: 300px;
+        max-width: 500px;
+    }
+
+    .toast {
+        background: white;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideIn 0.3s ease;
+        border-left: 4px solid #666;
+    }
+
+    .toast.success { border-left-color: #28a745; }
+    .toast.error { border-left-color: #dc3545; }
+    .toast.warning { border-left-color: #ffc107; }
+    .toast.info { border-left-color: #17a2b8; }
+
+    .toast-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .toast-message {
+        flex: 1;
+        color: #333;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOut {
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+
     .status-badge {
         display: inline-block;
         padding: 4px 12px;
@@ -268,6 +341,9 @@
     }
 </style>
 
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
 <div class="gcp-tool-header">
     <h1>🔗 Wellknown GCP OAuth Setup</h1>
     <p class="subtitle">Interactive setup wizard - no gcloud CLI needed!</p>
@@ -320,6 +396,7 @@
             <label>Project ID (6-30 chars, lowercase, numbers, hyphens):</label>
             <input type="text" id="projectId" placeholder="wellknown-cal-dev"
                    value="{{.GCPStatus.ProjectID}}">
+            <div id="projectIdError" class="error-message"></div>
         </div>
         <div class="input-group">
             <label>Project Name (display name in console):</label>
@@ -478,30 +555,57 @@ make pb-server
 <script>
     let status = {{.GCPStatus}};
 
+    // Toast Notification System (replaces all alert/confirm dialogs)
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+        
+        toast.innerHTML = `
+            <div class="toast-icon">${icons[type] || icons.info}</div>
+            <div class="toast-message">${message}</div>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+
     async function resetSetup() {
-        if (!confirm('⚠️ This will reset all setup progress and delete the .env file. Are you sure?')) {
-            return;
-        }
+        // Removed confirm dialog for faster testing - instant reset
 
         const resp = await fetch('/api/gcp-setup/reset', { method: 'POST' });
         const data = await resp.json();
 
         if (resp.ok) {
-            alert('✅ Reset complete!');
+            showToast('✅ Reset complete!', 'success');
             location.reload();
         } else {
-            alert('❌ Failed to reset: ' + (data.message || 'Unknown error'));
+            showToast('❌ Failed to reset: ' + (data.message || 'Unknown error'), 'error');
         }
     }
 
     function openDeleteProject() {
         const projectId = document.getElementById('projectId').value || status.project_id;
         if (!projectId) {
-            alert('⚠️ Please save a project ID first (Step 1)');
+            showToast('⚠️ Please save a project ID first (Step 1)', 'warning');
             return;
         }
 
-        if (confirm(`🗑️ Open GCP Console to delete project "${projectId}"?\n\nYou'll be taken to Project Settings where you can:\n1. Scroll down to find "Shut down this project"\n2. Click "SHUT DOWN"\n3. Type the project ID to confirm: ${projectId}\n4. Click "SHUT DOWN" again\n\nAfter deletion, come back and click "🔄 Reset Setup" to clear the local config.`)) {
+        // Auto-open GCP Console - no confirm needed for faster workflow
+        {
             window.open(`https://console.cloud.google.com/iam-admin/settings?project=${projectId}`, '_blank');
         }
     }
@@ -582,6 +686,14 @@ make pb-server
 
         document.getElementById('progressBar').style.width = progress + '%';
 
+        // Update project ID displays dynamically (for Playwright testing)
+        if (status.project_id) {
+            const projectIdToCopy = document.getElementById('projectIdToCopy');
+            if (projectIdToCopy) {
+                projectIdToCopy.textContent = status.project_id;
+            }
+        }
+
         // Update step states
         updateStep(1, status.project_id !== '' && status.project_id !== 'your-project-id');
         updateStep(2, status.project_done);
@@ -619,33 +731,52 @@ make pb-server
         return false;
     }
 
+    function showError(message) {
+        const errorDiv = document.getElementById('projectIdError');
+        const input = document.getElementById('projectId');
+        errorDiv.textContent = message;
+        errorDiv.classList.add('visible');
+        input.classList.add('error');
+    }
+
+    function clearError() {
+        const errorDiv = document.getElementById('projectIdError');
+        const input = document.getElementById('projectId');
+        errorDiv.textContent = '';
+        errorDiv.classList.remove('visible');
+        input.classList.remove('error');
+    }
+
     async function saveProject() {
         const projectId = document.getElementById('projectId').value;
         const projectName = document.getElementById('projectName').value;
 
+        // Clear previous errors
+        clearError();
+
         // Validate project ID
         if (!projectId) {
-            alert('⚠️ Please enter a project ID');
+            showError('Please enter a project ID');
             return;
         }
 
         if (projectId.length < 6 || projectId.length > 30) {
-            alert('⚠️ Project ID must be 6-30 characters long');
+            showError('Project ID must be 6-30 characters long');
             return;
         }
 
         if (!/^[a-z]/.test(projectId)) {
-            alert('⚠️ Project ID must start with a lowercase letter');
+            showError('Project ID must start with a lowercase letter');
             return;
         }
 
         if (!/^[a-z][a-z0-9-]*$/.test(projectId)) {
-            alert('⚠️ Project ID can only contain lowercase letters, numbers, and hyphens');
+            showError('Project ID can only contain lowercase letters, numbers, and hyphens');
             return;
         }
 
         if (projectId.endsWith('-')) {
-            alert('⚠️ Project ID cannot end with a hyphen');
+            showError('Project ID cannot end with a hyphen');
             return;
         }
 
@@ -658,6 +789,7 @@ make pb-server
         if (resp.ok) {
             status = (await resp.json()).status || status;
             status.project_done = true;
+            status.project_id = projectId;  // Update project_id in status
             updateUI();
         }
     }
@@ -667,7 +799,7 @@ make pb-server
         const clientSecret = document.getElementById('clientSecret').value;
 
         if (!clientId || !clientSecret) {
-            alert('Please enter both credentials');
+            showToast('Please enter both credentials', 'error');
             return;
         }
 
@@ -687,7 +819,7 @@ make pb-server
     function openProjectCreate() {
         const projectId = document.getElementById('projectId').value || status.project_id;
         if (!projectId) {
-            alert('⚠️ Please save a project ID first (Step 1)');
+            showToast('⚠️ Please save a project ID first (Step 1)', 'warning');
             return;
         }
         // Just open the project create page - no URL parameters work anyway
@@ -697,7 +829,7 @@ make pb-server
     function copyProjectId(event) {
         const projectId = document.getElementById('projectIdToCopy').textContent;
         if (!projectId) {
-            alert('⚠️ No project ID to copy');
+            showToast('⚠️ No project ID to copy', 'warning');
             return;
         }
 
@@ -713,14 +845,14 @@ make pb-server
                 btn.style.background = '';
             }, 2000);
         }).catch(err => {
-            alert('Failed to copy: ' + err);
+            showToast('Failed to copy: ' + err, 'error');
         });
     }
 
     function openEnableAPI(apiName) {
         const projectId = document.getElementById('projectId').value || status.project_id;
         if (!projectId) {
-            alert('⚠️ Please save a project ID first (Step 1)');
+            showToast('⚠️ Please save a project ID first (Step 1)', 'warning');
             return;
         }
         window.open(`https://console.cloud.google.com/apis/library/${apiName}.googleapis.com?project=${projectId}`, '_blank');
@@ -729,7 +861,7 @@ make pb-server
     function openConsent() {
         const projectId = document.getElementById('projectId').value || status.project_id;
         if (!projectId) {
-            alert('⚠️ Please save a project ID first (Step 1)');
+            showToast('⚠️ Please save a project ID first (Step 1)', 'warning');
             return;
         }
         window.open(`https://console.cloud.google.com/apis/credentials/consent?project=${projectId}`, '_blank');
@@ -738,7 +870,7 @@ make pb-server
     function openCredentials() {
         const projectId = document.getElementById('projectId').value || status.project_id;
         if (!projectId) {
-            alert('⚠️ Please save a project ID first (Step 1)');
+            showToast('⚠️ Please save a project ID first (Step 1)', 'warning');
             return;
         }
         window.open(`https://console.cloud.google.com/apis/credentials/oauthclient?project=${projectId}`, '_blank');

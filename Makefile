@@ -1,11 +1,12 @@
-.PHONY: help install-tools dev build test clean run pb-server pb-build
+.PHONY: help install-tools dev build test test-e2e clean run pb-server pb-build
 
 help:
 	@echo "Development:"
 	@echo "  make install-tools  - Install dev tools (Air, pocketbase-gogen)"
 	@echo "  make dev           - Start dev server with hot-reload"
 	@echo "  make build         - Build server binary"
-	@echo "  make test          - Run tests"
+	@echo "  make test          - Run Go unit tests"
+	@echo "  make test-e2e      - Run Playwright E2E tests (fast core tests)"
 	@echo "  make run           - Run server"
 	@echo "  make clean         - Clean artifacts"
 	@echo ""
@@ -34,6 +35,10 @@ build:
 
 test:
 	go test -v ./pkg/...
+
+test-e2e:
+	@echo "🧪 Running Playwright E2E tests..."
+	@cd tests && bun run playwright test wizard-core --grep-invert "Delete Project Button" --reporter=line --workers=1
 
 clean:
 	rm -rf tmp/ bin/

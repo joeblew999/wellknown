@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+bun.lockb
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.auth/
+.playwright-mcp/
+
+# TypeScript
+*.js
+*.js.map
+tsconfig.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

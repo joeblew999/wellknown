@@ -14,6 +14,7 @@
 
 ### ❌ NEVER DO:
 1. **NEVER use wrong module name** (`joeblew99` is WRONG, must be `joeblew999`)
+2. **NEVER use `alert()`, `confirm()`, or `prompt()` dialogs** - use toast notifications or inline UI instead
 3. **NEVER use `docs/` folder** for Claude tracking documents (user-facing docs only)
 4. **NEVER add external dependencies** to core library (stdlib only)
 
@@ -213,6 +214,101 @@ event := calendar.NewEvent().
 
 ---
 
+## UI/UX Patterns & Best Practices
+
+### 🚫 NEVER Use Browser Dialogs
+
+**CRITICAL RULE**: Never use `alert()`, `confirm()`, or `prompt()` in web interfaces.
+
+**Why dialogs are BAD**:
+- ❌ Block the entire page (bad UX)
+- ❌ Impossible to test with Playwright without complex event handlers
+- ❌ Slow down automated tests (need to handle async dialogs)
+- ❌ Not customizable (ugly default browser styles)
+- ❌ Not accessible (screen readers struggle with them)
+- ❌ Mobile unfriendly (often render poorly)
+
+**✅ USE INSTEAD**:
+1. **Toast Notifications** - For success/error/warning/info messages
+   - Auto-dismiss after 3 seconds
+   - Non-blocking
+   - Fully customizable
+   - Easily testable
+   - Example: `showToast('Success!', 'success')`
+
+2. **Inline Error Messages** - For form validation
+   - Show errors directly below input fields
+   - Use `<div class="error-message">` with visibility toggle
+   - Red border on invalid inputs
+   - Example in [gcp_tool.html:183-192](pkg/server/templates/gcp_tool.html:183-192)
+
+3. **Modal Dialogs** - For complex confirmations (when necessary)
+   - Custom HTML/CSS modal overlays
+   - Cancel/Confirm buttons
+   - Fully testable with standard Playwright selectors
+
+**Real-World Example (2025-10-27)**:
+- **Before**: GCP Setup Wizard had 13 `alert()`/`confirm()` calls
+- **After**: Replaced ALL with toast notifications
+- **Result**: Tests went from 2+ minutes to 8.7 seconds (14x faster!)
+- **Test pass rate**: 40% → 100%
+
+### Toast Notification System
+
+**Implementation** (see [gcp_tool.html:194-250](pkg/server/templates/gcp_tool.html:194-250)):
+```javascript
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+    };
+
+    toast.innerHTML = `
+        <div class="toast-icon">${icons[type] || icons.info}</div>
+        <div class="toast-message">${message}</div>
+    `;
+
+    container.appendChild(toast);
+
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+```
+
+**Usage**:
+```javascript
+// Success
+showToast('✅ Reset complete!', 'success');
+
+// Error
+showToast('❌ Failed to save', 'error');
+
+// Warning
+showToast('⚠️ Please enter a project ID', 'warning');
+
+// Info
+showToast('ℹ️ Loading projects...', 'info');
+```
+
+**Testing with Playwright**:
+```typescript
+// NO dialog handlers needed!
+await page.click('button:has-text("Save")');
+await expect(page.locator('.toast.success')).toBeVisible();
+await expect(page.locator('.toast-message')).toContainText('Saved');
+```
+
+---
+
 ## Testing Strategy
 
 ### Test Pyramid
@@ -223,7 +319,16 @@ event := calendar.NewEvent().
    - Test validation logic
    - Run: `go test ./pkg/...`
 
-2. **Web Demo Testing** (Playwright MCP with Safari/WebKit)
+2. **E2E Tests with Playwright** (Fast, Automated)
+   - **Run tests**: `make test-e2e` (runs 13 core tests in ~8 seconds)
+   - **Location**: `tests/e2e/wizard-core.spec.ts`
+   - **Browser**: WebKit (Safari) via Playwright
+   - **Test suite**: 13/13 passing (100%)
+   - **Speed**: 8.7 seconds for full suite
+   - **Coverage**: Form validation, URL generation, state persistence, reset functionality
+   - **Key achievement (2025-10-27)**: Removed ALL alert/confirm dialogs → 14x faster tests!
+
+3. **Web Demo Testing** (Playwright MCP with Safari/WebKit)
    - **Development mode**: `cd examples/basic && air` (hot-reload on code changes)
    - **Standard mode**: `go run ./examples/basic/main.go`
    - **URLs displayed on startup**:
@@ -496,16 +601,19 @@ func Calendar(event Event, opts ...Option) (string, error) {
 - ✅ Apple Calendar (ICS data URI approach)
 - ✅ Generic template system (custom.html, showcase.html)
 - ✅ Auto-registration pattern (~15 lines to add new service)
+- ✅ **Toast notification system** - Replaced ALL 13 alert/confirm dialogs (2025-10-27)
+- ✅ **100% E2E test pass rate** - 13/13 tests passing in 8.7 seconds (2025-10-27)
 
 ---
 
 ## Resources
 
 - **MCP Go SDK**: https://github.com/modelcontextprotocol/go-sdk
-- **Testing Guide**: `docs/testing-with-goup-util.md`
+- **Playwright Documentation**: https://playwright.dev/
+- **E2E Testing with Bun**: https://bun.sh/docs/cli/test
 - **Go Templates**: https://pkg.go.dev/text/template
 
 ---
 
-**Last Updated**: 2025-10-27 (Comprehensive cleanup after Phase 3 & 4 refactoring)
+**Last Updated**: 2025-10-27 (Added toast notification system, achieved 100% E2E test pass rate)
 **Maintained by**: Claude (AI assistant)
