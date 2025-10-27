@@ -4,16 +4,16 @@ import (
 	"github.com/joeblew999/wellknown/pkg/google"
 )
 
-// GoogleCalendarConfig is the configuration for Google Calendar handlers
-var GoogleCalendarConfig = ServiceConfig{
+// GoogleCalendarService is the registered Google Calendar service
+var GoogleCalendarService = RegisterService(ServiceConfig{
 	Platform:  "google",
 	AppType:   "calendar",
 	Examples:  google.CalendarExamples,
 	Generator: google.Calendar,
-}
+})
 
 // GoogleCalendar handles Google Calendar custom event creation
-var GoogleCalendar = CalendarHandler(GoogleCalendarConfig)
+var GoogleCalendar = GoogleCalendarService.CustomHandler
 
 // GoogleCalendarShowcase handles Google Calendar showcase page
-var GoogleCalendarShowcase = ShowcaseHandler(GoogleCalendarConfig)
+var GoogleCalendarShowcase = GoogleCalendarService.ShowcaseHandler

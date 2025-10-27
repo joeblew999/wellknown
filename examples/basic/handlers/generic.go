@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -17,6 +18,50 @@ type ServiceConfig struct {
 	AppType   string
 	Examples  interface{} // TestCases for showcase
 	Generator CalendarGenerator
+}
+
+// ServiceRegistration holds a service config and its handlers
+type ServiceRegistration struct {
+	Config          ServiceConfig
+	CustomHandler   http.HandlerFunc
+	ShowcaseHandler http.HandlerFunc
+}
+
+// serviceRegistry holds all registered services
+var serviceRegistry = make(map[string]*ServiceRegistration)
+
+// RegisterService registers a service and returns its handlers
+func RegisterService(config ServiceConfig) *ServiceRegistration {
+	key := fmt.Sprintf("%s/%s", config.Platform, config.AppType)
+
+	registration := &ServiceRegistration{
+		Config:          config,
+		CustomHandler:   CalendarHandler(config),
+		ShowcaseHandler: ShowcaseHandler(config),
+	}
+
+	serviceRegistry[key] = registration
+	return registration
+}
+
+// GetAllServices returns all registered services
+func GetAllServices() map[string]*ServiceRegistration {
+	return serviceRegistry
+}
+
+// RegisterRoutes automatically registers all service routes with http.DefaultServeMux
+func RegisterRoutes() {
+	for key, service := range serviceRegistry {
+		// Register custom handler
+		customPath := fmt.Sprintf("/%s", key)
+		http.HandleFunc(customPath, service.CustomHandler)
+		log.Printf("Registered route: %s", customPath)
+
+		// Register showcase handler
+		showcasePath := fmt.Sprintf("/%s/showcase", key)
+		http.HandleFunc(showcasePath, service.ShowcaseHandler)
+		log.Printf("Registered route: %s", showcasePath)
+	}
 }
 
 // CalendarHandler creates a generic handler for calendar services

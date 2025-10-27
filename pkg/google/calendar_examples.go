@@ -16,6 +16,16 @@ type CalendarExample struct {
 	ExpectedURL string // Generated URL for display
 }
 
+// GetName returns the example name (implements ServiceExample interface)
+func (e CalendarExample) GetName() string {
+	return e.Name
+}
+
+// GetDescription returns the example description (implements ServiceExample interface)
+func (e CalendarExample) GetDescription() string {
+	return e.Description
+}
+
 // CalendarExamples provides beautiful, realistic examples for the web demo showcase
 var CalendarExamples = []CalendarExample{
 	{

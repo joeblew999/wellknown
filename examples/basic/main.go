@@ -32,10 +32,11 @@ func main() {
 		log.Fatalf("Failed to parse templates: %v", err)
 	}
 
-	// Routes
+	// Auto-register all service routes
+	handlers.RegisterRoutes()
+
+	// Register root and stub routes manually
 	http.HandleFunc("/", handlers.GoogleCalendar)
-	http.HandleFunc("/google/calendar", handlers.GoogleCalendar)
-	http.HandleFunc("/google/calendar/showcase", handlers.GoogleCalendarShowcase)
 	http.HandleFunc("/google/maps", handlers.Stub("google", "maps"))
 	http.HandleFunc("/google/maps/showcase", handlers.Stub("google", "maps"))
 
