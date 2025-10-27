@@ -26,3 +26,28 @@ func Stub(platform, appType string) http.HandlerFunc {
 		})
 	}
 }
+
+// RegisterMapsRoutes registers all Maps routes (stubs for now) with the given mux
+func RegisterMapsRoutes(mux *http.ServeMux) {
+	// Google Maps
+	mux.HandleFunc("/google/maps", Stub("google", "maps"))
+	mux.HandleFunc("/google/maps/showcase", Stub("google", "maps"))
+	registerService(ServiceConfig{
+		Platform:    "google",
+		AppType:     "maps",
+		Title:       "Google Maps",
+		HasCustom:   true,
+		HasShowcase: true,
+	})
+
+	// Apple Maps
+	mux.HandleFunc("/apple/maps", Stub("apple", "maps"))
+	mux.HandleFunc("/apple/maps/showcase", Stub("apple", "maps"))
+	registerService(ServiceConfig{
+		Platform:    "apple",
+		AppType:     "maps",
+		Title:       "Apple Maps",
+		HasCustom:   true,
+		HasShowcase: true,
+	})
+}

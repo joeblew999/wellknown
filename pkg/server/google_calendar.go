@@ -40,3 +40,16 @@ var GoogleCalendar = GenericCalendarHandler(CalendarConfig{
 func GoogleCalendarShowcase(w http.ResponseWriter, r *http.Request) {
 	renderShowcase(w, r, "google", "calendar", googlecalendar.ValidTestCases)
 }
+
+// RegisterGoogleCalendarRoutes registers all Google Calendar routes with the given mux
+func RegisterGoogleCalendarRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/google/calendar", GoogleCalendar)
+	mux.HandleFunc("/google/calendar/showcase", GoogleCalendarShowcase)
+	registerService(ServiceConfig{
+		Platform:    "google",
+		AppType:     "calendar",
+		Title:       "Google Calendar",
+		HasCustom:   true,
+		HasShowcase: true,
+	})
+}

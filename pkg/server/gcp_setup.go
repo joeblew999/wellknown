@@ -23,13 +23,13 @@ type GCPSetupStatus struct {
 
 var gcpSetupStatus GCPSetupStatus
 
-// RegisterGCPSetupRoutes registers all GCP setup routes
-func RegisterGCPSetupRoutes() {
-	http.HandleFunc("/tools/gcp-setup", handleGCPSetup)
-	http.HandleFunc("/api/gcp-setup/status", handleGCPSetupStatus)
-	http.HandleFunc("/api/gcp-setup/save-project", handleGCPSaveProject)
-	http.HandleFunc("/api/gcp-setup/save-creds", handleGCPSaveCreds)
-	http.HandleFunc("/api/gcp-setup/reset", handleGCPReset)
+// RegisterGCPSetupRoutes registers all GCP setup routes with the given mux
+func RegisterGCPSetupRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/tools/gcp-setup", handleGCPSetup)
+	mux.HandleFunc("/api/gcp-setup/status", handleGCPSetupStatus)
+	mux.HandleFunc("/api/gcp-setup/save-project", handleGCPSaveProject)
+	mux.HandleFunc("/api/gcp-setup/save-creds", handleGCPSaveCreds)
+	mux.HandleFunc("/api/gcp-setup/reset", handleGCPReset)
 }
 
 // handleGCPSetup renders the GCP setup page

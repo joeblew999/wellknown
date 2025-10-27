@@ -79,3 +79,17 @@ func AppleCalendarDownload(w http.ResponseWriter, r *http.Request) {
 	// Write ICS content
 	w.Write(icsContent)
 }
+
+// RegisterAppleCalendarRoutes registers all Apple Calendar routes with the given mux
+func RegisterAppleCalendarRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/apple/calendar", AppleCalendar)
+	mux.HandleFunc("/apple/calendar/showcase", AppleCalendarShowcase)
+	mux.HandleFunc("/apple/calendar/download", AppleCalendarDownload)
+	registerService(ServiceConfig{
+		Platform:    "apple",
+		AppType:     "calendar",
+		Title:       "Apple Calendar",
+		HasCustom:   true,
+		HasShowcase: true,
+	})
+}
