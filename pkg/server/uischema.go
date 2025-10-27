@@ -36,10 +36,11 @@ type Element struct {
 
 // Options for control rendering
 type Options struct {
-	Placeholder string `json:"placeholder,omitempty"`
-	Multi       bool   `json:"multi,omitempty"`     // For multi-line text
-	Format      string `json:"format,omitempty"`    // Override format
-	ShowLabel   *bool  `json:"showLabel,omitempty"` // Show/hide label
+	Placeholder string   `json:"placeholder,omitempty"`
+	Multi       bool     `json:"multi,omitempty"`     // For multi-line text
+	Format      string   `json:"format,omitempty"`    // Override format
+	ShowLabel   *bool    `json:"showLabel,omitempty"` // Show/hide label
+	Suggestions []string `json:"suggestions,omitempty"` // Autocomplete suggestions
 }
 
 // ParseUISchema parses a UI Schema JSON string
