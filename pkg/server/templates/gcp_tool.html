@@ -501,8 +501,8 @@ make pb-server
             return;
         }
 
-        if (confirm(`🗑️ Open GCP Console to delete project "${projectId}"?\n\nYou'll need to:\n1. Click "Shut Down" in the console\n2. Type the project ID to confirm\n3. Click "Shut Down" again\n\nAfter deletion, come back and click "🔄 Reset Setup" to clear the local config.`)) {
-            window.open(`https://console.cloud.google.com/home/dashboard?project=${projectId}`, '_blank');
+        if (confirm(`🗑️ Open GCP Console to delete project "${projectId}"?\n\nYou'll be taken to Project Settings where you can:\n1. Scroll down to find "Shut down this project"\n2. Click "SHUT DOWN"\n3. Type the project ID to confirm: ${projectId}\n4. Click "SHUT DOWN" again\n\nAfter deletion, come back and click "🔄 Reset Setup" to clear the local config.`)) {
+            window.open(`https://console.cloud.google.com/iam-admin/settings?project=${projectId}`, '_blank');
         }
     }
 
