@@ -70,6 +70,107 @@
 
 ---
 
+### Phase 7: JSON Schema Dynamic Forms (Completed 2025-10-27)
+
+**Goal**: Auto-generate forms from JSON Schema definitions (inspired by goPocJsonSchemaForm)
+
+**Implementation**:
+- ✅ Created `pkg/server/schema.go` - JSON Schema parser (stdlib only!)
+- ✅ Created `pkg/google/calendar/schema.go` - Schema definition for Google Calendar
+- ✅ Auto-form generation with full type support (string, number, boolean, array, object)
+- ✅ Format support (datetime-local, email, uri, date, time)
+- ✅ Constraints (minLength, maxLength, minimum, maximum, enum, required)
+- ✅ Created route `/google/calendar-schema`
+- ✅ Fixed template embedding and rendering
+
+**Benefits**:
+- Declarative form definition (define schema once, form generates automatically)
+- Type-safe data validation
+- Self-documenting API
+- Zero external dependencies (stdlib only!)
+
+**Testing**: ✅ Schema-based forms working end-to-end
+
+---
+
+### Phase 8: UI Schema for Layout Control (Completed 2025-10-27)
+
+**Goal**: Separate presentation (UI Schema) from validation (JSON Schema)
+
+**Implementation**:
+- ✅ Created `pkg/server/uischema.go` (370 lines) - UI Schema renderer
+- ✅ Created `pkg/google/calendar/uischema.go` - Layout definition
+- ✅ Layout types: VerticalLayout, HorizontalLayout, Control, Label, Group
+- ✅ Options: placeholder, multi-line, format override, showLabel, suggestions
+- ✅ Created route `/google/calendar-uischema`
+- ✅ Added CSS styling for layouts (responsive horizontal -> vertical on mobile)
+
+**UI Features**:
+- Side-by-side start/end time fields (HorizontalLayout)
+- Section labels with emoji (Label)
+- Grouped fields (Group)
+- Custom placeholders and descriptions
+
+**Benefits**:
+- Flexible layout control without changing validation
+- Reusable UI patterns
+- Better UX with proper field grouping
+
+**Testing**: ✅ UI Schema forms rendering correctly with layout control
+
+---
+
+### Phase 9: Server-Side Validation (Completed 2025-10-27)
+
+**Goal**: Validate form submissions and display errors inline
+
+**Phase 9a: Validation Infrastructure** ✅
+- Created `pkg/server/validator.go` (280 lines, stdlib only!)
+- `ValidateAgainstSchema()` - validates form data against JSON Schema
+- Format validation: email, uri, date, datetime-local, time
+- Type validation: string, number, integer, boolean
+- Constraint validation: required, minLength, maxLength, minimum, maximum, enum
+- `FormDataToMap()` - converts flat forms to nested maps (dot notation support)
+- No external dependencies!
+
+**Phase 9b: Wire Validation** ✅
+- Created `handleGoogleCalendarUISchemaPost()` in `pkg/server/google_calendar.go`
+- Validates POST data against schema
+- Re-renders form with errors if validation fails
+- Only generates URL if validation passes
+- Added `ValidationErrors` and `FormData` to PageData struct
+
+**Phase 9c: Display Validation Errors** ✅
+- Updated `pkg/server/uischema.go`:
+  - Added `GenerateFormHTMLWithData()` method
+  - Pre-fills form values from `FormData`
+  - Displays validation errors inline below each field
+  - All input types support value attributes (text, datetime-local, email, textarea, number)
+- Updated `pkg/server/helpers.go` to pass ValidationErrors and FormData to renderer
+- Added CSS styling:
+  - `.field-error` class: red text with proper spacing
+  - Error state styling: red border + pink background on inputs with errors
+  - Uses `:has()` selector for automatic error highlighting
+
+**Testing**: ✅ Complete validation UX working
+- Submitted form with missing required fields → errors appear below fields
+- Submitted form with partial data → values preserved after validation failure
+- Error styling applied correctly (red text, red border, pink background)
+- Users don't lose their data when validation fails!
+
+**Benefits**:
+- Better UX - users see exactly what's wrong
+- Form values preserved after validation errors
+- Stdlib only implementation (no external validation libraries)
+- Follows reference code patterns from goPocJsonSchemaForm
+
+**Routes Strategy** (all 3 approaches working):
+1. `/google/calendar` - Hardcoded HTML form ✅
+2. `/google/calendar-schema` - JSON Schema only ✅
+3. `/google/calendar-uischema` - UI Schema + JSON Schema + Validation ✅
+
+---
+
 ## Ideas and Future Work
 
 ### JSON Schema Forms
