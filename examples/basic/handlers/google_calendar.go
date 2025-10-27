@@ -117,7 +117,7 @@ func GoogleCalendarShowcase(w http.ResponseWriter, r *http.Request) {
 		AppType:      "calendar",
 		CurrentPage:  "showcase",
 		TemplateName: "google_calendar_showcase",
-		TestCases:    google.CalendarEvents,
+		TestCases:    google.CalendarExamples,
 		LocalURL:     LocalURL,
 		MobileURL:    MobileURL,
 	})
