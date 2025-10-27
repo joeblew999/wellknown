@@ -34,8 +34,12 @@ func RegisterGCPSetupRoutes(mux *http.ServeMux) {
 
 // handleGCPSetup renders the GCP setup page
 func handleGCPSetup(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Request: GET %s", r.URL.Path)
+
 	// Load current status from .env
 	loadGCPEnvStatus()
+
+	log.Printf("GCP Status loaded: ProjectID=%s, EnvPath=%s", gcpSetupStatus.ProjectID, gcpSetupStatus.EnvPath)
 
 	// Render template using base template with navigation
 	err := Templates.ExecuteTemplate(w, "base", PageData{

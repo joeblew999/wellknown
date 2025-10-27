@@ -644,7 +644,8 @@ make pb-server
 
     function openProjectCreate() {
         const projectId = document.getElementById('projectId').value || status.project_id;
-        const projectName = document.getElementById('projectName').value || 'Wellknown Calendar OAuth';
+        // Use projectId as the default project name (same value)
+        const projectName = document.getElementById('projectName').value || projectId;
         if (!projectId) {
             alert('⚠️ Please enter a project ID first');
             return;
