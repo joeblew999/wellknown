@@ -65,6 +65,45 @@ func renderSchemaBasedForm(w http.ResponseWriter, r *http.Request, platform, app
 	}
 }
 
+// renderUISchemaBasedForm renders a form generated from JSON Schema + UI Schema
+func renderUISchemaBasedForm(w http.ResponseWriter, r *http.Request, platform, appType, schemaJSON, uiSchemaJSON string) {
+	log.Printf("Request: %s %s", r.Method, r.URL.Path)
+
+	// Parse JSON Schema
+	schema, err := ParseSchema(schemaJSON)
+	if err != nil {
+		log.Printf("JSON Schema parse error: %v", err)
+		http.Error(w, "Failed to parse JSON schema: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Parse UI Schema
+	uiSchema, err := ParseUISchema(uiSchemaJSON)
+	if err != nil {
+		log.Printf("UI Schema parse error: %v", err)
+		http.Error(w, "Failed to parse UI schema: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Generate form HTML from UI Schema + JSON Schema
+	formHTML := uiSchema.GenerateFormHTML(schema)
+
+	// Render with UI schema-generated form
+	err = Templates.ExecuteTemplate(w, "base", PageData{
+		Platform:       platform,
+		AppType:        appType,
+		CurrentPage:    "ui-schema", // Set to "ui-schema" for menu highlighting
+		TemplateName:   "schema_form",
+		SchemaFormHTML: formHTML,
+		LocalURL:       LocalURL,
+		MobileURL:      MobileURL,
+	})
+	if err != nil {
+		log.Printf("Template execution error: %v", err)
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+	}
+}
+
 // renderSuccess renders a success page with the generated URL
 func renderSuccess(w http.ResponseWriter, platform, appType, generatedURL string) {
 	err := Templates.ExecuteTemplate(w, "base", PageData{

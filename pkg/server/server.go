@@ -60,7 +60,8 @@ func (s *Server) registerRoutes() {
 	// Google Calendar
 	http.HandleFunc("/google/calendar", GoogleCalendar)
 	http.HandleFunc("/google/calendar/showcase", GoogleCalendarShowcase)
-	http.HandleFunc("/google/calendar-schema", GoogleCalendarSchema) // JSON Schema version (WIP)
+	http.HandleFunc("/google/calendar-schema", GoogleCalendarSchema)       // JSON Schema (Phase 7)
+	http.HandleFunc("/google/calendar-uischema", GoogleCalendarUISchema)   // UI Schema (Phase 8)
 
 	// Apple Calendar
 	http.HandleFunc("/apple/calendar", AppleCalendar)

@@ -2,9 +2,13 @@
 {{/* Schema-based dynamic form template - generates forms from JSON Schema */}}
 
 <h2>Create Custom {{.Platform | title}} {{.AppType | title}} Event</h2>
-<p style="color: #666; margin-bottom: 20px;">📝 This form is dynamically generated from JSON Schema</p>
+{{if eq .CurrentPage "ui-schema"}}
+<p style="color: #666; margin-bottom: 20px;">🎨 This form uses <strong>UI Schema</strong> for layout control + JSON Schema for validation</p>
+{{else}}
+<p style="color: #666; margin-bottom: 20px;">📝 This form is dynamically generated from <strong>JSON Schema</strong> only</p>
+{{end}}
 
-<form method="POST" action="/{{.Platform}}/{{.AppType}}-schema">
+<form method="POST" action="/{{.Platform}}/{{.AppType}}-{{if eq .CurrentPage "ui-schema"}}uischema{{else}}schema{{end}}">
     {{/* Dynamically generated form fields from schema */}}
     {{.SchemaFormHTML}}
 
@@ -65,6 +69,64 @@
         background: #f0f0f0;
         border-radius: 4px;
         color: #666;
+    }
+
+    /* UI Schema Layout Styles */
+    .ui-schema-form {
+        width: 100%;
+    }
+
+    .vertical-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .horizontal-layout {
+        display: flex;
+        flex-direction: row;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .horizontal-item {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .ui-label {
+        color: #2c3e50;
+        font-size: 16px;
+        font-weight: 600;
+        margin: 25px 0 15px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #ecf0f1;
+    }
+
+    .ui-label:first-child {
+        margin-top: 0;
+    }
+
+    .form-group-section {
+        border: 2px solid #ecf0f1;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .form-group-section legend {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2c3e50;
+        padding: 0 10px;
+    }
+
+    /* Responsive: Stack horizontal layouts on mobile */
+    @media (max-width: 768px) {
+        .horizontal-layout {
+            flex-direction: column;
+            gap: 0;
+        }
     }
 </style>
 {{end}}

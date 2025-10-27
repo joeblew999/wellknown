@@ -72,11 +72,28 @@ func GoogleCalendarShowcase(w http.ResponseWriter, r *http.Request) {
 	renderShowcase(w, r, "google", "calendar", googlecalendar.Examples)
 }
 
-// GoogleCalendarSchema handles Google Calendar with JSON Schema dynamic forms (WIP - Phase 7)
+// GoogleCalendarSchema handles Google Calendar with JSON Schema dynamic forms (Phase 7)
 func GoogleCalendarSchema(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		// Use schema-based form generation
 		renderSchemaBasedForm(w, r, "google", "calendar", googlecalendar.Schema)
+		return
+	}
+
+	if r.Method == "POST" {
+		// Use same POST handler as regular calendar
+		handleGoogleCalendarPost(w, r)
+		return
+	}
+
+	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+}
+
+// GoogleCalendarUISchema handles Google Calendar with UI Schema + JSON Schema (Phase 8)
+func GoogleCalendarUISchema(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		// Use UI schema-based form generation
+		renderUISchemaBasedForm(w, r, "google", "calendar", googlecalendar.Schema, googlecalendar.UISchema)
 		return
 	}
 
