@@ -53,7 +53,11 @@
 - Mail: `mailto:` ✅ Universal standard
 
 ### Apple Ecosystem
-- Calendar: `calshow:` ✅ Works on macOS/iOS
+- Calendar: `data:text/calendar` (ICS format) ✅ **Universal cross-platform method**
+  - Uses ICS (iCalendar) format with base64-encoded data URI
+  - Works on macOS, iOS, and cross-platform
+  - Format: `data:text/calendar;base64,<encoded ICS>`
+  - Note: `calshow:` exists but is undocumented and unreliable
 - Maps: `maps://?q=` ✅ Universal on Apple devices
 - Files: `shareddocuments://` ⚠️ iOS only
 - Mail: `mailto:` ✅ Universal standard
@@ -169,6 +173,11 @@ event := calendar.NewEvent().
    - **URLs displayed on startup**:
      - Desktop: `http://localhost:8080`
      - Mobile: `http://192.168.1.84:8080` (auto-detected local network IP)
+   - **Browser selection**:
+     - **Apple services (Calendar, Maps)**: Use Safari/WebKit for testing
+       - Command: `open -a Safari http://localhost:8080/apple/calendar`
+       - Playwright MCP should be configured with `browser: "webkit"` for Apple features
+     - **Google services**: Chrome/Chromium works fine
    - Use Playwright MCP to automate browser testing
    - Capture screenshots: Saved to `.playwright-mcp/`
    - **IMPORTANT**: Screenshots can be copied to `docs/` and referenced in README.md
