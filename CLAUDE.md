@@ -72,12 +72,12 @@
 wellknown/
 ├── pkg/                     # Core library (zero external dependencies)
 │   ├── types/              # Shared data structures (CalendarEvent, etc.)
+│   ├── examples/           # Shared test data for all platforms
+│   │   └── calendar.go    # CalendarExample type + shared examples
 │   ├── google/             # Google service implementations
-│   │   ├── calendar.go
-│   │   └── calendar_examples.go
+│   │   └── calendar.go
 │   └── apple/              # Apple service implementations
-│       ├── calendar.go
-│       └── calendar_examples.go
+│       └── calendar.go
 ├── examples/
 │   ├── basic/              # Web demo (air hot-reload)
 │   │   ├── main.go
@@ -105,6 +105,10 @@ wellknown/
 - **No embedded templates**: Web demo uses HTML templates, not go:embed
 - **Service registry pattern**: Services self-register with `RegisterService()`
 - **Generic templates**: `custom.html` and `showcase.html` work for all services
+- **Shared examples**: `pkg/examples/` contains test data used by ALL platforms
+  - **Why**: Google Calendar and Apple Calendar support the same basic fields
+  - **Benefit**: Single source of truth ensures consistency
+  - **Future**: If platforms diverge (ICS-only features), we can add platform-specific examples
 
 ### Web Demo Architecture Evolution (Phase 3 & 4 Refactoring)
 
@@ -322,9 +326,9 @@ func Maps(location types.Location) (string, error) {
 }
 ```
 
-**Step 2:** Create examples in `pkg/apple/maps_examples.go`
+**Step 2:** Create examples in `pkg/examples/maps.go` (shared across all platforms!)
 ```go
-package apple
+package examples
 
 type MapsExample struct {
     Name        string
@@ -338,16 +342,22 @@ func (e MapsExample) GetDescription() string { return e.Description }
 var MapsExamples = []MapsExample{...}
 ```
 
+**Why `pkg/examples/`?** If the feature works the same across Google Maps and Apple Maps,
+share the test data! This ensures consistency and reduces duplication.
+
 **Step 3:** Register service in `examples/basic/handlers/apple_maps.go` (**only ~15-19 lines!**)
 ```go
 package handlers
 
-import "github.com/joeblew999/wellknown/pkg/apple"
+import (
+    "github.com/joeblew999/wellknown/pkg/apple"
+    "github.com/joeblew999/wellknown/pkg/examples"
+)
 
 var AppleMapsService = RegisterService(ServiceConfig{
     Platform:  "apple",
     AppType:   "maps",
-    Examples:  apple.MapsExamples,
+    Examples:  examples.MapsExamples,  // Shared examples!
     Generator: apple.Maps,  // Adapt if different signature
 })
 

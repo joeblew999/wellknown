@@ -2,13 +2,14 @@ package handlers
 
 import (
 	"github.com/joeblew999/wellknown/pkg/apple"
+	"github.com/joeblew999/wellknown/pkg/examples"
 )
 
 // AppleCalendarService is the registered Apple Calendar service
 var AppleCalendarService = RegisterService(ServiceConfig{
 	Platform:  "apple",
 	AppType:   "calendar",
-	Examples:  apple.CalendarExamples,
+	Examples:  examples.CalendarExamples,
 	Generator: apple.Calendar,
 })
 

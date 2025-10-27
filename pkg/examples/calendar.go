@@ -1,6 +1,6 @@
-// Package google provides examples for demonstration purposes.
-// These examples are used in the web demo showcase to show realistic use cases.
-package google
+// Package examples provides shared test data and examples for all platforms.
+// This ensures consistency across Google Calendar, Apple Calendar, and future services.
+package examples
 
 import (
 	"time"
@@ -8,12 +8,12 @@ import (
 	"github.com/joeblew999/wellknown/pkg/types"
 )
 
-// CalendarExample represents a user-friendly example for the web demo
+// CalendarExample represents a user-friendly example for the web demo showcase.
+// It wraps a CalendarEvent with metadata like name and description.
 type CalendarExample struct {
 	Name        string
 	Description string
 	Event       types.CalendarEvent
-	ExpectedURL string // Generated URL for display
 }
 
 // GetName returns the example name (implements ServiceExample interface)
@@ -26,7 +26,9 @@ func (e CalendarExample) GetDescription() string {
 	return e.Description
 }
 
-// CalendarExamples provides beautiful, realistic examples for the web demo showcase
+// CalendarExamples provides beautiful, realistic examples for the web demo showcase.
+// These examples are shared across all calendar platforms (Google, Apple, etc.)
+// to ensure consistent test data and user experience.
 var CalendarExamples = []CalendarExample{
 	{
 		Name:        "Team Meeting",
@@ -38,7 +40,6 @@ var CalendarExamples = []CalendarExample{
 			Location:    "Conference Room A",
 			Description: "Quarterly planning meeting - please bring your Q4 goals",
 		},
-		ExpectedURL: "https://calendar.google.com/calendar/render?action=TEMPLATE&dates=20251026T140000Z%2F20251026T150000Z&details=Quarterly+planning+meeting+-+please+bring+your+Q4+goals&location=Conference+Room+A&text=Team+Meeting",
 	},
 	{
 		Name:        "Quick Sync",
@@ -48,7 +49,6 @@ var CalendarExamples = []CalendarExample{
 			StartTime: time.Date(2025, 10, 27, 10, 0, 0, 0, time.UTC),
 			EndTime:   time.Date(2025, 10, 27, 10, 15, 0, 0, time.UTC),
 		},
-		ExpectedURL: "https://calendar.google.com/calendar/render?action=TEMPLATE&dates=20251027T100000Z%2F20251027T101500Z&text=Quick+Sync",
 	},
 	{
 		Name:        "Client Visit",
@@ -60,7 +60,6 @@ var CalendarExamples = []CalendarExample{
 			Location:    "123 Main St, San Francisco, CA",
 			Description: "Q4 business review and 2026 planning discussion",
 		},
-		ExpectedURL: "https://calendar.google.com/calendar/render?action=TEMPLATE&dates=20251101T090000Z%2F20251101T100000Z&details=Q4+business+review+and+2026+planning+discussion&location=123+Main+St%2C+San+Francisco%2C+CA&text=Client+Visit+-+Acme+Corp",
 	},
 	{
 		Name:        "Lunch Break",
@@ -70,7 +69,6 @@ var CalendarExamples = []CalendarExample{
 			StartTime: time.Date(2025, 10, 26, 12, 0, 0, 0, time.UTC),
 			EndTime:   time.Date(2025, 10, 26, 13, 0, 0, 0, time.UTC),
 		},
-		ExpectedURL: "https://calendar.google.com/calendar/render?action=TEMPLATE&dates=20251026T120000Z%2F20251026T130000Z&text=Lunch+Break",
 	},
 	{
 		Name:        "Workshop",
@@ -82,7 +80,6 @@ var CalendarExamples = []CalendarExample{
 			Location:    "Training Room B",
 			Description: "Topics: Goroutines, Channels, Context, and Best Practices. Bring your laptop!",
 		},
-		ExpectedURL: "https://calendar.google.com/calendar/render?action=TEMPLATE&dates=20251105T090000Z%2F20251105T130000Z&details=Topics%3A+Goroutines%2C+Channels%2C+Context%2C+and+Best+Practices.+Bring+your+laptop%21&location=Training+Room+B&text=Go+Programming+Workshop",
 	},
 	{
 		Name:        "Coffee Chat",
@@ -94,6 +91,5 @@ var CalendarExamples = []CalendarExample{
 			Location:    "Starbucks Downtown",
 			Description: "Catch up and discuss career goals",
 		},
-		ExpectedURL: "https://calendar.google.com/calendar/render?action=TEMPLATE&dates=20251028T153000Z%2F20251028T160000Z&details=Catch+up+and+discuss+career+goals&location=Starbucks+Downtown&text=Coffee+Chat",
 	},
 }

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/joeblew999/wellknown/pkg/examples"
 	"github.com/joeblew999/wellknown/pkg/google"
 )
 
@@ -8,7 +9,7 @@ import (
 var GoogleCalendarService = RegisterService(ServiceConfig{
 	Platform:  "google",
 	AppType:   "calendar",
-	Examples:  google.CalendarExamples,
+	Examples:  examples.CalendarExamples,
 	Generator: google.Calendar,
 })
 
