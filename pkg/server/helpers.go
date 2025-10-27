@@ -90,9 +90,8 @@ func renderUISchemaBasedFormWithErrors(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	// Generate form HTML from UI Schema + JSON Schema
-	// TODO: Pass formData and validationErrors to pre-fill form and show errors
-	formHTML := uiSchema.GenerateFormHTML(schema)
+	// Generate form HTML from UI Schema + JSON Schema with validation errors
+	formHTML := uiSchema.GenerateFormHTMLWithData(schema, formData, validationErrors)
 
 	// Render with UI schema-generated form
 	err = Templates.ExecuteTemplate(w, "base", PageData{

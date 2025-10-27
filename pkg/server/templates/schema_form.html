@@ -63,6 +63,21 @@
         font-style: italic;
     }
 
+    .field-error {
+        color: #e74c3c;
+        font-size: 13px;
+        margin: 5px 0 0 0;
+        font-weight: 500;
+        display: block;
+    }
+
+    .form-group:has(.field-error) input,
+    .form-group:has(.field-error) textarea,
+    .form-group:has(.field-error) select {
+        border-color: #e74c3c;
+        background-color: #fff5f5;
+    }
+
     .array-input-placeholder,
     .object-input-placeholder {
         padding: 10px;
