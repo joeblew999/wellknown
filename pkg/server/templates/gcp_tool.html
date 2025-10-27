@@ -622,8 +622,30 @@ make pb-server
     async function saveProject() {
         const projectId = document.getElementById('projectId').value;
         const projectName = document.getElementById('projectName').value;
+
+        // Validate project ID
         if (!projectId) {
-            alert('Please enter a project ID');
+            alert('⚠️ Please enter a project ID');
+            return;
+        }
+
+        if (projectId.length < 6 || projectId.length > 30) {
+            alert('⚠️ Project ID must be 6-30 characters long');
+            return;
+        }
+
+        if (!/^[a-z]/.test(projectId)) {
+            alert('⚠️ Project ID must start with a lowercase letter');
+            return;
+        }
+
+        if (!/^[a-z][a-z0-9-]*$/.test(projectId)) {
+            alert('⚠️ Project ID can only contain lowercase letters, numbers, and hyphens');
+            return;
+        }
+
+        if (projectId.endsWith('-')) {
+            alert('⚠️ Project ID cannot end with a hyphen');
             return;
         }
 
