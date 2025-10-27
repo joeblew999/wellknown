@@ -22,7 +22,7 @@ func (e CalendarEvent) Validate() error {
 	if e.EndTime.IsZero() {
 		return ErrMissingEndTime
 	}
-	if e.EndTime.Before(e.StartTime) {
+	if e.EndTime.Before(e.StartTime) || e.EndTime.Equal(e.StartTime) {
 		return ErrInvalidTimeRange
 	}
 	return nil

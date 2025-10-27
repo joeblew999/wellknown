@@ -1,6 +1,7 @@
 package google
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -8,24 +9,79 @@ import (
 	"github.com/joeblew999/wellknown/pkg/types"
 )
 
+// compareURLs compares two URLs by parsing them and comparing components
+// This is more robust than string comparison as it handles parameter ordering
+func compareURLs(t *testing.T, got, want string) {
+	t.Helper()
+
+	// Parse both URLs
+	gotURL, err := url.Parse(got)
+	if err != nil {
+		t.Fatalf("Failed to parse generated URL: %v", err)
+	}
+
+	wantURL, err := url.Parse(want)
+	if err != nil {
+		t.Fatalf("Failed to parse expected URL: %v", err)
+	}
+
+	// Compare scheme, host, and path
+	if gotURL.Scheme != wantURL.Scheme {
+		t.Errorf("URL scheme mismatch: got %q, want %q", gotURL.Scheme, wantURL.Scheme)
+	}
+	if gotURL.Host != wantURL.Host {
+		t.Errorf("URL host mismatch: got %q, want %q", gotURL.Host, wantURL.Host)
+	}
+	if gotURL.Path != wantURL.Path {
+		t.Errorf("URL path mismatch: got %q, want %q", gotURL.Path, wantURL.Path)
+	}
+
+	// Compare query parameters (order-independent)
+	gotParams := gotURL.Query()
+	wantParams := wantURL.Query()
+
+	for key, wantVals := range wantParams {
+		gotVals, exists := gotParams[key]
+		if !exists {
+			t.Errorf("Missing query parameter %q", key)
+			continue
+		}
+		if len(gotVals) != len(wantVals) {
+			t.Errorf("Query parameter %q: got %d values, want %d values", key, len(gotVals), len(wantVals))
+			continue
+		}
+		for i, wantVal := range wantVals {
+			if gotVals[i] != wantVal {
+				t.Errorf("Query parameter %q[%d]: got %q, want %q", key, i, gotVals[i], wantVal)
+			}
+		}
+	}
+
+	// Check for unexpected parameters
+	for key := range gotParams {
+		if _, exists := wantParams[key]; !exists {
+			t.Errorf("Unexpected query parameter %q", key)
+		}
+	}
+}
+
 // TestCalendar_ValidCases tests all valid calendar events from testdata
 func TestCalendar_ValidCases(t *testing.T) {
-	for _, tc := range CalendarEvents {
+	for _, tc := range CalendarValidTestCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			got, err := Calendar(tc.Event)
 			if err != nil {
 				t.Fatalf("Calendar() error = %v, want nil", err)
 			}
-			if got != tc.ExpectedURL {
-				t.Errorf("Calendar() = %v, want %v", got, tc.ExpectedURL)
-			}
+			// Use smart URL comparison that handles parameter ordering
+			compareURLs(t, got, tc.ExpectedURL)
 		})
 	}
 }
 
 // TestCalendar_ErrorCases tests all error cases from testdata
 func TestCalendar_ErrorCases(t *testing.T) {
-	for _, tc := range ErrorTestCases {
+	for _, tc := range CalendarErrorTestCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			_, err := Calendar(tc.Event)
 			if err == nil {

@@ -18,7 +18,7 @@ func GoogleCalendar(w http.ResponseWriter, r *http.Request) {
 			AppType:      "calendar",
 			CurrentPage:  "custom",
 			TemplateName: "google_calendar_custom",
-			TestCases:    google.CalendarEvents,
+			TestCases:    google.CalendarExamples,
 			LocalURL:     LocalURL,
 			MobileURL:    MobileURL,
 		})
@@ -40,7 +40,7 @@ func GoogleCalendar(w http.ResponseWriter, r *http.Request) {
 				CurrentPage:  "custom",
 				TemplateName: "google_calendar_custom",
 				Error:        "Invalid start time format: " + err.Error(),
-				TestCases:    google.CalendarEvents,
+				TestCases:    google.CalendarExamples,
 				LocalURL:     LocalURL,
 				MobileURL:    MobileURL,
 			})
@@ -55,7 +55,7 @@ func GoogleCalendar(w http.ResponseWriter, r *http.Request) {
 				CurrentPage:  "custom",
 				TemplateName: "google_calendar_custom",
 				Error:        "Invalid end time format: " + err.Error(),
-				TestCases:    google.CalendarEvents,
+				TestCases:    google.CalendarExamples,
 				LocalURL:     LocalURL,
 				MobileURL:    MobileURL,
 			})
@@ -79,7 +79,7 @@ func GoogleCalendar(w http.ResponseWriter, r *http.Request) {
 				TemplateName: "google_calendar_custom",
 				Error:        err.Error(),
 				Event:        &event,
-				TestCases:    google.CalendarEvents,
+				TestCases:    google.CalendarExamples,
 				LocalURL:     LocalURL,
 				MobileURL:    MobileURL,
 			})
@@ -100,7 +100,7 @@ func GoogleCalendar(w http.ResponseWriter, r *http.Request) {
 			GeneratedURL: url,
 			AppURL:       appURL,
 			Event:        &event,
-			TestCases:    google.CalendarEvents,
+			TestCases:    google.CalendarExamples,
 			LocalURL:     LocalURL,
 			MobileURL:    MobileURL,
 		})
