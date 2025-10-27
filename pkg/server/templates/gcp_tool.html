@@ -341,12 +341,32 @@
     </div>
     <div class="step-content">
         <p class="step-description">
-            Click the button below to open Google Cloud Console with your project ID pre-filled.
-            Just click the blue "CREATE" button in the console.
+            <strong>Manual Step Required:</strong> Google Cloud Console doesn't support URL pre-filling.
+            When the console opens, you'll need to manually enter your Project ID.
         </p>
+
+        <div class="info-box" style="background: #fff3cd; border-color: #ffc107;">
+            <strong>📋 Copy this Project ID:</strong>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                <code id="projectIdToCopy" style="font-size: 16px; padding: 8px 12px; background: white; border: 1px solid #ddd; border-radius: 4px; flex: 1;">{{.GCPStatus.ProjectID}}</code>
+                <button class="gcp-btn" onclick="copyProjectId(event)" style="margin: 0;">📋 Copy</button>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <strong>Steps in GCP Console:</strong>
+            <ol style="margin: 8px 0 0 20px; padding: 0;">
+                <li>Click "Edit the project ID" button</li>
+                <li>Paste your Project ID: <code>{{.GCPStatus.ProjectID}}</code></li>
+                <li>Enter the same value for Project Name</li>
+                <li>Click the blue "CREATE" button</li>
+            </ol>
+        </div>
+
         <div class="info-box">
             <strong>Note:</strong> You'll need a Google account and billing enabled (free tier is fine - no charges for our usage).
         </div>
+
         <a href="#" class="gcp-btn" id="createProjectBtn" onclick="openProjectCreate(); return false;">
             Open GCP Console →
         </a>
@@ -644,14 +664,35 @@ make pb-server
 
     function openProjectCreate() {
         const projectId = document.getElementById('projectId').value || status.project_id;
-        // Use projectId as the default project name (same value)
-        const projectName = document.getElementById('projectName').value || projectId;
         if (!projectId) {
-            alert('⚠️ Please enter a project ID first');
+            alert('⚠️ Please save a project ID first (Step 1)');
             return;
         }
-        const encodedName = encodeURIComponent(projectName);
-        window.open(`https://console.cloud.google.com/projectcreate?project=${projectId}&name=${encodedName}`, '_blank');
+        // Just open the project create page - no URL parameters work anyway
+        window.open('https://console.cloud.google.com/projectcreate', '_blank');
+    }
+
+    function copyProjectId(event) {
+        const projectId = document.getElementById('projectIdToCopy').textContent;
+        if (!projectId) {
+            alert('⚠️ No project ID to copy');
+            return;
+        }
+
+        // Copy to clipboard
+        navigator.clipboard.writeText(projectId).then(() => {
+            // Show success feedback
+            const btn = event.currentTarget;
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Copied!';
+            btn.style.background = '#28a745';
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '';
+            }, 2000);
+        }).catch(err => {
+            alert('Failed to copy: ' + err);
+        });
     }
 
     function openEnableAPI(apiName) {
