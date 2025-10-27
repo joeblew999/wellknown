@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/mail"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"

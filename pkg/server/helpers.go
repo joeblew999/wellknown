@@ -67,6 +67,11 @@ func renderSchemaBasedForm(w http.ResponseWriter, r *http.Request, platform, app
 
 // renderUISchemaBasedForm renders a form generated from JSON Schema + UI Schema
 func renderUISchemaBasedForm(w http.ResponseWriter, r *http.Request, platform, appType, schemaJSON, uiSchemaJSON string) {
+	renderUISchemaBasedFormWithErrors(w, r, platform, appType, schemaJSON, uiSchemaJSON, nil, nil)
+}
+
+// renderUISchemaBasedFormWithErrors renders a form with validation errors and pre-filled data
+func renderUISchemaBasedFormWithErrors(w http.ResponseWriter, r *http.Request, platform, appType, schemaJSON, uiSchemaJSON string, formData map[string]interface{}, validationErrors ValidationErrors) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
 
 	// Parse JSON Schema
@@ -86,17 +91,20 @@ func renderUISchemaBasedForm(w http.ResponseWriter, r *http.Request, platform, a
 	}
 
 	// Generate form HTML from UI Schema + JSON Schema
+	// TODO: Pass formData and validationErrors to pre-fill form and show errors
 	formHTML := uiSchema.GenerateFormHTML(schema)
 
 	// Render with UI schema-generated form
 	err = Templates.ExecuteTemplate(w, "base", PageData{
-		Platform:       platform,
-		AppType:        appType,
-		CurrentPage:    "ui-schema", // Set to "ui-schema" for menu highlighting
-		TemplateName:   "schema_form",
-		SchemaFormHTML: formHTML,
-		LocalURL:       LocalURL,
-		MobileURL:      MobileURL,
+		Platform:         platform,
+		AppType:          appType,
+		CurrentPage:      "ui-schema", // Set to "ui-schema" for menu highlighting
+		TemplateName:     "schema_form",
+		SchemaFormHTML:   formHTML,
+		FormData:         formData,
+		ValidationErrors: validationErrors,
+		LocalURL:         LocalURL,
+		MobileURL:        MobileURL,
 	})
 	if err != nil {
 		log.Printf("Template execution error: %v", err)

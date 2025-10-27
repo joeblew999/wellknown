@@ -89,7 +89,7 @@ func GoogleCalendarSchema(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
-// GoogleCalendarUISchema handles Google Calendar with UI Schema + JSON Schema (Phase 8)
+// GoogleCalendarUISchema handles Google Calendar with UI Schema + JSON Schema (Phase 8 + 9)
 func GoogleCalendarUISchema(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		// Use UI schema-based form generation
@@ -98,10 +98,75 @@ func GoogleCalendarUISchema(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "POST" {
-		// Use same POST handler as regular calendar
-		handleGoogleCalendarPost(w, r)
+		// Handle POST with validation (Phase 9)
+		handleGoogleCalendarUISchemaPost(w, r)
 		return
 	}
 
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+}
+
+// handleGoogleCalendarUISchemaPost handles POST with validation for UI Schema forms
+func handleGoogleCalendarUISchemaPost(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Request: %s %s", r.Method, r.URL.Path)
+
+	// Parse form data
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Parse JSON Schema for validation
+	schema, err := ParseSchema(googlecalendar.Schema)
+	if err != nil {
+		log.Printf("Schema parse error: %v", err)
+		http.Error(w, "Failed to parse schema: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Convert form data to map
+	formData := FormDataToMap(r.Form)
+
+	// Validate against schema
+	validationErrors := ValidateAgainstSchema(formData, schema)
+
+	// If there are validation errors, re-render form with errors
+	if len(validationErrors) > 0 {
+		log.Printf("Validation errors: %v", validationErrors)
+		renderUISchemaBasedFormWithErrors(w, r, "google", "calendar", googlecalendar.Schema, googlecalendar.UISchema, formData, validationErrors)
+		return
+	}
+
+	// Validation passed - proceed with generating URL
+	// Parse start and end times
+	startTime, err := time.Parse("2006-01-02T15:04", r.FormValue("start"))
+	if err != nil {
+		http.Error(w, "Invalid start time: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	endTime, err := time.Parse("2006-01-02T15:04", r.FormValue("end"))
+	if err != nil {
+		http.Error(w, "Invalid end time: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Create Google Calendar event
+	event := googlecalendar.Event{
+		Title:       r.FormValue("title"),
+		StartTime:   startTime,
+		EndTime:     endTime,
+		Location:    r.FormValue("location"),
+		Description: r.FormValue("description"),
+	}
+
+	// Generate URL
+	url, err := event.GenerateURL()
+	if err != nil {
+		http.Error(w, "Failed to generate URL: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("SUCCESS! Generated URL: %s", url)
+	renderSuccess(w, "google", "calendar", url)
 }
