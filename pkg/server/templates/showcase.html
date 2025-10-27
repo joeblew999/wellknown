@@ -7,10 +7,10 @@
 
 {{range $index, $case := .TestCases}}
 <div class="showcase-item">
-    <h3>{{$case.Name}}</h3>
+    <h3>{{$case.GetName}}</h3>
 
-    {{if $case.Description}}
-    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">{{$case.Description}}</p>
+    {{if $case.GetDescription}}
+    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">{{$case.GetDescription}}</p>
     {{end}}
 
     <div class="details">

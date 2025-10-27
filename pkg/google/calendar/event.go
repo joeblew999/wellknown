@@ -20,11 +20,11 @@ import (
 // Event represents a Google Calendar event with URL-compatible fields only.
 // Google Calendar URLs have significant limitations compared to ICS format.
 type Event struct {
-	Title       string    // Required - Event title (max ~255 chars for URL safety)
+	Title       string    // Required - Event title (max 200 chars for URL safety)
 	StartTime   time.Time // Required - Event start time (converted to UTC)
 	EndTime     time.Time // Required - Event end time (converted to UTC)
-	Location    string    // Optional - Event location (max ~255 chars for URL safety)
-	Description string    // Optional - Event description (max ~1000 chars for URL safety)
+	Location    string    // Optional - Event location (max 200 chars for URL safety)
+	Description string    // Optional - Event description (max 1000 chars for URL safety)
 }
 
 // Validation errors
@@ -33,8 +33,8 @@ var (
 	ErrMissingStartTime  = errors.New("google calendar: event start time is required")
 	ErrMissingEndTime    = errors.New("google calendar: event end time is required")
 	ErrInvalidTimeRange  = errors.New("google calendar: end time must be after start time")
-	ErrTitleTooLong      = errors.New("google calendar: title too long for URL (max 255 characters)")
-	ErrLocationTooLong   = errors.New("google calendar: location too long for URL (max 255 characters)")
+	ErrTitleTooLong      = errors.New("google calendar: title too long for URL (max 200 characters)")
+	ErrLocationTooLong   = errors.New("google calendar: location too long for URL (max 200 characters)")
 	ErrDescriptionTooLong = errors.New("google calendar: description too long for URL (max 1000 characters)")
 )
 
@@ -44,7 +44,7 @@ func (e Event) Validate() error {
 	if e.Title == "" {
 		return ErrMissingTitle
 	}
-	if len(e.Title) > 255 {
+	if len(e.Title) > 200 {
 		return ErrTitleTooLong
 	}
 
@@ -58,7 +58,7 @@ func (e Event) Validate() error {
 		return ErrInvalidTimeRange
 	}
 
-	if len(e.Location) > 255 {
+	if len(e.Location) > 200 {
 		return ErrLocationTooLong
 	}
 	if len(e.Description) > 1000 {
@@ -72,12 +72,11 @@ func (e Event) Validate() error {
 // The URL format: https://calendar.google.com/calendar/render?action=TEMPLATE&...
 //
 // This works on all devices and will prompt to open in the Google Calendar app if installed.
+//
+// NOTE: This method does NOT validate the event. Validation should be done via JSON Schema
+// before calling this method. The Validate() method is kept for backward compatibility
+// with existing unit tests but should not be called in production code.
 func (e Event) GenerateURL() (string, error) {
-	// Validate event
-	if err := e.Validate(); err != nil {
-		return "", err
-	}
-
 	// Format times in Google Calendar format (UTC, ISO 8601)
 	startTime := formatTime(e.StartTime)
 	endTime := formatTime(e.EndTime)

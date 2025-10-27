@@ -13,6 +13,19 @@ var (
 	MobileURL string
 )
 
+// NavLink represents a single navigation link
+type NavLink struct {
+	Label    string
+	URL      string
+	IsActive bool
+}
+
+// NavSection represents a navigation section with multiple links
+type NavSection struct {
+	Title string
+	Links []NavLink
+}
+
 // PageData holds all data needed to render a page
 type PageData struct {
 	Platform         string
@@ -29,4 +42,5 @@ type PageData struct {
 	SchemaFormHTML   template.HTML     // Dynamically generated form HTML from JSON Schema
 	FormData         map[string]interface{} // Form data for pre-filling after validation errors
 	ValidationErrors schema.ValidationErrors // Field-level validation errors
+	Navigation       []NavSection      // Server-generated navigation
 }

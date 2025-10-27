@@ -78,12 +78,14 @@ func TestEvent_ValidCases(t *testing.T) {
 }
 
 // TestEvent_ErrorCases tests all error cases from testdata
+// NOTE: Now that GenerateURL() doesn't validate, we test Validate() explicitly.
+// In production, validation is done via JSON Schema before calling GenerateURL().
 func TestEvent_ErrorCases(t *testing.T) {
 	for _, tc := range ErrorTestCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			_, err := tc.Event.GenerateURL()
+			err := tc.Event.Validate()
 			if err == nil {
-				t.Error("GenerateURL() error = nil, want error")
+				t.Error("Validate() error = nil, want error")
 			}
 		})
 	}

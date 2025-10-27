@@ -39,5 +39,11 @@
       "examples": ["Quarterly planning meeting", "Discuss project roadmap"]
     }
   },
-  "required": ["title", "start", "end"]
+  "required": ["title", "start", "end"],
+  "x-validations": {
+    "endAfterStart": {
+      "fields": ["end", "start"],
+      "message": "End time must be after start time"
+    }
+  }
 }

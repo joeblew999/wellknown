@@ -1,11 +1,33 @@
 {{define "stub"}}
-<div style="text-align: center; padding: 60px 20px; background: #f9f9f9; border-radius: 12px;">
-    <h2 style="color: #333; margin-bottom: 20px;">🚧 Coming Soon</h2>
-    <p style="color: #666; font-size: 16px; margin-bottom: 10px;">
-        <strong>{{.Platform | title}} {{.AppType | title}}</strong> deep link generation
+<div style="text-align: center; padding: 60px 20px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 12px; border: 2px solid #e0e0e0;">
+    <div style="font-size: 64px; margin-bottom: 20px;">🚧</div>
+    <h2 style="color: #333; margin-bottom: 15px; font-size: 28px;">Coming Soon</h2>
+    <p style="color: #555; font-size: 18px; margin-bottom: 10px;">
+        <strong>{{.Platform | title}} {{.AppType | title}}</strong>
     </p>
-    <p style="color: #999; font-size: 14px;">
-        This feature is planned but not yet implemented.
+    <p style="color: #666; font-size: 14px; max-width: 500px; margin: 0 auto 30px; line-height: 1.6;">
+        Deep link generation for {{.Platform | title}} {{.AppType | title}} is planned but not yet implemented.
+        This service will allow you to create deep links that open directly in the {{.Platform | title}} {{.AppType | title}} app.
     </p>
+
+    {{/* Show current implementation status */}}
+    <div style="background: white; border-radius: 8px; padding: 20px; max-width: 600px; margin: 0 auto; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color: #333; font-size: 16px; margin-bottom: 15px;">✅ Currently Available Services:</h3>
+        <ul style="color: #666; font-size: 14px; line-height: 2; list-style: none; padding: 0;">
+            <li style="padding: 5px 0;">✅ <strong>Google Calendar</strong> - Create calendar events via web URLs</li>
+            <li style="padding: 5px 0;">✅ <strong>Apple Calendar</strong> - Generate .ics files for calendar events</li>
+        </ul>
+    </div>
+
+    {{/* Link to contribute */}}
+    <div style="margin-top: 30px;">
+        <p style="color: #999; font-size: 12px; margin-bottom: 10px;">Want to help implement this service?</p>
+        <a href="https://github.com/joeblew999/wellknown/issues" target="_blank" 
+           style="display: inline-block; padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; transition: transform 0.2s;"
+           onmouseover="this.style.transform='translateY(-2px)'" 
+           onmouseout="this.style.transform='translateY(0)'">
+            View on GitHub →
+        </a>
+    </div>
 </div>
 {{end}}

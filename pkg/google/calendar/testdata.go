@@ -14,6 +14,30 @@ type TestCase struct {
 	ExpectedURL string
 }
 
+// GetName returns the test case name (implements ServiceExample interface for showcase)
+func (tc TestCase) GetName() string {
+	return tc.Name
+}
+
+// GetDescription returns a description derived from the event details
+func (tc TestCase) GetDescription() string {
+	// Generate description from event fields
+	desc := ""
+	if tc.Event.Location != "" {
+		desc = "Location: " + tc.Event.Location
+	}
+	if tc.Event.Description != "" {
+		if desc != "" {
+			desc += " • "
+		}
+		desc += tc.Event.Description
+	}
+	if desc == "" {
+		desc = "Calendar event example"
+	}
+	return desc
+}
+
 // ErrorCase represents a test case that should produce a validation error
 type ErrorCase struct {
 	Name  string

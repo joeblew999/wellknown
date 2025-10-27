@@ -5,13 +5,43 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/joeblew999/wellknown/pkg/schema"
 )
 
+// schemaCache caches loaded schemas in memory to avoid repeated file I/O
+var schemaCache = struct {
+	sync.RWMutex
+	schemas map[string]string
+}{
+	schemas: make(map[string]string),
+}
+
 // loadSchemaFromFile loads a JSON Schema from an external file
 // Handles both running from project root and from cmd/server/
+// Caches schemas in memory to avoid repeated file I/O
 func loadSchemaFromFile(platform, appType, schemaType string) (string, error) {
+	// Create cache key
+	cacheKey := fmt.Sprintf("%s/%s/%s", platform, appType, schemaType)
+
+	// Check cache first (read lock)
+	schemaCache.RLock()
+	if cached, exists := schemaCache.schemas[cacheKey]; exists {
+		schemaCache.RUnlock()
+		return cached, nil
+	}
+	schemaCache.RUnlock()
+
+	// Not in cache, load from file (write lock)
+	schemaCache.Lock()
+	defer schemaCache.Unlock()
+
+	// Double-check cache (another goroutine might have loaded it while we waited for the lock)
+	if cached, exists := schemaCache.schemas[cacheKey]; exists {
+		return cached, nil
+	}
+
 	// Try relative path from project root first
 	path := fmt.Sprintf("pkg/%s/%s/%s.json", platform, appType, schemaType)
 	content, err := os.ReadFile(path)
@@ -23,11 +53,16 @@ func loadSchemaFromFile(platform, appType, schemaType string) (string, error) {
 			return "", fmt.Errorf("failed to read schema file: %w", err)
 		}
 	}
-	return string(content), nil
+
+	// Store in cache
+	schemaStr := string(content)
+	schemaCache.schemas[cacheKey] = schemaStr
+
+	return schemaStr, nil
 }
 
 // renderPage is a helper to render a page with error handling
-func renderPage(w http.ResponseWriter, platform, appType, currentPage, templateName string, data interface{}) {
+func renderPage(w http.ResponseWriter, r *http.Request, platform, appType, currentPage, templateName string, data interface{}) {
 	err := Templates.ExecuteTemplate(w, "base", PageData{
 		Platform:     platform,
 		AppType:      appType,
@@ -36,6 +71,7 @@ func renderPage(w http.ResponseWriter, platform, appType, currentPage, templateN
 		TestCases:    data,
 		LocalURL:     LocalURL,
 		MobileURL:    MobileURL,
+		Navigation:   GetNavigation(r.URL.Path),
 	})
 	if err != nil {
 		log.Printf("Template execution error: %v", err)
@@ -46,13 +82,13 @@ func renderPage(w http.ResponseWriter, platform, appType, currentPage, templateN
 // renderShowcase is a helper specifically for showcase pages
 func renderShowcase(w http.ResponseWriter, r *http.Request, platform, appType string, examples interface{}) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
-	renderPage(w, platform, appType, "showcase", "showcase", examples)
+	renderPage(w, r, platform, appType, "showcase", "showcase", examples)
 }
 
 // renderCustomPage is a helper specifically for custom form pages
 func renderCustomPage(w http.ResponseWriter, r *http.Request, platform, appType string, examples interface{}) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
-	renderPage(w, platform, appType, "custom", "custom", examples)
+	renderPage(w, r, platform, appType, "custom", "custom", examples)
 }
 
 // renderSchemaBasedForm renders a form generated from JSON Schema
@@ -79,6 +115,7 @@ func renderSchemaBasedForm(w http.ResponseWriter, r *http.Request, platform, app
 		SchemaFormHTML: formHTML,
 		LocalURL:       LocalURL,
 		MobileURL:      MobileURL,
+		Navigation:     GetNavigation(r.URL.Path),
 	})
 	if err != nil {
 		log.Printf("Template execution error: %v", err)
@@ -118,13 +155,14 @@ func renderUISchemaBasedFormWithErrors(w http.ResponseWriter, r *http.Request, p
 	err = Templates.ExecuteTemplate(w, "base", PageData{
 		Platform:         platform,
 		AppType:          appType,
-		CurrentPage:      "ui-schema", // Set to "ui-schema" for menu highlighting
+		CurrentPage:      "custom", // Set to "custom" for menu highlighting (UI Schema forms are the "Custom" pages)
 		TemplateName:     "schema_form",
 		SchemaFormHTML:   formHTML,
 		FormData:         formData,
 		ValidationErrors: validationErrors,
 		LocalURL:         LocalURL,
 		MobileURL:        MobileURL,
+		Navigation:       GetNavigation(r.URL.Path),
 	})
 	if err != nil {
 		log.Printf("Template execution error: %v", err)
@@ -133,15 +171,16 @@ func renderUISchemaBasedFormWithErrors(w http.ResponseWriter, r *http.Request, p
 }
 
 // renderSuccess renders a success page with the generated URL
-func renderSuccess(w http.ResponseWriter, platform, appType, generatedURL string) {
+func renderSuccess(w http.ResponseWriter, r *http.Request, platform, appType, generatedURL string) {
 	err := Templates.ExecuteTemplate(w, "base", PageData{
 		Platform:     platform,
 		AppType:      appType,
 		CurrentPage:  "custom",
-		TemplateName: "custom",
+		TemplateName: "success",
 		GeneratedURL: generatedURL,
 		LocalURL:     LocalURL,
 		MobileURL:    MobileURL,
+		Navigation:   GetNavigation(r.URL.Path),
 	})
 	if err != nil {
 		log.Printf("Template execution error: %v", err)

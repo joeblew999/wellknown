@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"errors"
 	"fmt"
 	"net/mail"
 	"net/url"
@@ -47,6 +48,16 @@ func ValidateAgainstSchema(data map[string]interface{}, schema *JSONSchema) Vali
 		// Validate based on type
 		if err := validateProperty(fieldName, value, prop); err != nil {
 			errors[fieldName] = err.Error()
+		}
+	}
+
+	// Validate custom cross-field rules (x-validations)
+	for ruleName, rule := range schema.XValidations {
+		if err := validateCrossFieldRule(ruleName, rule, data); err != nil {
+			// Add error to the first field mentioned in the rule
+			if len(rule.Fields) > 0 {
+				errors[rule.Fields[0]] = err.Error()
+			}
 		}
 	}
 
@@ -279,4 +290,55 @@ func getNestedValueHelper(m map[string]interface{}, path []string) (interface{},
 	}
 
 	return nil, false
+}
+
+// validateCrossFieldRule validates custom cross-field rules from x-validations
+func validateCrossFieldRule(ruleName string, rule CrossFieldRule, data map[string]interface{}) error {
+	switch ruleName {
+	case "endAfterStart":
+		// Ensure we have at least 2 fields: [end, start]
+		if len(rule.Fields) < 2 {
+			return nil
+		}
+
+		endField := rule.Fields[0]
+		startField := rule.Fields[1]
+
+		// Get values from data
+		endVal, endExists := data[endField]
+		startVal, startExists := data[startField]
+
+		// Skip validation if either field is missing (required field validation handles this)
+		if !endExists || !startExists {
+			return nil
+		}
+
+		// Parse as datetime-local strings (HTML format: YYYY-MM-DDTHH:MM)
+		endStr, endOk := endVal.(string)
+		startStr, startOk := startVal.(string)
+
+		if !endOk || !startOk {
+			return nil // Not strings, skip
+		}
+
+		// Skip if either is empty (optional field handling)
+		if strings.TrimSpace(endStr) == "" || strings.TrimSpace(startStr) == "" {
+			return nil
+		}
+
+		// Parse times
+		endTime, err1 := time.Parse("2006-01-02T15:04", endStr)
+		startTime, err2 := time.Parse("2006-01-02T15:04", startStr)
+
+		if err1 != nil || err2 != nil {
+			return nil // Invalid time format, format validation handles this
+		}
+
+		// Check if end is after start
+		if endTime.Before(startTime) || endTime.Equal(startTime) {
+			return errors.New(rule.Message)
+		}
+	}
+
+	return nil
 }

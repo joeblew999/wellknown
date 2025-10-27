@@ -14,10 +14,24 @@ import (
 var templatesFS embed.FS
 
 // Server represents the wellknown demo/test server
+// Navigation types and functions are in navigation.go
 type Server struct {
 	Port      string
 	LocalURL  string
 	MobileURL string
+}
+
+// initTemplates initializes the templates (exported for testing)
+func initTemplates() (*template.Template, error) {
+	funcMap := template.FuncMap{
+		"title": strings.Title,
+	}
+	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse templates: %w", err)
+	}
+	Templates = tmpl
+	return tmpl, nil
 }
 
 // New creates a new Server instance with the specified port
@@ -27,13 +41,9 @@ func New(port string) (*Server, error) {
 	}
 
 	// Parse all templates with custom functions
-	funcMap := template.FuncMap{
-		"title": strings.Title,
-	}
-	var err error
-	Templates, err = template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")
+	_, err := initTemplates()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse templates: %w", err)
+		return nil, err
 	}
 
 	addr := ":" + port
@@ -49,28 +59,10 @@ func New(port string) (*Server, error) {
 		MobileURL: MobileURL,
 	}
 
-	// Register all HTTP routes
-	server.registerRoutes()
+	// Register all HTTP routes using default mux
+	RegisterRoutes(http.DefaultServeMux)
 
 	return server, nil
-}
-
-// registerRoutes sets up all HTTP routes
-func (s *Server) registerRoutes() {
-	// Google Calendar
-	http.HandleFunc("/google/calendar", GoogleCalendar)
-	http.HandleFunc("/google/calendar/showcase", GoogleCalendarShowcase)
-	http.HandleFunc("/google/calendar-schema", GoogleCalendarSchema)       // JSON Schema (Phase 7)
-	http.HandleFunc("/google/calendar-uischema", GoogleCalendarUISchema)   // UI Schema (Phase 8)
-
-	// Apple Calendar
-	http.HandleFunc("/apple/calendar", AppleCalendar)
-	http.HandleFunc("/apple/calendar/showcase", AppleCalendarShowcase)
-
-	// Stub routes (placeholders for future services)
-	http.HandleFunc("/", GoogleCalendar) // Default to Google Calendar
-	http.HandleFunc("/google/maps", Stub("google", "maps"))
-	http.HandleFunc("/google/maps/showcase", Stub("google", "maps"))
 }
 
 // Start starts the HTTP server

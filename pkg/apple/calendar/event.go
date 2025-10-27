@@ -86,12 +86,11 @@ func (e Event) GenerateDataURI() (string, error) {
 }
 
 // GenerateICS creates ICS file content (RFC 5545 format) for this event.
+//
+// NOTE: This method does NOT validate the event. Validation should be done via JSON Schema
+// before calling this method. The Validate() method is kept for backward compatibility
+// with existing unit tests but should not be called in production code.
 func (e Event) GenerateICS() ([]byte, error) {
-	// Validate event
-	if err := e.Validate(); err != nil {
-		return nil, err
-	}
-
 	var buf bytes.Buffer
 
 	// ICS file header
@@ -103,7 +102,12 @@ func (e Event) GenerateICS() ([]byte, error) {
 	buf.WriteString("BEGIN:VEVENT\r\n")
 
 	// Required fields
-	buf.WriteString(fmt.Sprintf("UID:%d@wellknown\r\n", time.Now().Unix()))
+	// Generate deterministic UID based on event content
+	// This ensures the same event always gets the same UID (deterministic)
+	// But different events get different UIDs (unique)
+	uidContent := fmt.Sprintf("%s|%s|%s", e.Title, formatICSTime(e.StartTime), formatICSTime(e.EndTime))
+	uidHash := fmt.Sprintf("%x", []byte(uidContent)) // Simple hash
+	buf.WriteString(fmt.Sprintf("UID:%s@wellknown\r\n", uidHash))
 	buf.WriteString(fmt.Sprintf("DTSTAMP:%s\r\n", formatICSTime(time.Now())))
 	buf.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", escapeICS(e.Title)))
 	buf.WriteString(fmt.Sprintf("DTSTART:%s\r\n", formatICSTime(e.StartTime)))

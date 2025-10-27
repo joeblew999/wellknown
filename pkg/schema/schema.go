@@ -8,12 +8,19 @@ import (
 
 // JSONSchema represents a simplified JSON Schema for form generation
 type JSONSchema struct {
-	Schema      string                 `json:"$schema"`
-	Type        string                 `json:"type"`
-	Title       string                 `json:"title"`
-	Description string                 `json:"description"`
-	Properties  map[string]Property    `json:"properties"`
-	Required    []string               `json:"required"`
+	Schema        string                       `json:"$schema"`
+	Type          string                       `json:"type"`
+	Title         string                       `json:"title"`
+	Description   string                       `json:"description"`
+	Properties    map[string]Property          `json:"properties"`
+	Required      []string                     `json:"required"`
+	XValidations  map[string]CrossFieldRule    `json:"x-validations,omitempty"` // Custom cross-field validation
+}
+
+// CrossFieldRule represents a custom cross-field validation rule
+type CrossFieldRule struct {
+	Fields  []string `json:"fields"`
+	Message string   `json:"message"`
 }
 
 // Property represents a schema property

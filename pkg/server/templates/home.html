@@ -1,0 +1,129 @@
+{{define "home"}}
+<div class="homepage-hero">
+    <h1>🔗 wellknown</h1>
+    <p>Universal Go library for generating deep links across Google and Apple ecosystems</p>
+</div>
+
+<div class="services-grid">
+    {{range .Navigation}}
+    <div class="service-card">
+        <h3>{{.Title}}</h3>
+        <div class="service-links">
+            {{range .Links}}
+            <a href="{{.URL}}" class="service-link">
+                {{.Label}}
+            </a>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+</div>
+
+<style>
+.homepage-hero {
+    text-align: center;
+    padding: 60px 20px 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    margin: -20px -20px 40px -20px;
+    border-radius: 0 0 12px 12px;
+}
+
+.homepage-hero h1 {
+    font-size: 48px;
+    margin-bottom: 16px;
+    font-weight: 700;
+}
+
+.homepage-hero p {
+    font-size: 18px;
+    opacity: 0.95;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    padding: 20px;
+}
+
+.service-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+
+.service-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.service-card h3 {
+    font-size: 22px;
+    margin-bottom: 16px;
+    color: #2c3e50;
+}
+
+.service-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.service-link {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.service-link:hover {
+    background: #2980b9;
+}
+
+.service-stub {
+    opacity: 0.6;
+}
+
+.service-stub .service-link {
+    background: #95a5a6;
+    pointer-events: none;
+}
+
+.badge-coming-soon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #f39c12;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .homepage-hero h1 {
+        font-size: 36px;
+    }
+
+    .homepage-hero p {
+        font-size: 16px;
+    }
+
+    .services-grid {
+        grid-template-columns: 1fr;
+        padding: 12px;
+    }
+}
+</style>
+{{end}}

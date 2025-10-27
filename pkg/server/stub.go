@@ -22,6 +22,7 @@ func Stub(platform, appType string) http.HandlerFunc {
 			IsStub:      true,
 			LocalURL:    LocalURL,
 			MobileURL:   MobileURL,
+			Navigation:  GetNavigation(r.URL.Path),
 		})
 	}
 }

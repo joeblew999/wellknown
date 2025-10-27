@@ -203,6 +203,8 @@ func TestEventDeterministic(t *testing.T) {
 }
 
 // TestEvent_ValidationErrors tests validation errors
+// NOTE: Now that GenerateICS() doesn't validate, we test Validate() explicitly.
+// In production, validation is done via JSON Schema before calling GenerateICS().
 func TestEvent_ValidationErrors(t *testing.T) {
 	testCases := []struct {
 		name  string
@@ -249,9 +251,9 @@ func TestEvent_ValidationErrors(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := tc.event.GenerateICS()
+			err := tc.event.Validate()
 			if err == nil {
-				t.Error("GenerateICS() error = nil, want error")
+				t.Error("Validate() error = nil, want error")
 			}
 		})
 	}

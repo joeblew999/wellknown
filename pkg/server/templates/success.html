@@ -1,0 +1,60 @@
+{{define "success"}}
+{{/* Success page after generating a deep link */}}
+
+<div class="result">
+    <h3>✅ Success!</h3>
+
+    {{/* Platform-specific messaging */}}
+    {{if eq .Platform "google"}}
+        <p style="color: #666; margin-bottom: 15px;">Your Google Calendar URL has been generated.</p>
+    {{else if eq .Platform "apple"}}
+        <p style="color: #666; margin-bottom: 15px;">Your Apple Calendar event is ready.</p>
+    {{else}}
+        <p style="color: #666; margin-bottom: 15px;">Your deep link has been generated.</p>
+    {{end}}
+
+    <div class="url">{{.GeneratedURL}}</div>
+
+    <div class="actions">
+        {{/* Platform-specific button labels */}}
+        {{if eq .Platform "google"}}
+            <button class="btn-open" onclick="window.open('{{.GeneratedURL}}', '_blank')">Open in Google Calendar</button>
+        {{else if eq .Platform "apple"}}
+            <button class="btn-open" onclick="window.open('{{.GeneratedURL}}', '_blank')">Open in Calendar</button>
+        {{else}}
+            <button class="btn-open" onclick="window.open('{{.GeneratedURL}}', '_blank')">Open</button>
+        {{end}}
+        <button class="btn-copy" onclick="copyURL('{{.GeneratedURL}}', this)">Copy Link</button>
+    </div>
+
+    <div style="margin-top: 20px; text-align: center;">
+        <h4 style="margin-bottom: 10px;">📱 QR Code</h4>
+        <div id="qrcode-success" class="qr-container" data-url="{{.GeneratedURL}}" style="display: inline-block;"></div>
+        <p style="font-size: 12px; color: #666; margin-top: 10px;">
+            {{if eq .Platform "google"}}
+                Scan to open in Google Calendar on mobile
+            {{else if eq .Platform "apple"}}
+                Scan to add event to Calendar on mobile
+            {{else}}
+                Scan to open on mobile
+            {{end}}
+        </p>
+    </div>
+
+    <script>
+        // Generate QR code when page loads
+        if (typeof generateQR === 'function') {
+            generateQR('{{.GeneratedURL}}', 'qrcode-success');
+        } else {
+            document.addEventListener('DOMContentLoaded', function() {
+                generateQR('{{.GeneratedURL}}', 'qrcode-success');
+            });
+        }
+    </script>
+</div>
+
+{{/* Back button */}}
+<div style="margin-top: 30px; text-align: center;">
+    <a href="/{{.Platform}}/{{.AppType}}" style="color: #667eea; text-decoration: none;">← Create Another Event</a>
+</div>
+{{end}}

@@ -53,11 +53,17 @@
 - Mail: `mailto:` ✅ Universal standard
 
 ### Apple Ecosystem
-- Calendar: `data:text/calendar` (ICS format) ✅ **Universal cross-platform method**
-  - Uses ICS (iCalendar) format with base64-encoded data URI
-  - Works on macOS, iOS, and cross-platform
-  - Format: `data:text/calendar;base64,<encoded ICS>`
+- Calendar: **HTTP-served .ics files** ✅ **CORRECT and WORKING method**
+  - ❌ **WRONG**: `data:text/calendar` URIs do NOT work (Safari rejects as "invalid address")
+  - ✅ **CORRECT**: Serve .ics file via HTTP endpoint with proper headers
+  - **Implementation**:
+    - Generate ICS content (RFC 5545 iCalendar format)
+    - Serve via HTTP endpoint: `/apple/calendar/download?event=<base64_ics>`
+    - Headers: `Content-Type: text/calendar; charset=utf-8`, `Content-Disposition: attachment; filename="event.ics"`
+    - Safari downloads .ics → macOS/iOS automatically offers "Add to Calendar"
+  - **Tested and working** on macOS Safari (2025-10-27)
   - Note: `calshow:` exists but is undocumented and unreliable
+  - **Research verified**: All working "Add to Calendar" tools use HTTP-served .ics files, NOT data URIs
 - Maps: `maps://?q=` ✅ Universal on Apple devices
 - Files: `shareddocuments://` ⚠️ iOS only
 - Mail: `mailto:` ✅ Universal standard
@@ -217,21 +223,20 @@ event := calendar.NewEvent().
    - Test validation logic
    - Run: `go test ./pkg/...`
 
-2. **Web Demo Testing** (Interactive, Playwright MCP)
+2. **Web Demo Testing** (Playwright MCP with Safari/WebKit)
    - **Development mode**: `cd examples/basic && air` (hot-reload on code changes)
    - **Standard mode**: `go run ./examples/basic/main.go`
    - **URLs displayed on startup**:
      - Desktop: `http://localhost:8080`
      - Mobile: `http://192.168.1.84:8080` (auto-detected local network IP)
-   - **🚨 CRITICAL - Browser Selection for Claude (AI Agent)**:
-     - **When testing Apple services** (Calendar, Maps):
-       - ❌ DO NOT use Playwright MCP if it's configured for Chrome
-       - ✅ USE: `open -a Safari http://localhost:8080/apple/calendar`
-       - **Reason**: Apple Calendar uses data URI ICS format best tested in Safari
-     - **When testing Google services**: Playwright MCP with Chrome is fine
-   - Use Playwright MCP to automate browser testing (Google services only)
-   - Capture screenshots: Saved to `.playwright-mcp/`
-   - **IMPORTANT**: Screenshots can be copied to `docs/` and referenced in README.md
+   - **🚨 CRITICAL - Browser for Claude (AI Agent)**:
+     - **USE PLAYWRIGHT MCP** - Configured in `.claude.json` to use WebKit (Safari)
+     - The `.claude.json` file sets `PLAYWRIGHT_BROWSER=webkit` for this project
+     - Playwright MCP will use Safari's WebKit engine on macOS
+     - Use all mcp__playwright__* tools for automated testing
+     - **Reason**: WebKit IS Safari on macOS - perfect for Apple integrations
+   - Capture screenshots with Playwright: Saved to `.playwright-mcp/`
+   - Screenshots can be copied to `docs/` and referenced in README.md
 
 3. **Deep Link Verification** (Manual, Real Device)
    - **Google Calendar**: Use web URL - mobile OS automatically offers to open in app
