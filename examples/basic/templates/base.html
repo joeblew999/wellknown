@@ -353,8 +353,8 @@
 
         <div class="nav-section">
             <div class="nav-section-title">Apple Calendar</div>
-            <a href="#" class="nav-link">Custom</a>
-            <a href="#" class="nav-link">Showcase</a>
+            <a href="/apple/calendar" class="nav-link {{if and (eq .Platform "apple") (eq .AppType "calendar") (eq .CurrentPage "custom")}}active{{end}}">Custom</a>
+            <a href="/apple/calendar/showcase" class="nav-link {{if and (eq .Platform "apple") (eq .AppType "calendar") (eq .CurrentPage "showcase")}}active{{end}}">Showcase</a>
         </div>
 
         <div class="nav-section">
