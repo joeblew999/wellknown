@@ -1,9 +1,4 @@
-package calendar
-
-// UISchema defines the UI layout for Google Calendar event forms
-// This controls how the form is presented visually (layout, grouping, etc.)
-// while the JSON Schema (schema.go) defines validation and data types.
-const UISchema = `{
+{
   "type": "VerticalLayout",
   "elements": [
     {
@@ -52,4 +47,4 @@ const UISchema = `{
       }
     }
   ]
-}`
+}

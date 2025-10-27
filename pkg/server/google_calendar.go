@@ -6,6 +6,7 @@ import (
 	"time"
 
 	googlecalendar "github.com/joeblew999/wellknown/pkg/google/calendar"
+	"github.com/joeblew999/wellknown/pkg/schema"
 )
 
 // GoogleCalendar handles Google Calendar custom event creation with GET form and POST support
@@ -75,8 +76,13 @@ func GoogleCalendarShowcase(w http.ResponseWriter, r *http.Request) {
 // GoogleCalendarSchema handles Google Calendar with JSON Schema dynamic forms (Phase 7)
 func GoogleCalendarSchema(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		// Use schema-based form generation
-		renderSchemaBasedForm(w, r, "google", "calendar", googlecalendar.Schema)
+		// Load schema from external JSON file
+		schemaJSON, err := loadSchemaFromFile("google", "calendar", "schema")
+		if err != nil {
+			http.Error(w, "Failed to load schema: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		renderSchemaBasedForm(w, r, "google", "calendar", schemaJSON)
 		return
 	}
 
@@ -92,8 +98,18 @@ func GoogleCalendarSchema(w http.ResponseWriter, r *http.Request) {
 // GoogleCalendarUISchema handles Google Calendar with UI Schema + JSON Schema (Phase 8 + 9)
 func GoogleCalendarUISchema(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		// Use UI schema-based form generation
-		renderUISchemaBasedForm(w, r, "google", "calendar", googlecalendar.Schema, googlecalendar.UISchema)
+		// Load schemas from external JSON files
+		schemaJSON, err := loadSchemaFromFile("google", "calendar", "schema")
+		if err != nil {
+			http.Error(w, "Failed to load schema: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		uiSchemaJSON, err := loadSchemaFromFile("google", "calendar", "uischema")
+		if err != nil {
+			http.Error(w, "Failed to load UI schema: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		renderUISchemaBasedForm(w, r, "google", "calendar", schemaJSON, uiSchemaJSON)
 		return
 	}
 
@@ -116,8 +132,20 @@ func handleGoogleCalendarUISchemaPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Load schemas from external JSON files
+	schemaJSON, err := loadSchemaFromFile("google", "calendar", "schema")
+	if err != nil {
+		http.Error(w, "Failed to load schema: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	uiSchemaJSON, err := loadSchemaFromFile("google", "calendar", "uischema")
+	if err != nil {
+		http.Error(w, "Failed to load UI schema: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	// Parse JSON Schema for validation
-	schema, err := ParseSchema(googlecalendar.Schema)
+	jsonSchema, err := schema.ParseSchema(schemaJSON)
 	if err != nil {
 		log.Printf("Schema parse error: %v", err)
 		http.Error(w, "Failed to parse schema: "+err.Error(), http.StatusInternalServerError)
@@ -125,15 +153,15 @@ func handleGoogleCalendarUISchemaPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert form data to map
-	formData := FormDataToMap(r.Form)
+	formData := schema.FormDataToMap(r.Form)
 
 	// Validate against schema
-	validationErrors := ValidateAgainstSchema(formData, schema)
+	validationErrors := schema.ValidateAgainstSchema(formData, jsonSchema)
 
 	// If there are validation errors, re-render form with errors
 	if len(validationErrors) > 0 {
 		log.Printf("Validation errors: %v", validationErrors)
-		renderUISchemaBasedFormWithErrors(w, r, "google", "calendar", googlecalendar.Schema, googlecalendar.UISchema, formData, validationErrors)
+		renderUISchemaBasedFormWithErrors(w, r, "google", "calendar", schemaJSON, uiSchemaJSON, formData, validationErrors)
 		return
 	}
 

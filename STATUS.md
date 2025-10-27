@@ -198,6 +198,14 @@ https://github.com/joeblew999/timelinize-plug
 they have stuff related.
 
 
+---
+
+xtemplate 
+
+https://github.com/infogulch/xtemplate
+
+Check how this might help us. use .src to get the code and research what it gives us
+
 
 
 

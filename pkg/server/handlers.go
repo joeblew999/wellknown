@@ -2,6 +2,8 @@ package server
 
 import (
 	"html/template"
+
+	"github.com/joeblew999/wellknown/pkg/schema"
 )
 
 // Package-level variables for templates and URLs
@@ -26,5 +28,5 @@ type PageData struct {
 	MobileURL        string            // Mobile URL for QR codes
 	SchemaFormHTML   template.HTML     // Dynamically generated form HTML from JSON Schema
 	FormData         map[string]interface{} // Form data for pre-filling after validation errors
-	ValidationErrors ValidationErrors  // Field-level validation errors
+	ValidationErrors schema.ValidationErrors // Field-level validation errors
 }

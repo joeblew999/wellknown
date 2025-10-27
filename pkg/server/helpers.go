@@ -1,9 +1,30 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/joeblew999/wellknown/pkg/schema"
 )
+
+// loadSchemaFromFile loads a JSON Schema from an external file
+// Handles both running from project root and from cmd/server/
+func loadSchemaFromFile(platform, appType, schemaType string) (string, error) {
+	// Try relative path from project root first
+	path := fmt.Sprintf("pkg/%s/%s/%s.json", platform, appType, schemaType)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		// If that fails, try from cmd/server/ directory (Air case)
+		path = fmt.Sprintf("../../pkg/%s/%s/%s.json", platform, appType, schemaType)
+		content, err = os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("failed to read schema file: %w", err)
+		}
+	}
+	return string(content), nil
+}
 
 // renderPage is a helper to render a page with error handling
 func renderPage(w http.ResponseWriter, platform, appType, currentPage, templateName string, data interface{}) {
@@ -39,7 +60,7 @@ func renderSchemaBasedForm(w http.ResponseWriter, r *http.Request, platform, app
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
 
 	// Parse the schema
-	schema, err := ParseSchema(schemaJSON)
+	jsonSchema, err := schema.ParseSchema(schemaJSON)
 	if err != nil {
 		log.Printf("Schema parse error: %v", err)
 		http.Error(w, "Failed to parse schema: "+err.Error(), http.StatusInternalServerError)
@@ -47,7 +68,7 @@ func renderSchemaBasedForm(w http.ResponseWriter, r *http.Request, platform, app
 	}
 
 	// Generate form HTML from schema
-	formHTML := schema.GenerateFormHTML()
+	formHTML := jsonSchema.GenerateFormHTML()
 
 	// Render with schema-generated form
 	err = Templates.ExecuteTemplate(w, "base", PageData{
@@ -71,11 +92,11 @@ func renderUISchemaBasedForm(w http.ResponseWriter, r *http.Request, platform, a
 }
 
 // renderUISchemaBasedFormWithErrors renders a form with validation errors and pre-filled data
-func renderUISchemaBasedFormWithErrors(w http.ResponseWriter, r *http.Request, platform, appType, schemaJSON, uiSchemaJSON string, formData map[string]interface{}, validationErrors ValidationErrors) {
+func renderUISchemaBasedFormWithErrors(w http.ResponseWriter, r *http.Request, platform, appType, schemaJSON, uiSchemaJSON string, formData map[string]interface{}, validationErrors schema.ValidationErrors) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
 
 	// Parse JSON Schema
-	schema, err := ParseSchema(schemaJSON)
+	jsonSchema, err := schema.ParseSchema(schemaJSON)
 	if err != nil {
 		log.Printf("JSON Schema parse error: %v", err)
 		http.Error(w, "Failed to parse JSON schema: "+err.Error(), http.StatusInternalServerError)
@@ -83,7 +104,7 @@ func renderUISchemaBasedFormWithErrors(w http.ResponseWriter, r *http.Request, p
 	}
 
 	// Parse UI Schema
-	uiSchema, err := ParseUISchema(uiSchemaJSON)
+	uiSchema, err := schema.ParseUISchema(uiSchemaJSON)
 	if err != nil {
 		log.Printf("UI Schema parse error: %v", err)
 		http.Error(w, "Failed to parse UI schema: "+err.Error(), http.StatusInternalServerError)
@@ -91,7 +112,7 @@ func renderUISchemaBasedFormWithErrors(w http.ResponseWriter, r *http.Request, p
 	}
 
 	// Generate form HTML from UI Schema + JSON Schema with validation errors
-	formHTML := uiSchema.GenerateFormHTMLWithData(schema, formData, validationErrors)
+	formHTML := uiSchema.GenerateFormHTMLWithData(jsonSchema, formData, validationErrors)
 
 	// Render with UI schema-generated form
 	err = Templates.ExecuteTemplate(w, "base", PageData{

@@ -1,8 +1,4 @@
-package calendar
-
-// Schema defines the JSON Schema for Google Calendar events.
-// Google Calendar URLs support only 5 basic fields due to URL length limitations.
-const Schema = `{
+{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "title": "Google Calendar Event",
@@ -44,4 +40,4 @@ const Schema = `{
     }
   },
   "required": ["title", "start", "end"]
-}`
+}
