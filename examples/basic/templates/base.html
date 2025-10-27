@@ -35,45 +35,72 @@
             color: white;
         }
 
-        /* Mobile: Hide sidebar by default, show as bottom nav */
+        /* Hamburger menu button (mobile only) */
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: #2c3e50;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 5px 0;
+            transition: 0.3s;
+        }
+
+        /* Mobile: Hamburger menu */
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
             }
 
+            .hamburger {
+                display: block;
+            }
+
             .sidebar {
-                width: 100%;
-                height: auto;
-                padding: 15px;
                 position: fixed;
-                bottom: 0;
-                left: 0;
+                top: 0;
+                left: -100%;
+                width: 250px;
+                height: 100vh;
                 z-index: 1000;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            }
+
+            .sidebar.open {
+                left: 0;
             }
 
             .sidebar h2 {
-                display: none;
+                display: block;
             }
 
             .nav-section {
-                margin-bottom: 0;
+                margin-bottom: 25px;
             }
 
             .nav-section-title {
-                display: none;
+                display: block;
             }
 
             .nav-link {
-                display: inline-block;
-                padding: 8px 12px;
-                margin: 0 5px 5px 0;
-                font-size: 13px;
+                display: block;
             }
 
             .container {
-                padding: 20px;
-                padding-bottom: 200px;
+                padding: 70px 20px 40px 20px;
             }
 
             .content {
@@ -292,7 +319,13 @@
     </style>
 </head>
 <body>
-    <div class="sidebar">
+    <button class="hamburger" onclick="toggleMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <div class="sidebar" id="sidebar">
         <h2>📅 wellknown</h2>
 
         <div class="nav-section">
@@ -339,6 +372,23 @@
                 }, 2000);
             });
         }
+
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Close sidebar when clicking a link on mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth <= 768) {
+                        document.getElementById('sidebar').classList.remove('open');
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
