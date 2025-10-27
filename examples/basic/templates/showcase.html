@@ -1,4 +1,6 @@
-{{define "google_calendar_showcase"}}
+{{define "showcase"}}
+{{/* Generic showcase template - works for calendar events and other services */}}
+
 <p style="margin-bottom: 20px; color: #666;">
     Click any example below to test the generated URLs:
 </p>
@@ -6,21 +8,32 @@
 {{range $index, $case := .TestCases}}
 <div class="showcase-item">
     <h3>{{$case.Name}}</h3>
+
+    {{if $case.Description}}
+    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">{{$case.Description}}</p>
+    {{end}}
+
     <div class="details">
-        <strong>Title:</strong> {{$case.Event.Title}}<br>
-        <strong>Time:</strong> {{$case.Event.StartTime.Format "2006-01-02 15:04"}} - {{$case.Event.EndTime.Format "15:04"}}<br>
-        {{if $case.Event.Location}}<strong>Location:</strong> {{$case.Event.Location}}<br>{{end}}
-        {{if $case.Event.Description}}<strong>Description:</strong> {{$case.Event.Description}}<br>{{end}}
+        {{/* Calendar-specific details */}}
+        {{if $case.Event}}
+            <strong>Title:</strong> {{$case.Event.Title}}<br>
+            {{if $case.Event.StartTime}}
+            <strong>Time:</strong> {{$case.Event.StartTime.Format "2006-01-02 15:04"}} - {{$case.Event.EndTime.Format "15:04"}}<br>
+            {{end}}
+            {{if $case.Event.Location}}<strong>Location:</strong> {{$case.Event.Location}}<br>{{end}}
+            {{if $case.Event.Description}}<strong>Description:</strong> {{$case.Event.Description}}<br>{{end}}
+        {{end}}
     </div>
+
     <div class="url">{{$case.ExpectedURL}}</div>
     <div class="actions">
-        <button class="btn-open" onclick="window.open('{{$case.ExpectedURL}}', '_blank')">Open in Calendar</button>
+        <button class="btn-open" onclick="window.open('{{$case.ExpectedURL}}', '_blank')">Open</button>
         <button class="btn-copy" onclick="copyURL('{{$case.ExpectedURL}}', this)">Copy URL</button>
     </div>
 
     <div style="margin-top: 15px; text-align: center;">
         <div id="qrcode-showcase-{{$index}}" class="qr-container" data-url="{{$case.ExpectedURL}}" style="display: inline-block;"></div>
-        <p style="font-size: 11px; color: #666; margin-top: 5px;">Scan to add to calendar</p>
+        <p style="font-size: 11px; color: #666; margin-top: 5px;">Scan to open</p>
     </div>
 </div>
 {{end}}
