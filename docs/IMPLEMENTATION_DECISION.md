@@ -346,27 +346,222 @@ testCases['google-calendar'].forEach(testCase => {
 go get github.com/santhosh-tekuri/jsonschema/v5
 ```
 
-### Step 2: Replace Validator
+### Step 2: Replace Validator (Keep Existing Tests Passing!)
 - Rewrite `pkg/schema/validator.go` to use jsonschema library
 - Update server handlers to use new validator
-- Test that validation still works
+- **CRITICAL: Ensure existing functionality works:**
+  - ✅ Google Calendar form loads
+  - ✅ Google Calendar validation works
+  - ✅ Google Calendar URL generation works
+  - ✅ Apple Calendar form loads
+  - ✅ Apple Calendar validation works
+  - ✅ Apple Calendar ICS generation works
 
-### Step 3: Add Test Generator
+**Testing checklist**:
+```bash
+# 1. Start server
+go run ./cmd/server
+
+# 2. Test Google Calendar manually:
+#    - Go to http://localhost:8080/google/calendar
+#    - Fill form with valid data
+#    - Verify URL generates correctly
+#    - Test with invalid data (minLength violation)
+#    - Verify validation error shows
+
+# 3. Test Apple Calendar manually:
+#    - Go to http://localhost:8080/apple/calendar
+#    - Fill form with valid data
+#    - Verify ICS download works
+#    - Test with invalid data
+#    - Verify validation error shows
+
+# 4. Run existing Playwright tests:
+cd tests
+bun run playwright test wizard-core --grep-invert "Delete"
+# Should still pass 13/13 tests!
+```
+
+### Step 3: Create URL/ICS Generators (No event.go!)
+
+**CRITICAL CHANGE**: Rewrite generators to work with `map[string]interface{}`
+
+**Create**: `pkg/google/calendar/generator.go`
+```go
+package googlecalendar
+
+import (
+    "fmt"
+    "net/url"
+    "time"
+)
+
+// GenerateURL creates a Google Calendar URL from form data (NO struct needed!)
+func GenerateURL(data map[string]interface{}) (string, error) {
+    // Extract fields from map
+    title, _ := data["title"].(string)
+    startStr, _ := data["start"].(string)
+    endStr, _ := data["end"].(string)
+    location, _ := data["location"].(string)
+    description, _ := data["description"].(string)
+
+    // Parse datetime-local format
+    startTime, err := time.Parse("2006-01-02T15:04", startStr)
+    if err != nil {
+        return "", err
+    }
+    endTime, err := time.Parse("2006-01-02T15:04", endStr)
+    if err != nil {
+        return "", err
+    }
+
+    // Format for Google Calendar (UTC)
+    formattedStart := startTime.UTC().Format("20060102T150405Z")
+    formattedEnd := endTime.UTC().Format("20060102T150405Z")
+
+    // Build URL
+    baseURL := "https://calendar.google.com/calendar/render"
+    params := url.Values{}
+    params.Add("action", "TEMPLATE")
+    params.Add("text", title)
+    params.Add("dates", formattedStart+"/"+formattedEnd)
+    if location != "" {
+        params.Add("location", location)
+    }
+    if description != "" {
+        params.Add("details", description)
+    }
+
+    return fmt.Sprintf("%s?%s", baseURL, params.Encode()), nil
+}
+```
+
+**Create**: `pkg/apple/calendar/generator.go`
+```go
+package applecalendar
+
+import (
+    "fmt"
+    "time"
+)
+
+// GenerateICS creates ICS file content from form data (NO struct needed!)
+func GenerateICS(data map[string]interface{}) (string, error) {
+    // Extract fields from map
+    title, _ := data["title"].(string)
+    startStr, _ := data["start"].(string)
+    endStr, _ := data["end"].(string)
+    location, _ := data["location"].(string)
+    description, _ := data["description"].(string)
+
+    // Parse datetime-local format
+    startTime, err := time.Parse("2006-01-02T15:04", startStr)
+    if err != nil {
+        return "", err
+    }
+    endTime, err := time.Parse("2006-01-02T15:04", endStr)
+    if err != nil {
+        return "", err
+    }
+
+    // Format for ICS (UTC)
+    formattedStart := startTime.UTC().Format("20060102T150405Z")
+    formattedEnd := endTime.UTC().Format("20060102T150405Z")
+
+    // Build ICS content
+    ics := fmt.Sprintf(`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//wellknown//EN
+BEGIN:VEVENT
+DTSTART:%s
+DTEND:%s
+SUMMARY:%s
+LOCATION:%s
+DESCRIPTION:%s
+END:VEVENT
+END:VCALENDAR`, formattedStart, formattedEnd, title, location, description)
+
+    return ics, nil
+}
+```
+
+### Step 4: Update CalendarConfig (Remove BuildEvent!)
+
+**Modify**: `pkg/server/calendar_generic.go`
+
+```go
+// OLD CalendarConfig:
+type CalendarConfig struct {
+    Platform     string
+    AppType      string
+    BuildEvent   CalendarEventBuilder  // ❌ DELETE THIS!
+    GenerateURL  CalendarURLGenerator  // ❌ Change signature!
+    SuccessLabel string
+}
+
+// NEW CalendarConfig:
+type CalendarConfig struct {
+    Platform     string
+    AppType      string
+    // BuildEvent removed! ✅
+    GenerateURL  func(data map[string]interface{}) (string, error)  // ✅ Takes map!
+    SuccessLabel string
+}
+```
+
+**Update handler**:
+```go
+func handleCalendarPost(w http.ResponseWriter, r *http.Request, cfg CalendarConfig) {
+    // ... (validation code stays same) ...
+
+    // ❌ OLD: Build typed event struct
+    // event, err := cfg.BuildEvent(r)
+
+    // ✅ NEW: Use validated map directly!
+    generatedURL, err := cfg.GenerateURL(formData)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    // ... (render response) ...
+}
+```
+
+### Step 5: Delete event.go Files! 🎉
+```bash
+rm pkg/google/calendar/event.go
+rm pkg/apple/calendar/event.go
+```
+
+**Verify everything still works**:
+```bash
+# Run server
+go run ./cmd/server
+
+# Manual testing (same as Step 2)
+
+# Run Playwright tests
+cd tests && bun run playwright test wizard-core
+# Should STILL pass 13/13!
+```
+
+### Step 6: Add Test Generator
 - Create `pkg/schema/testgen.go`
 - Implement `GenerateTestCases()`
 - Test with Google Calendar schema
 
-### Step 4: Create CLI Tool
+### Step 7: Create CLI Tool
 - Create `cmd/testgen/main.go`
 - Generate test-cases.json
 - Verify JSON output format
 
-### Step 5: Update TypeScript
+### Step 8: Update TypeScript
 - Modify `tests/e2e/schema-reflection.spec.ts`
 - Read test-cases.json
 - Run generated tests
 
-### Step 6: Integrate Workflow
+### Step 9: Integrate Workflow
 ```json
 // tests/package.json
 {
