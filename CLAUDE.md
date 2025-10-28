@@ -10,7 +10,6 @@
 1. **ALWAYS verify module name is `joeblew999`** (NOT `joeblew99`!) - see Project Overview below
 **Module**: `github.com/joeblew999/wellknown` ⚠️ NOTE: `999` not `99`!
 **Path**: `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
-2. **UPDATE STATUS.md** whenever making progress or completing tasks
 
 ### ❌ NEVER DO:
 1. **NEVER use wrong module name** (`joeblew99` is WRONG, must be `joeblew999`)
@@ -20,8 +19,8 @@
 
 ### 📁 File Responsibilities:
 - **CLAUDE.md** (this file): Technical decisions, architecture, how things work
-- **STATUS.md**: Current state, what's done, what's next, milestones
 - **docs/**: User-facing documentation ONLY (never for Claude tracking)
+- **git log**: See commit history for what's been completed
 
 ---
 
@@ -108,7 +107,6 @@ wellknown/
 │   └── wellknown-mcp/      # MCP server (future)
 ├── docs/                   # User-facing documentation
 ├── CLAUDE.md              # This file (AI agent instructions)
-├── STATUS.md              # Project status tracking
 └── go.mod
 ```
 
@@ -592,7 +590,7 @@ func Calendar(event Event, opts ...Option) (string, error) {
 
 ## Project Status and Roadmap
 
-**For current status, completed work, and next tasks**: See [STATUS.md](STATUS.md)
+**For current status, completed work, and next tasks**: See `git log` for commit history
 
 **Recent major milestones:**
 - ✅ Web demo with Air hot-reload
@@ -615,5 +613,5 @@ func Calendar(event Event, opts ...Option) (string, error) {
 
 ---
 
-**Last Updated**: 2025-10-27 (Added toast notification system, achieved 100% E2E test pass rate)
+**Last Updated**: 2025-10-28 (Completed schema-driven architecture migration)
 **Maintained by**: Claude (AI assistant)

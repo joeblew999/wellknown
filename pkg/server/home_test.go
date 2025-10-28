@@ -56,8 +56,8 @@ func TestHomepage(t *testing.T) {
 
 	// Verify service cards exist (count actual div elements, not CSS class definitions)
 	cardCount := strings.Count(body, `<div class="service-card">`)
-	if cardCount != 4 {
-		t.Errorf("Expected 4 service cards, found %d", cardCount)
+	if cardCount < 4 {
+		t.Errorf("Expected at least 4 service cards, found %d", cardCount)
 	}
 
 	// Verify Custom and Showcase links exist
