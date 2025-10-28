@@ -7,32 +7,12 @@ import (
 )
 
 // GoogleCalendar handles Google Calendar event creation with UI Schema form and validation
-// Uses the generic calendar handler to eliminate code duplication
+// Uses the generic calendar handler with map-based generator (NO Event structs!)
 var GoogleCalendar = GenericCalendarHandler(CalendarConfig{
 	Platform:     "google",
 	AppType:      "calendar",
 	SuccessLabel: "URL",
-	BuildEvent: func(r *http.Request) (interface{}, error) {
-		startTime, err := parseFormTime(r.FormValue("start"))
-		if err != nil {
-			return nil, err
-		}
-		endTime, err := parseFormTime(r.FormValue("end"))
-		if err != nil {
-			return nil, err
-		}
-
-		return googlecalendar.Event{
-			Title:       r.FormValue("title"),
-			StartTime:   startTime,
-			EndTime:     endTime,
-			Location:    r.FormValue("location"),
-			Description: r.FormValue("description"),
-		}, nil
-	},
-	GenerateURL: func(event interface{}) (string, error) {
-		return event.(googlecalendar.Event).GenerateURL()
-	},
+	GenerateURL:  googlecalendar.GenerateURL, // Takes map[string]interface{}, returns URL
 })
 
 // GoogleCalendarShowcase handles Google Calendar showcase page

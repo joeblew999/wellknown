@@ -9,33 +9,14 @@ import (
 )
 
 // AppleCalendar handles Apple Calendar event creation with UI Schema form and validation
-// Uses the generic calendar handler to eliminate code duplication
+// Uses the generic calendar handler with map-based generator (NO Event structs!)
 var AppleCalendar = GenericCalendarHandler(CalendarConfig{
 	Platform:     "apple",
 	AppType:      "calendar",
 	SuccessLabel: "Download Link",
-	BuildEvent: func(r *http.Request) (interface{}, error) {
-		startTime, err := parseFormTime(r.FormValue("start"))
-		if err != nil {
-			return nil, err
-		}
-		endTime, err := parseFormTime(r.FormValue("end"))
-		if err != nil {
-			return nil, err
-		}
-
-		return applecalendar.Event{
-			Title:       r.FormValue("title"),
-			StartTime:   startTime,
-			EndTime:     endTime,
-			Location:    r.FormValue("location"),
-			Description: r.FormValue("description"),
-			AllDay:      r.FormValue("allDay") == "true",
-		}, nil
-	},
-	GenerateURL: func(event interface{}) (string, error) {
-		// Generate ICS content
-		icsContent, err := event.(applecalendar.Event).GenerateICS()
+	GenerateURL: func(data map[string]interface{}) (string, error) {
+		// Generate ICS content from validated map data
+		icsContent, err := applecalendar.GenerateICS(data)
 		if err != nil {
 			return "", err
 		}

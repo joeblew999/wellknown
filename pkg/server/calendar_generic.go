@@ -3,23 +3,18 @@ package server
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/joeblew999/wellknown/pkg/schema"
 )
 
-// CalendarEventBuilder is a function that creates a platform-specific event from form data
-type CalendarEventBuilder func(r *http.Request) (interface{}, error)
-
-// CalendarURLGenerator is a function that generates a URL/data URI from a platform-specific event
-type CalendarURLGenerator func(event interface{}) (string, error)
+// CalendarURLGenerator is a function that generates a URL/data URI from validated form data
+type CalendarURLGenerator func(data map[string]interface{}) (string, error)
 
 // CalendarConfig configures the generic calendar handler for a specific platform
 type CalendarConfig struct {
 	Platform     string               // "google" or "apple"
 	AppType      string               // "calendar"
-	BuildEvent   CalendarEventBuilder // Function to build platform-specific event from form
-	GenerateURL  CalendarURLGenerator // Function to generate URL/data URI from event
+	GenerateURL  CalendarURLGenerator // Function to generate URL/data URI from validated data
 	SuccessLabel string               // "URL" or "data URI"
 }
 
@@ -58,23 +53,25 @@ func handleCalendarPost(w http.ResponseWriter, r *http.Request, cfg CalendarConf
 
 	// Parse form data
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Failed to parse form: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
 		return
 	}
 
-	// Load schemas from external JSON files
+	// Load schemas for validation
 	schemaJSON, err := loadSchemaFromFile(cfg.Platform, cfg.AppType, "schema")
 	if err != nil {
+		log.Printf("Schema load error: %v", err)
 		http.Error(w, "Failed to load schema: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	uiSchemaJSON, err := loadSchemaFromFile(cfg.Platform, cfg.AppType, "uischema")
 	if err != nil {
+		log.Printf("UI schema load error: %v", err)
 		http.Error(w, "Failed to load UI schema: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Parse JSON Schema for validation
+	// Parse schema
 	jsonSchema, err := schema.ParseSchema(schemaJSON)
 	if err != nil {
 		log.Printf("Schema parse error: %v", err)
@@ -95,15 +92,9 @@ func handleCalendarPost(w http.ResponseWriter, r *http.Request, cfg CalendarConf
 		return
 	}
 
-	// Validation passed - build platform-specific event
-	event, err := cfg.BuildEvent(r)
-	if err != nil {
-		http.Error(w, "Failed to build event: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Generate URL or data URI
-	url, err := cfg.GenerateURL(event)
+	// Validation passed - generate URL/data URI directly from validated map data
+	// NO MORE BuildEvent callback! No more Event structs!
+	url, err := cfg.GenerateURL(formData)
 	if err != nil {
 		http.Error(w, "Failed to generate "+cfg.SuccessLabel+": "+err.Error(), http.StatusInternalServerError)
 		return
@@ -111,9 +102,4 @@ func handleCalendarPost(w http.ResponseWriter, r *http.Request, cfg CalendarConf
 
 	log.Printf("SUCCESS! Generated %s %s (length: %d bytes)", cfg.Platform, cfg.SuccessLabel, len(url))
 	renderSuccess(w, r, cfg.Platform, cfg.AppType, url)
-}
-
-// parseFormTime is a helper to parse datetime-local form values
-func parseFormTime(value string) (time.Time, error) {
-	return time.Parse("2006-01-02T15:04", value)
 }
