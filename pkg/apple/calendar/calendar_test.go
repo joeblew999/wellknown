@@ -25,8 +25,8 @@ func TestGenerateICS(t *testing.T) {
 
 	// Verify ICS content has required fields
 	requiredFields := []string{
-		"BEGIN:VCALENDAR",
-		"VERSION:2.0",
+		"BEGIN:" + "VCALENDAR",
+		"VERSION:" + ICSVersion,
 		"BEGIN:VEVENT",
 		"SUMMARY:Test Meeting",
 		"DTSTART:20251101T100000Z",

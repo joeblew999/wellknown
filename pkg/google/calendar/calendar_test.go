@@ -37,18 +37,18 @@ func TestGenerateURL_ValidExamples(t *testing.T) {
 			}
 
 			// Verify URL structure
-			if !strings.HasPrefix(url, "https://calendar.google.com/calendar/render?") {
+			if !strings.HasPrefix(url, BaseURL + "?") {
 				t.Errorf("URL should start with Google Calendar base URL\nGot: %s", url)
 			}
 
 			// Verify required parameters
-			if !strings.Contains(url, "action=TEMPLATE") {
+			if !strings.Contains(url, QueryParamAction + "=" + ActionParam) {
 				t.Errorf("URL missing action=TEMPLATE\nGot: %s", url)
 			}
 
 			// Verify title is in URL
 			if _, ok := example.Data["title"].(string); ok {
-				if !strings.Contains(url, "text=") {
+				if !strings.Contains(url, FieldMapping["title"] + "=") {
 					t.Errorf("URL missing title parameter\nGot: %s", url)
 				}
 			}
