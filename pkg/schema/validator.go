@@ -1,228 +1,189 @@
 package schema
 
 import (
-	"errors"
+	"context"
+	"encoding/json"
 	"fmt"
-	"net/mail"
-	"net/url"
-	"strconv"
+	"os"
+	"path/filepath"
 	"strings"
-	"time"
+
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
-// ValidationErrors maps field paths to error messages
+// ValidationErrors maps field names to error messages
 type ValidationErrors map[string]string
 
-// ValidateAgainstSchema validates form data against a JSON Schema
-// Returns a map of field path -> error message
-// Uses only stdlib - no external validation libraries!
-func ValidateAgainstSchema(data map[string]interface{}, schema *JSONSchema) ValidationErrors {
+// ValidatorV6 handles JSON Schema validation using santhosh-tekuri/jsonschema v6
+type ValidatorV6 struct {
+	compiler *jsonschema.Compiler
+	schemas  map[string]*jsonschema.Schema
+}
+
+// NewValidatorV6 creates a new validator instance using jsonschema v6
+func NewValidatorV6() *ValidatorV6 {
+	compiler := jsonschema.NewCompiler()
+
+	return &ValidatorV6{
+		compiler: compiler,
+		schemas:  make(map[string]*jsonschema.Schema),
+	}
+}
+
+// LoadSchemaFromFile loads and compiles a JSON Schema file
+func (v *ValidatorV6) LoadSchemaFromFile(schemaPath string) (*jsonschema.Schema, error) {
+	// Check cache first
+	if cached, ok := v.schemas[schemaPath]; ok {
+		return cached, nil
+	}
+
+	// Read file
+	absPath, err := filepath.Abs(schemaPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve path %s: %w", schemaPath, err)
+	}
+
+	// Check file exists
+	if _, err := os.Stat(absPath); err != nil {
+		return nil, fmt.Errorf("schema file not found: %s", absPath)
+	}
+
+	// Compile schema (library handles file loading)
+	fileURL := "file:///" + absPath
+	schema, err := v.compiler.Compile(fileURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile schema %s: %w", schemaPath, err)
+	}
+
+	// Cache it
+	v.schemas[schemaPath] = schema
+	return schema, nil
+}
+
+// Validate validates data against a compiled schema
+// Returns ValidationErrors for backwards compatibility
+func (v *ValidatorV6) Validate(data map[string]interface{}, schema *jsonschema.Schema) ValidationErrors {
 	errors := make(ValidationErrors)
 
-	// Check required fields
-	for _, requiredField := range schema.Required {
-		if _, exists := data[requiredField]; !exists {
-			errors[requiredField] = "This field is required"
-			continue
-		}
-		// Check if the value is empty string
-		if str, ok := data[requiredField].(string); ok && strings.TrimSpace(str) == "" {
-			errors[requiredField] = "This field is required"
-		}
+	// Use library's validation
+	err := schema.Validate(data)
+	if err == nil {
+		return errors // No errors
 	}
 
-	// Validate each property
-	for fieldName, value := range data {
-		prop, exists := schema.Properties[fieldName]
-		if !exists {
-			continue // Unknown field, skip
-		}
-
-		// Skip validation for empty optional fields
-		if !contains(schema.Required, fieldName) {
-			if str, ok := value.(string); ok && strings.TrimSpace(str) == "" {
-				continue
-			}
-		}
-
-		// Validate based on type
-		if err := validateProperty(fieldName, value, prop); err != nil {
-			errors[fieldName] = err.Error()
-		}
+	// Convert validation errors to our format
+	if valErr, ok := err.(*jsonschema.ValidationError); ok {
+		errors = convertValidationErrorV6(valErr)
+	} else {
+		// Generic error
+		errors["_error"] = err.Error()
 	}
 
-	// Validate custom cross-field rules (x-validations)
-	for ruleName, rule := range schema.XValidations {
-		if err := validateCrossFieldRule(ruleName, rule, data); err != nil {
-			// Add error to the first field mentioned in the rule
-			if len(rule.Fields) > 0 {
-				errors[rule.Fields[0]] = err.Error()
-			}
+	return errors
+}
+
+// convertValidationErrorV6 converts jsonschema.ValidationError to our format
+func convertValidationErrorV6(err *jsonschema.ValidationError) ValidationErrors {
+	errors := make(ValidationErrors)
+
+	// Get the instance path (which field failed)
+	// InstanceLocation is []string like ["fieldName"] or ["fieldName", "subField"]
+	instancePath := err.InstanceLocation
+
+	// Convert to simple field name
+	fieldName := strings.Join(instancePath, "/")
+	if fieldName == "" {
+		fieldName = "_root"
+	}
+
+	// Get the error message from ErrorKind
+	message := fmt.Sprintf("%v", err.ErrorKind)
+
+	// Store error
+	errors[fieldName] = message
+
+	// Also add any sub-errors
+	for _, cause := range err.Causes {
+		subErrors := convertValidationErrorV6(cause)
+		for k, v := range subErrors {
+			errors[k] = v
 		}
 	}
 
 	return errors
 }
 
-// validateProperty validates a single property value against its schema
-func validateProperty(fieldName string, value interface{}, prop Property) error {
-	switch prop.Type {
-	case "string":
-		return validateString(fieldName, value, prop)
-	case "integer", "number":
-		return validateNumber(fieldName, value, prop)
-	case "boolean":
-		return validateBoolean(fieldName, value, prop)
-	case "array":
-		return validateArray(fieldName, value, prop)
-	case "object":
-		return validateObject(fieldName, value, prop)
-	default:
-		return nil
+// ValidateWithContext validates data with context support
+func (v *ValidatorV6) ValidateWithContext(ctx context.Context, data map[string]interface{}, schema *jsonschema.Schema) ValidationErrors {
+	errors := make(ValidationErrors)
+
+	err := schema.Validate(data)
+	if err == nil {
+		return errors
+	}
+
+	if valErr, ok := err.(*jsonschema.ValidationError); ok {
+		errors = convertValidationErrorV6(valErr)
+	} else {
+		errors["_error"] = err.Error()
+	}
+
+	return errors
+}
+
+// ==================== BACKWARDS COMPATIBILITY ====================
+// These functions maintain compatibility with existing server code that
+// uses the old custom validator. Eventually, the server should be refactored
+// to use ValidatorV6 directly instead of these legacy functions.
+
+// ValidateAgainstSchema validates form data against a JSON Schema
+// This is a backwards-compatible shim for existing server code.
+//
+// DEPRECATED: New code should use ValidatorV6 directly.
+func ValidateAgainstSchema(data map[string]interface{}, customSchema *JSONSchema) ValidationErrors {
+	// Convert the custom JSONSchema struct to actual JSON
+	schemaBytes, err := json.Marshal(customSchema)
+	if err != nil {
+		return ValidationErrors{
+			"_error": fmt.Sprintf("Failed to marshal schema: %v", err),
+		}
+	}
+
+	// Create a new compiler and compile the schema
+	compiler := jsonschema.NewCompiler()
+
+	// Add the schema to compiler
+	if err := compiler.AddResource("schema.json", strings.NewReader(string(schemaBytes))); err != nil {
+		return ValidationErrors{
+			"_error": fmt.Sprintf("Failed to add schema resource: %v", err),
+		}
+	}
+
+	// Compile the schema
+	schema, err := compiler.Compile("schema.json")
+	if err != nil {
+		return ValidationErrors{
+			"_error": fmt.Sprintf("Failed to compile schema: %v", err),
+		}
+	}
+
+	// Validate the data
+	validationErr := schema.Validate(data)
+	if validationErr == nil {
+		return ValidationErrors{} // No errors
+	}
+
+	// Convert validation errors
+	if valErr, ok := validationErr.(*jsonschema.ValidationError); ok {
+		return convertValidationErrorV6(valErr)
+	}
+
+	return ValidationErrors{
+		"_error": validationErr.Error(),
 	}
 }
 
-// validateString validates string values
-func validateString(fieldName string, value interface{}, prop Property) error {
-	str, ok := value.(string)
-	if !ok {
-		return fmt.Errorf("must be a string")
-	}
-
-	// Check minLength
-	if prop.MinLength > 0 && len(str) < prop.MinLength {
-		return fmt.Errorf("must be at least %d characters", prop.MinLength)
-	}
-
-	// Check maxLength
-	if prop.MaxLength > 0 && len(str) > prop.MaxLength {
-		return fmt.Errorf("must be at most %d characters", prop.MaxLength)
-	}
-
-	// Check enum
-	if len(prop.Enum) > 0 {
-		valid := false
-		for _, enumVal := range prop.Enum {
-			if str == enumVal {
-				valid = true
-				break
-			}
-		}
-		if !valid {
-			return fmt.Errorf("must be one of: %s", strings.Join(prop.Enum, ", "))
-		}
-	}
-
-	// Check format
-	if prop.Format != "" {
-		if err := validateFormat(str, prop.Format); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// validateFormat validates string formats
-func validateFormat(value string, format string) error {
-	switch format {
-	case "email":
-		if _, err := mail.ParseAddress(value); err != nil {
-			return fmt.Errorf("must be a valid email address")
-		}
-	case "uri", "url":
-		if _, err := url.ParseRequestURI(value); err != nil {
-			return fmt.Errorf("must be a valid URL")
-		}
-	case "date":
-		if _, err := time.Parse("2006-01-02", value); err != nil {
-			return fmt.Errorf("must be a valid date (YYYY-MM-DD)")
-		}
-	case "datetime-local":
-		// HTML datetime-local format: YYYY-MM-DDTHH:MM
-		if _, err := time.Parse("2006-01-02T15:04", value); err != nil {
-			return fmt.Errorf("must be a valid datetime")
-		}
-	case "time":
-		if _, err := time.Parse("15:04", value); err != nil {
-			return fmt.Errorf("must be a valid time (HH:MM)")
-		}
-	}
-	return nil
-}
-
-// validateNumber validates integer and number values
-func validateNumber(fieldName string, value interface{}, prop Property) error {
-	var num float64
-
-	// Try to parse as number
-	switch v := value.(type) {
-	case string:
-		parsed, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			return fmt.Errorf("must be a number")
-		}
-		num = parsed
-	case float64:
-		num = v
-	case int:
-		num = float64(v)
-	default:
-		return fmt.Errorf("must be a number")
-	}
-
-	// For integer type, check if it's actually an integer
-	if prop.Type == "integer" {
-		if num != float64(int(num)) {
-			return fmt.Errorf("must be an integer")
-		}
-	}
-
-	// Check minimum
-	if prop.Minimum > 0 && int(num) < prop.Minimum {
-		return fmt.Errorf("must be at least %d", prop.Minimum)
-	}
-
-	// Check maximum
-	if prop.Maximum > 0 && int(num) > prop.Maximum {
-		return fmt.Errorf("must be at most %d", prop.Maximum)
-	}
-
-	return nil
-}
-
-// validateBoolean validates boolean values
-func validateBoolean(fieldName string, value interface{}, prop Property) error {
-	switch v := value.(type) {
-	case bool:
-		return nil
-	case string:
-		if v == "true" || v == "false" || v == "on" || v == "" {
-			return nil
-		}
-		return fmt.Errorf("must be true or false")
-	default:
-		return fmt.Errorf("must be a boolean")
-	}
-}
-
-// validateArray validates array values
-func validateArray(fieldName string, value interface{}, prop Property) error {
-	// Arrays from forms need special handling
-	// For now, just check if it's a slice
-	// TODO: Implement full array validation
-	return nil
-}
-
-// validateObject validates nested object values
-func validateObject(fieldName string, value interface{}, prop Property) error {
-	// Objects from forms need special handling (dot notation)
-	// TODO: Implement full object validation
-	return nil
-}
-
-// FormDataToMap converts form values to a map structure
-// Handles both simple fields and nested objects (dot notation)
+// FormDataToMap converts HTML form data to a map suitable for validation
 func FormDataToMap(formData map[string][]string) map[string]interface{} {
 	result := make(map[string]interface{})
 
@@ -245,9 +206,8 @@ func FormDataToMap(formData map[string][]string) map[string]interface{} {
 	return result
 }
 
-// setNestedValue sets a value in a nested map structure
-// e.g., ["organizer", "name"] with value "John" creates map["organizer"]["name"] = "John"
-func setNestedValue(m map[string]interface{}, path []string, value interface{}) {
+// setNestedValue sets a value in a nested map using a path
+func setNestedValue(m map[string]interface{}, path []string, value string) {
 	if len(path) == 0 {
 		return
 	}
@@ -257,88 +217,13 @@ func setNestedValue(m map[string]interface{}, path []string, value interface{}) 
 		return
 	}
 
-	// Create nested map if it doesn't exist
-	if _, exists := m[path[0]]; !exists {
-		m[path[0]] = make(map[string]interface{})
+	// Create or get nested map
+	key := path[0]
+	nested, ok := m[key].(map[string]interface{})
+	if !ok {
+		nested = make(map[string]interface{})
+		m[key] = nested
 	}
 
-	// Recurse into nested map
-	if nested, ok := m[path[0]].(map[string]interface{}); ok {
-		setNestedValue(nested, path[1:], value)
-	}
-}
-
-// GetNestedValue gets a value from a nested map using dot notation
-// e.g., "organizer.name" returns map["organizer"]["name"]
-func GetNestedValue(m map[string]interface{}, path string) (interface{}, bool) {
-	parts := strings.Split(path, ".")
-	return getNestedValueHelper(m, parts)
-}
-
-func getNestedValueHelper(m map[string]interface{}, path []string) (interface{}, bool) {
-	if len(path) == 0 {
-		return nil, false
-	}
-
-	if len(path) == 1 {
-		val, exists := m[path[0]]
-		return val, exists
-	}
-
-	if nested, ok := m[path[0]].(map[string]interface{}); ok {
-		return getNestedValueHelper(nested, path[1:])
-	}
-
-	return nil, false
-}
-
-// validateCrossFieldRule validates custom cross-field rules from x-validations
-func validateCrossFieldRule(ruleName string, rule CrossFieldRule, data map[string]interface{}) error {
-	switch ruleName {
-	case "endAfterStart":
-		// Ensure we have at least 2 fields: [end, start]
-		if len(rule.Fields) < 2 {
-			return nil
-		}
-
-		endField := rule.Fields[0]
-		startField := rule.Fields[1]
-
-		// Get values from data
-		endVal, endExists := data[endField]
-		startVal, startExists := data[startField]
-
-		// Skip validation if either field is missing (required field validation handles this)
-		if !endExists || !startExists {
-			return nil
-		}
-
-		// Parse as datetime-local strings (HTML format: YYYY-MM-DDTHH:MM)
-		endStr, endOk := endVal.(string)
-		startStr, startOk := startVal.(string)
-
-		if !endOk || !startOk {
-			return nil // Not strings, skip
-		}
-
-		// Skip if either is empty (optional field handling)
-		if strings.TrimSpace(endStr) == "" || strings.TrimSpace(startStr) == "" {
-			return nil
-		}
-
-		// Parse times
-		endTime, err1 := time.Parse("2006-01-02T15:04", endStr)
-		startTime, err2 := time.Parse("2006-01-02T15:04", startStr)
-
-		if err1 != nil || err2 != nil {
-			return nil // Invalid time format, format validation handles this
-		}
-
-		// Check if end is after start
-		if endTime.Before(startTime) || endTime.Equal(startTime) {
-			return errors.New(rule.Message)
-		}
-	}
-
-	return nil
+	setNestedValue(nested, path[1:], value)
 }
