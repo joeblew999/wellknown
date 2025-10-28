@@ -30,6 +30,15 @@ testConfig.pages.forEach((pageConfig: any) => {
   const schemaPath = path.join(__dirname, '..', pageConfig.schema);
   const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
 
+  // Load the UI Schema (if exists)
+  let uiSchema = null;
+  if (pageConfig.uiSchema) {
+    const uiSchemaPath = path.join(__dirname, '..', pageConfig.uiSchema);
+    if (fs.existsSync(uiSchemaPath)) {
+      uiSchema = JSON.parse(fs.readFileSync(uiSchemaPath, 'utf-8'));
+    }
+  }
+
   // Create test suite for this page
   test.describe(`${pageConfig.name} - Schema Validation (Reflective)`, () => {
 
