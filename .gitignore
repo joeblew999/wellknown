@@ -40,3 +40,4 @@ go.work.sum
 
 tmp/
 bin/
+/server

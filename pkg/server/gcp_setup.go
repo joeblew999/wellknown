@@ -39,21 +39,14 @@ func (s *Server) handleGCPSetup(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("GCP Status loaded: ProjectID=%s, EnvPath=%s", s.gcpSetupStatus.ProjectID, s.gcpSetupStatus.EnvPath)
 
-	// Render template using base template with navigation
-	err := s.templates.ExecuteTemplate(w, "base", PageData{
+	// Use the SINGLE render method
+	s.render(w, r, PageData{
 		Platform:     "tools",
 		AppType:      "gcp-setup",
 		CurrentPage:  "gcp-setup",
 		TemplateName: "gcp_tool",
 		GCPStatus:    s.gcpSetupStatus,
-		LocalURL:     s.LocalURL,
-		MobileURL:    s.MobileURL,
-		Navigation:   s.registry.GetNavigation(r.URL.Path),
 	})
-	if err != nil {
-		log.Printf("Template execution error: %v", err)
-		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
-	}
 }
 
 // handleGCPSetupStatus returns current setup status as JSON

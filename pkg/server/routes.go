@@ -10,11 +10,8 @@ import (
 // registerAllRoutes registers all HTTP routes with the server's mux and registry
 // This is called during Server.New() initialization
 func (s *Server) registerAllRoutes() {
-	// Create handler context for all handlers
-	hc := s.newHandlerContext()
-
 	// Register calendar services
-	s.registerCalendarServices(hc)
+	s.registerCalendarServices()
 
 	// Maps services (stubs for now)
 	s.registerMapsRoutes()
@@ -33,7 +30,7 @@ func (s *Server) registerAllRoutes() {
 }
 
 // registerCalendarServices registers all calendar services
-func (s *Server) registerCalendarServices(hc *HandlerContext) {
+func (s *Server) registerCalendarServices() {
 	// Define all calendar services in ONE place
 	services := []struct {
 		Platform     string
@@ -64,22 +61,22 @@ func (s *Server) registerCalendarServices(hc *HandlerContext) {
 	}
 
 	for _, svc := range services {
-		// Create calendar handler with server context
-		handler := s.makeGenericCalendarHandler(hc, CalendarConfig{
+		// Create calendar handler
+		handler := s.makeGenericCalendarHandler(CalendarConfig{
 			Platform:     svc.Platform,
 			AppType:      svc.AppType,
 			SuccessLabel: svc.SuccessLabel,
 			GenerateURL:  svc.GenerateURL,
 		})
 
-		// Create showcase handler with server context
+		// Create showcase handler
 		var showcaseExamples interface{}
 		if svc.Platform == "google" {
 			showcaseExamples = googlecalendar.ShowcaseExamples
 		} else {
 			showcaseExamples = applecalendar.ShowcaseExamples
 		}
-		showcaseHandler := s.makeShowcaseHandler(hc, svc.Platform, svc.AppType, showcaseExamples)
+		showcaseHandler := s.makeShowcaseHandler(svc.Platform, svc.AppType, showcaseExamples)
 
 		// Register main handler
 		mainPath := "/" + svc.Platform + "/" + svc.AppType

@@ -113,3 +113,19 @@ func getLocalIP() string {
 	}
 	return "localhost"
 }
+
+// render is the SINGLE method to render any page
+// All other render methods call this with different PageData
+func (s *Server) render(w http.ResponseWriter, r *http.Request, data PageData) {
+	// Auto-populate common fields
+	data.LocalURL = s.LocalURL
+	data.MobileURL = s.MobileURL
+	data.Navigation = s.registry.GetNavigation(r.URL.Path)
+
+	// Render template
+	err := s.templates.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		log.Printf("Template execution error: %v", err)
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+	}
+}

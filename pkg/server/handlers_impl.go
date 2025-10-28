@@ -12,20 +12,13 @@ import (
 func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
 
-	// Render homepage with all services
-	err := s.templates.ExecuteTemplate(w, "base", PageData{
+	// Render homepage with all services - use the SINGLE render method
+	s.render(w, r, PageData{
 		Platform:     "",
 		AppType:      "",
 		CurrentPage:  "home",
 		TemplateName: "home",
-		LocalURL:     s.LocalURL,
-		MobileURL:    s.MobileURL,
-		Navigation:   s.registry.GetNavigation("/"),
 	})
-	if err != nil {
-		log.Printf("Template execution error: %v", err)
-		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
-	}
 }
 
 // makeStubHandler creates a stub handler for unimplemented services
@@ -38,14 +31,12 @@ func (s *Server) makeStubHandler(platform, appType string) http.HandlerFunc {
 			currentPage = "showcase"
 		}
 
-		s.templates.ExecuteTemplate(w, "base", PageData{
+		// Use the SINGLE render method
+		s.render(w, r, PageData{
 			Platform:    platform,
 			AppType:     appType,
 			CurrentPage: currentPage,
 			IsStub:      true,
-			LocalURL:    s.LocalURL,
-			MobileURL:   s.MobileURL,
-			Navigation:  s.registry.GetNavigation(r.URL.Path),
 		})
 	}
 }
