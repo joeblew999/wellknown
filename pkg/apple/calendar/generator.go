@@ -129,3 +129,28 @@ func formatICSDate(t time.Time) string {
 
 // Note: formatICSTime() and escapeICS() are defined in event.go
 // When event.go is deleted, move those functions here
+
+// formatICSTime converts a time.Time to ICS format: YYYYMMDDTHHMMSSZ (UTC)
+func formatICSTime(t time.Time) string {
+	return t.UTC().Format("20060102T150405Z")
+}
+
+// escapeICS escapes special characters in ICS text fields per RFC 5545
+func escapeICS(s string) string {
+	var buf bytes.Buffer
+	for _, r := range s {
+		switch r {
+		case '\\':
+			buf.WriteString("\\\\")
+		case ';':
+			buf.WriteString("\\;")
+		case ',':
+			buf.WriteString("\\,")
+		case '\n':
+			buf.WriteString("\\n")
+		default:
+			buf.WriteRune(r)
+		}
+	}
+	return buf.String()
+}

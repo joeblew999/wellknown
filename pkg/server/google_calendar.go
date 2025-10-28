@@ -16,9 +16,9 @@ var GoogleCalendar = GenericCalendarHandler(CalendarConfig{
 })
 
 // GoogleCalendarShowcase handles Google Calendar showcase page
-// Uses ValidTestCases from testdata.go - comprehensive examples validated by JSON Schema
+// TODO: Re-implement with map-based examples instead of Event structs
 func GoogleCalendarShowcase(w http.ResponseWriter, r *http.Request) {
-	renderShowcase(w, r, "google", "calendar", googlecalendar.ValidTestCases)
+	http.Error(w, "Showcase page temporarily disabled during migration", http.StatusServiceUnavailable)
 }
 
 // RegisterGoogleCalendarRoutes registers all Google Calendar routes with the given mux
@@ -30,6 +30,6 @@ func RegisterGoogleCalendarRoutes(mux *http.ServeMux) {
 		AppType:     "calendar",
 		Title:       "Google Calendar",
 		HasCustom:   true,
-		HasShowcase: true,
+		HasShowcase: false, // Temporarily disabled
 	})
 }

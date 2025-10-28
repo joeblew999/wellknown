@@ -28,9 +28,9 @@ var AppleCalendar = GenericCalendarHandler(CalendarConfig{
 })
 
 // AppleCalendarShowcase handles Apple Calendar showcase page
-// Uses ValidTestCases from testdata.go - comprehensive examples validated by JSON Schema
+// TODO: Re-implement with map-based examples instead of Event structs
 func AppleCalendarShowcase(w http.ResponseWriter, r *http.Request) {
-	renderShowcase(w, r, "apple", "calendar", applecalendar.ValidTestCases)
+	http.Error(w, "Showcase page temporarily disabled during migration", http.StatusServiceUnavailable)
 }
 
 // AppleCalendarDownload serves .ics file for download
@@ -71,6 +71,6 @@ func RegisterAppleCalendarRoutes(mux *http.ServeMux) {
 		AppType:     "calendar",
 		Title:       "Apple Calendar",
 		HasCustom:   true,
-		HasShowcase: true,
+		HasShowcase: false, // Temporarily disabled
 	})
 }

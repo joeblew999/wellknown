@@ -70,3 +70,9 @@ func GenerateURL(data map[string]interface{}) (string, error) {
 	return baseURL + "?" + params.Encode(), nil
 }
 
+
+// formatTime converts a time.Time to Google Calendar format: 20060102T150405Z
+// Google Calendar requires UTC time in this specific format
+func formatTime(t time.Time) string {
+	return t.UTC().Format("20060102T150405Z")
+}

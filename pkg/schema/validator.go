@@ -152,8 +152,16 @@ func ValidateAgainstSchema(data map[string]interface{}, customSchema *JSONSchema
 	// Create a new compiler and compile the schema
 	compiler := jsonschema.NewCompiler()
 
-	// Add the schema to compiler
-	if err := compiler.AddResource("schema.json", strings.NewReader(string(schemaBytes))); err != nil {
+	// Unmarshal the schema JSON into interface{} for the compiler
+	var schemaDoc interface{}
+	if err := json.Unmarshal(schemaBytes, &schemaDoc); err != nil {
+		return ValidationErrors{
+			"_error": fmt.Sprintf("Failed to unmarshal schema: %v", err),
+		}
+	}
+
+	// Add the schema to compiler using the correct method
+	if err := compiler.AddResource("schema.json", schemaDoc); err != nil {
 		return ValidationErrors{
 			"_error": fmt.Sprintf("Failed to add schema resource: %v", err),
 		}
