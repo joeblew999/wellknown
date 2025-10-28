@@ -201,7 +201,7 @@ func GenerateICS(data map[string]interface{}) ([]byte, error) {
 // formatICSDate converts a time.Time to ICS DATE format: YYYYMMDD
 // Used for all-day events
 func formatICSDate(t time.Time) string {
-	return t.Format("20060102")
+	return t.Format(DateFormat)
 }
 
 // Note: formatICSTime() and escapeICS() are defined in event.go
@@ -209,7 +209,7 @@ func formatICSDate(t time.Time) string {
 
 // formatICSTime converts a time.Time to ICS format: YYYYMMDDTHHMMSSZ (UTC)
 func formatICSTime(t time.Time) string {
-	return t.UTC().Format("20060102T150405Z")
+	return t.UTC().Format(DateTimeFormat)
 }
 
 // escapeICS escapes special characters in ICS text fields per RFC 5545
