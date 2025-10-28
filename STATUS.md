@@ -1402,6 +1402,150 @@ UID: 517569636b2053796e637c3230323531303237543130303030305a7c3230323531303237543
 
 ---
 
+### Phase 27: Complete Schema-Driven Architecture - Map-Based Showcase (Completed 2025-10-28)
+
+**Goal**: Finalize the schema-driven architecture migration by completing Apple Calendar UI Schema and restoring map-based showcase functionality
+
+**Problems Fixed**:
+1. Apple Calendar showcase was disabled after Event struct deletion
+2. Showcase template expected Event structs but new architecture uses map[string]interface{}
+3. Boolean form fields (allDay) failing validation - HTML forms send string "true" but schema expects boolean
+4. Old Event struct examples still referenced in showcase
+
+**Solution**: Map-based architecture with proper type coercion
+
+**Implementation**:
+
+**1. Created Map-Based Showcase Examples** ✅
+- Created [pkg/google/calendar/showcase.go](pkg/google/calendar/showcase.go) (84 lines):
+  - ShowcaseExample struct with Name, Description, Data fields
+  - Data is map[string]interface{} (no Event struct!)
+  - GetName() and GetDescription() interface methods
+  - 6 comprehensive examples: Team Meeting, Client Presentation, Lunch Break, Workshop, Sprint Planning, Code Review
+- Created [pkg/apple/calendar/showcase.go](pkg/apple/calendar/showcase.go) (85 lines):
+  - Same ShowcaseExample pattern
+  - 6 examples including all-day events: Team Meeting, All-Day Conference, Client Presentation, Lunch Break, Workshop, Birthday
+
+**2. Updated Showcase Template for Maps** ✅
+- Modified [pkg/server/templates/showcase.html](pkg/server/templates/showcase.html):
+  - Before: `{{$case.Event.Title}}` (Event struct access)
+  - After: `{{index $case.Data "title"}}` (map access)
+  - Displays: title, start, end, allDay indicator, location, description
+  - Form submission: Hidden inputs generated from Data map
+  - Button: "Generate & Open" (submits form to create URL/ICS on-demand)
+  - Removed QR codes (redundant with success page)
+
+**3. Fixed Type Coercion for Form Data** ✅
+- Modified [pkg/schema/validator.go](pkg/schema/validator.go):
+  - FormDataToMap now converts boolean strings to actual booleans
+  - HTML forms send "true"/"false" as strings
+  - JSON Schema expects boolean type
+  - Added type coercion: `if value == "true" { typedValue = true }`
+  - Changed setNestedValue signature from string to interface{}
+
+**4. Re-Enabled Showcase Pages** ✅
+- Updated [pkg/server/google_calendar.go](pkg/server/google_calendar.go):
+  - `GoogleCalendarShowcase()` now uses `googlecalendar.ShowcaseExamples`
+  - Set `HasShowcase: true` in service config
+  - Comment: "Uses map-based examples - no Event structs needed!"
+- Updated [pkg/server/apple_calendar.go](pkg/server/apple_calendar.go):
+  - Same pattern with `applecalendar.ShowcaseExamples`
+  - Re-enabled with map-based examples
+
+**Test Results**:
+```bash
+✅ All 3 verification tests passing:
+  1. Apple Calendar Form - Download link generated ✅
+  2. Google Calendar Form - URL generated ✅
+  3. All-Day Event with allDay checkbox - Success ✅
+
+✅ Showcase pages rendering correctly:
+  - Google Calendar: 6 examples displayed
+  - Apple Calendar: 6 examples displayed
+  - Form submission generates URLs/ICS on-demand
+```
+
+**End-to-End Verification**:
+```bash
+# Test 1: Google Calendar showcase
+curl -s http://localhost:8080/google/calendar/showcase
+→ Displays 6 example cards with "Generate & Open" buttons ✅
+
+# Test 2: Apple Calendar showcase
+curl -s http://localhost:8080/apple/calendar/showcase
+→ Displays 6 examples including all-day events ✅
+
+# Test 3: Submit showcase example (generates ICS on-demand)
+# Click "Generate & Open" on "All-Day Conference" example
+→ Form submits with allDay=true
+→ ValidationTypeCoercion converts "true" string to boolean
+→ Validation passes
+→ ICS file generated with DATE format (not DATETIME)
+→ Calendar.app opens automatically ✅
+```
+
+**Architecture Evolution**:
+
+**Before Phase 27** (showcase disabled):
+```
+pkg/google/calendar/
+  ├── event.go.RETIRED     ← Event struct deleted
+  ├── examples.go.RETIRED  ← Examples deleted
+  └── testdata.go.RETIRED  ← Test data deleted
+
+Showcase: DISABLED (expected Event structs that no longer exist) ❌
+```
+
+**After Phase 27** (map-based showcase):
+```
+pkg/google/calendar/
+  ├── generator.go         ← GenerateURL(map[string]interface{})
+  ├── showcase.go          ← ShowcaseExamples (map-based)
+  └── schema.json          ← Single source of truth
+
+Showcase: ENABLED with map-based examples ✅
+Templates: Work with Data maps (no Event structs) ✅
+Type Coercion: HTML form strings → JSON Schema types ✅
+```
+
+**Benefits**:
+- ✅ **Schema-Driven Architecture Complete**: JSON Schema is single source of truth for validation AND examples
+- ✅ **No Event Structs**: Direct map[string]interface{} → URL/ICS generation
+- ✅ **Type Safety**: Automatic coercion from HTML form strings to proper types
+- ✅ **Showcase Restored**: 6 examples per platform, all working
+- ✅ **On-Demand Generation**: Examples don't pre-generate URLs, forms submit to create them
+- ✅ **Clean Architecture**: Maps throughout (FormData → Validation → Generation)
+
+**Files Created**:
+- Created: [pkg/google/calendar/showcase.go](pkg/google/calendar/showcase.go) (84 lines)
+- Created: [pkg/apple/calendar/showcase.go](pkg/apple/calendar/showcase.go) (85 lines)
+
+**Files Modified**:
+- Modified: [pkg/schema/validator.go](pkg/schema/validator.go) - Added boolean type coercion
+- Modified: [pkg/server/templates/showcase.html](pkg/server/templates/showcase.html) - Map-based rendering
+- Modified: [pkg/server/google_calendar.go](pkg/server/google_calendar.go) - Re-enabled showcase
+- Modified: [pkg/server/apple_calendar.go](pkg/server/apple_calendar.go) - Re-enabled showcase
+
+**Key Technical Decisions**:
+1. **ShowcaseExample struct**: Separates display metadata (Name/Description) from form data (Data map)
+2. **Form-based submission**: Examples submit forms instead of having pre-generated URLs (cleaner, more flexible)
+3. **Type coercion in validator**: HTML form strings automatically converted to JSON Schema types
+4. **interface{} in setNestedValue**: Allows typed values in nested structures (not just strings)
+
+**Migration Summary** (Event Structs → Maps):
+```
+Phase 1-22: Event structs with Validate() methods
+Phase 23-26: JSON Schema validation added (duplicate validation)
+Phase 27: ✅ COMPLETE - Event structs deleted, maps everywhere, showcase working
+```
+
+**Total Code Impact**:
+- Files deleted: event.go, examples.go, testdata.go (696 lines total!)
+- Files created: showcase.go (84+85 lines), map-based generators
+- Net result: **527 lines deleted**, cleaner architecture
+
+---
+
 ## Ideas and Future Work
 
 ### JSON Schema Forms
