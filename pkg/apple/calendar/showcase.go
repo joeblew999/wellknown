@@ -1,0 +1,60 @@
+package calendar
+
+// ShowcaseExamples provides map-based examples for the Apple Calendar showcase page
+var ShowcaseExamples = []map[string]interface{}{
+	{
+		"name":        "Team Meeting",
+		"description": "Weekly team standup with full calendar features",
+		"title":       "Team Standup",
+		"start":       "2025-11-01T10:00",
+		"end":         "2025-11-01T10:30",
+		"location":    "Conference Room A",
+		"description_field": "Weekly sync to discuss progress and blockers",
+	},
+	{
+		"name":        "All-Day Conference",
+		"description": "Full-day event demonstration",
+		"title":       "Tech Conference 2025",
+		"start":       "2025-12-10T00:00",
+		"end":         "2025-12-11T00:00",
+		"allDay":      true,
+		"location":    "Convention Center",
+		"description_field": "Annual technology conference with keynotes and workshops",
+	},
+	{
+		"name":        "Client Presentation",
+		"description": "Important client meeting",
+		"title":       "Q4 Business Review",
+		"start":       "2025-11-15T14:00",
+		"end":         "2025-11-15T16:00",
+		"location":    "Executive Boardroom",
+		"description_field": "Present Q4 results and discuss 2026 strategic plans",
+	},
+	{
+		"name":        "Lunch Break",
+		"description": "Team lunch outing",
+		"title":       "Team Lunch",
+		"start":       "2025-11-20T12:00",
+		"end":         "2025-11-20T13:30",
+		"location":    "Downtown Restaurant",
+		"description_field": "Celebrating the successful product launch!",
+	},
+	{
+		"name":        "Workshop",
+		"description": "Full-day professional development",
+		"title":       "Leadership Training",
+		"start":       "2025-12-05T09:00",
+		"end":         "2025-12-05T17:00",
+		"location":    "Training Center",
+		"description_field": "All-day workshop on effective leadership and team management",
+	},
+	{
+		"name":        "Birthday",
+		"description": "All-day birthday celebration",
+		"title":       "John's Birthday",
+		"start":       "2025-11-30T00:00",
+		"end":         "2025-12-01T00:00",
+		"allDay":      true,
+		"description_field": "Remember to wish John a happy birthday!",
+	},
+}
