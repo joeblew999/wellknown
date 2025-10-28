@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Google Calendar Test Data",
+  "description": "Invalid and edge case test data for Go unit tests and Playwright E2E tests. Valid examples are in examples.json.",
+  "invalid_cases": [
+    {
+      "name": "Missing title",
+      "description": "Should fail when title is missing",
+      "input": {
+        "start": "2025-11-01T10:00",
+        "end": "2025-11-01T11:00"
+      },
+      "expect_error": "missing or invalid title"
+    },
+    {
+      "name": "Missing start time",
+      "description": "Should fail when start time is missing",
+      "input": {
+        "title": "Meeting",
+        "end": "2025-11-01T11:00"
+      },
+      "expect_error": "missing or invalid start"
+    },
+    {
+      "name": "Missing end time",
+      "description": "Should fail when end time is missing",
+      "input": {
+        "title": "Meeting",
+        "start": "2025-11-01T10:00"
+      },
+      "expect_error": "missing or invalid end"
+    },
+    {
+      "name": "Invalid start time format",
+      "description": "Should fail with malformed datetime",
+      "input": {
+        "title": "Meeting",
+        "start": "invalid-date",
+        "end": "2025-11-01T11:00"
+      },
+      "expect_error": "invalid start time format"
+    },
+    {
+      "name": "Invalid end time format",
+      "description": "Should fail with malformed datetime",
+      "input": {
+        "title": "Meeting",
+        "start": "2025-11-01T10:00",
+        "end": "not-a-date"
+      },
+      "expect_error": "invalid end time format"
+    },
+    {
+      "name": "Empty title",
+      "description": "Should fail when title is empty string",
+      "input": {
+        "title": "",
+        "start": "2025-11-01T10:00",
+        "end": "2025-11-01T11:00"
+      },
+      "expect_error": "missing or invalid title"
+    }
+  ],
+  "edge_cases": [
+    {
+      "name": "Very long title (200 chars - max length)",
+      "description": "Test maximum allowed title length",
+      "input": {
+        "title": "This is an extremely long event title that tests the maximum allowed length constraint defined in the JSON Schema which specifies maxLength of 200 characters and we want to verify the system",
+        "start": "2025-11-01T10:00",
+        "end": "2025-11-01T11:00"
+      },
+      "expect": {
+        "url_contains": ["action=TEMPLATE"]
+      }
+    },
+    {
+      "name": "Very long description (1000 chars - max length)",
+      "description": "Test maximum allowed description length",
+      "input": {
+        "title": "Meeting",
+        "start": "2025-11-01T10:00",
+        "end": "2025-11-01T11:00",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam"
+      },
+      "expect": {
+        "url_contains": ["details=Lorem"]
+      }
+    },
+    {
+      "name": "Same start and end time",
+      "description": "Zero-duration event",
+      "input": {
+        "title": "Instant Event",
+        "start": "2025-11-01T10:00",
+        "end": "2025-11-01T10:00"
+      },
+      "expect": {
+        "url_contains": ["dates=20251101T100000Z%2F20251101T100000Z"]
+      }
+    },
+    {
+      "name": "Multi-day event",
+      "description": "Event spanning multiple days",
+      "input": {
+        "title": "Conference",
+        "start": "2025-12-01T09:00",
+        "end": "2025-12-03T17:00",
+        "location": "Convention Center",
+        "description": "Annual tech conference"
+      },
+      "expect": {
+        "url_contains": [
+          "dates=20251201T090000Z%2F20251203T170000Z"
+        ]
+      }
+    }
+  ]
+}

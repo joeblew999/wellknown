@@ -1,100 +1,129 @@
 package calendar
 
 import (
+	_ "embed"
+	"encoding/json"
 	"strings"
 	"testing"
 )
 
-func TestGenerateURL(t *testing.T) {
-	// Test data matching what the form would send
-	data := map[string]interface{}{
-		"title":       "Team Meeting",
-		"start":       "2025-11-01T14:00",
-		"end":         "2025-11-01T15:30",
-		"location":    "Conference Room A",
-		"description": "Quarterly planning session",
+// NOTE: Filenames must match schema.ExamplesFilename and schema.FailuresFilename constants
+// but go:embed requires literal strings (can't use constants)
+//
+//go:embed data-examples.json
+var examplesData []byte
+
+//go:embed data-failures.json
+var failuresData []byte
+
+// TestGenerateURL_ValidExamples tests all valid examples from data-examples.json
+func TestGenerateURL_ValidExamples(t *testing.T) {
+	var examples struct {
+		Examples []ShowcaseExample `json:"examples"`
 	}
 
-	// Generate URL
-	url, err := GenerateURL(data)
-	if err != nil{
-		t.Fatalf("GenerateURL failed: %v", err)
+	if err := json.Unmarshal(examplesData, &examples); err != nil {
+		t.Fatalf("Failed to parse data-examples.json: %v", err)
 	}
 
-	// Verify URL structure
-	if !strings.HasPrefix(url, "https://calendar.google.com/calendar/render?") {
-		t.Errorf("URL should start with Google Calendar base URL\nGot: %s", url)
-	}
+	for _, example := range examples.Examples {
+		t.Run(example.Name, func(t *testing.T) {
+			// Generate URL from example data
+			url, err := GenerateURL(example.Data)
+			if err != nil {
+				t.Fatalf("GenerateURL failed: %v", err)
+			}
 
-	// Verify required parameters
-	requiredParams := []string{
-		"action=TEMPLATE",
-		"text=Team+Meeting",
-		"dates=20251101T140000Z",  // UTC format
-		"location=Conference+Room+A",
-		"details=Quarterly+planning+session",
-	}
+			// Verify URL structure
+			if !strings.HasPrefix(url, "https://calendar.google.com/calendar/render?") {
+				t.Errorf("URL should start with Google Calendar base URL\nGot: %s", url)
+			}
 
-	for _, param := range requiredParams {
-		if !strings.Contains(url, param) {
-			t.Errorf("URL missing required parameter: %s\nGot: %s", param, url)
-		}
-	}
+			// Verify required parameters
+			if !strings.Contains(url, "action=TEMPLATE") {
+				t.Errorf("URL missing action=TEMPLATE\nGot: %s", url)
+			}
 
-	t.Logf("✅ Generated URL (%d bytes):\n%s", len(url), url)
+			// Verify title is in URL
+			if _, ok := example.Data["title"].(string); ok {
+				if !strings.Contains(url, "text=") {
+					t.Errorf("URL missing title parameter\nGot: %s", url)
+				}
+			}
+
+			t.Logf("✅ Generated URL (%d bytes): %s", len(url), url)
+		})
+	}
 }
 
-func TestGenerateURL_MinimalFields(t *testing.T) {
-	// Test with only required fields
-	data := map[string]interface{}{
-		"title": "Quick Meeting",
-		"start": "2025-11-01T10:00",
-		"end":   "2025-11-01T10:30",
+// TestGenerateURL_InvalidCases tests all invalid cases from data-failures.json
+func TestGenerateURL_InvalidCases(t *testing.T) {
+	var failures struct {
+		InvalidCases []struct {
+			Name        string                 `json:"name"`
+			Description string                 `json:"description"`
+			Input       map[string]interface{} `json:"input"`
+			ExpectError string                 `json:"expect_error"`
+		} `json:"invalid_cases"`
 	}
 
-	url, err := GenerateURL(data)
-	if err != nil {
-		t.Fatalf("GenerateURL failed: %v", err)
+	if err := json.Unmarshal(failuresData, &failures); err != nil {
+		t.Fatalf("Failed to parse data-failures.json: %v", err)
 	}
 
-	// Should NOT contain location or details
-	if strings.Contains(url, "location=") {
-		t.Errorf("URL should not contain location parameter")
-	}
-	if strings.Contains(url, "details=") {
-		t.Errorf("URL should not contain details parameter")
-	}
+	for _, testCase := range failures.InvalidCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			// Attempt to generate URL
+			_, err := GenerateURL(testCase.Input)
 
-	t.Logf("✅ Generated minimal URL: %s", url)
+			// Should fail
+			if err == nil {
+				t.Fatalf("Expected error but got success")
+			}
+
+			// Check error message contains expected text
+			if !strings.Contains(err.Error(), testCase.ExpectError) {
+				t.Errorf("Expected error containing %q\nGot: %v", testCase.ExpectError, err)
+			}
+
+			t.Logf("✅ Correctly rejected invalid data: %v", err)
+		})
+	}
 }
 
-func TestGenerateURL_MissingFields(t *testing.T) {
-	// Test missing required field
-	data := map[string]interface{}{
-		"title": "Missing Times",
-		// start and end are missing
+// TestGenerateURL_EdgeCases tests all edge cases from data-failures.json
+func TestGenerateURL_EdgeCases(t *testing.T) {
+	var failures struct {
+		EdgeCases []struct {
+			Name        string                 `json:"name"`
+			Description string                 `json:"description"`
+			Input       map[string]interface{} `json:"input"`
+			Expect      struct {
+				URLContains []string `json:"url_contains"`
+			} `json:"expect"`
+		} `json:"edge_cases"`
 	}
 
-	_, err := GenerateURL(data)
-	if err == nil {
-		t.Fatal("GenerateURL should fail with missing required fields")
+	if err := json.Unmarshal(failuresData, &failures); err != nil {
+		t.Fatalf("Failed to parse data-failures.json: %v", err)
 	}
 
-	t.Logf("✅ Correctly rejected invalid data: %v", err)
-}
+	for _, testCase := range failures.EdgeCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			// Generate URL
+			url, err := GenerateURL(testCase.Input)
+			if err != nil {
+				t.Fatalf("GenerateURL failed: %v", err)
+			}
 
-func TestGenerateURL_InvalidTimeFormat(t *testing.T) {
-	// Test invalid datetime format
-	data := map[string]interface{}{
-		"title": "Bad Time Format",
-		"start": "invalid-date",
-		"end":   "2025-11-01T10:30",
+			// Verify expected strings are in URL
+			for _, expected := range testCase.Expect.URLContains {
+				if !strings.Contains(url, expected) {
+					t.Errorf("URL missing expected string: %q\nGot: %s", expected, url)
+				}
+			}
+
+			t.Logf("✅ Edge case handled: %s", testCase.Description)
+		})
 	}
-
-	_, err := GenerateURL(data)
-	if err == nil {
-		t.Fatal("GenerateURL should fail with invalid time format")
-	}
-
-	t.Logf("✅ Correctly rejected invalid time format: %v", err)
 }

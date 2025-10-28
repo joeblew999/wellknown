@@ -286,11 +286,11 @@ func LoadUISchemaFromFile(platform, appType string) (string, error) {
 	}
 
 	// Try relative path from project root first
-	path := fmt.Sprintf("pkg/%s/%s/uischema.json", platform, appType)
+	path := fmt.Sprintf("pkg/%s/%s/%s", platform, appType, UISchemaFilename)
 	content, err := os.ReadFile(path)
 	if err != nil {
 		// If that fails, try from cmd/server/ directory (Air case)
-		path = fmt.Sprintf("../../pkg/%s/%s/uischema.json", platform, appType)
+		path = fmt.Sprintf("../../pkg/%s/%s/%s", platform, appType, UISchemaFilename)
 		content, err = os.ReadFile(path)
 		if err != nil {
 			return "", fmt.Errorf("failed to read UI schema file: %w", err)
@@ -319,9 +319,9 @@ func LoadSchemasForRendering(platform, appType string) (string, *jsonschema.Sche
 
 	// Try multiple paths (project root, then from cmd/server, then from pkg/server for tests)
 	schemaPaths := []string{
-		fmt.Sprintf("pkg/%s/%s/schema.json", platform, appType),           // From project root
-		fmt.Sprintf("../../pkg/%s/%s/schema.json", platform, appType),     // From cmd/server
-		fmt.Sprintf("../%s/%s/schema.json", platform, appType),            // From pkg/server (tests)
+		fmt.Sprintf("pkg/%s/%s/%s", platform, appType, SchemaFilename),           // From project root
+		fmt.Sprintf("../../pkg/%s/%s/%s", platform, appType, SchemaFilename),     // From cmd/server
+		fmt.Sprintf("../%s/%s/%s", platform, appType, SchemaFilename),            // From pkg/server (tests)
 	}
 
 	var compiledSchema *jsonschema.Schema
