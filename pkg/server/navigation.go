@@ -11,28 +11,38 @@ type ServiceConfig struct {
 	HasShowcase bool
 }
 
-// registeredServices tracks all services for navigation generation
-var registeredServices []ServiceConfig
+// ServiceRegistry manages registered services (no more global state!)
+type ServiceRegistry struct {
+	services []ServiceConfig
+}
 
-// registerService adds a service to the navigation registry
-// This is called by RegisterRoutes() to build the navigation automatically
-func registerService(config ServiceConfig) {
-	registeredServices = append(registeredServices, config)
+// NewServiceRegistry creates a new service registry
+func NewServiceRegistry() *ServiceRegistry {
+	return &ServiceRegistry{
+		services: make([]ServiceConfig, 0),
+	}
+}
+
+// Register adds a service to the registry
+func (r *ServiceRegistry) Register(config ServiceConfig) {
+	r.services = append(r.services, config)
+}
+
+// GetAll returns all registered services
+func (r *ServiceRegistry) GetAll() []ServiceConfig {
+	return r.services
+}
+
+// Clear removes all registered services (for testing)
+func (r *ServiceRegistry) Clear() {
+	r.services = nil
 }
 
 // GetNavigation returns navigation for the current request path
-// This is the public API used by templates and handlers
-func GetNavigation(currentPath string) []NavSection {
-	return buildNavigation(currentPath)
-}
-
-// buildNavigation generates navigation structure from registered services
-// currentPath is the current request path (e.g., "/google/calendar" or "/apple/calendar/showcase")
-// This dynamically builds the navigation menu based on which services have been registered
-func buildNavigation(currentPath string) []NavSection {
+func (r *ServiceRegistry) GetNavigation(currentPath string) []NavSection {
 	var sections []NavSection
 
-	for _, service := range registeredServices {
+	for _, service := range r.services {
 		var links []NavLink
 
 		if service.HasCustom {
@@ -74,14 +84,4 @@ func buildNavigation(currentPath string) []NavSection {
 	})
 
 	return sections
-}
-
-// GetRegisteredServices returns all registered services (for testing)
-func GetRegisteredServices() []ServiceConfig {
-	return registeredServices
-}
-
-// ClearRegisteredServices clears all registered services (for testing)
-func ClearRegisteredServices() {
-	registeredServices = nil
 }

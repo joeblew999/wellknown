@@ -10,10 +10,8 @@ import (
 // TestHomepage ensures the homepage renders correctly with all services
 func TestHomepage(t *testing.T) {
 	// Setup test server
-	mux, err := setupTestServer()
-	if err != nil {
-		t.Fatalf("Failed to setup test server: %v", err)
-	}
+	srv := setupTestServer(t)
+	mux := srv.GetMux()
 
 	// Request homepage
 	req := httptest.NewRequest("GET", "/", nil)
@@ -73,10 +71,8 @@ func TestHomepage(t *testing.T) {
 
 // TestHomepageNotFound ensures non-root paths return 404
 func TestHomepageNotFound(t *testing.T) {
-	mux, err := setupTestServer()
-	if err != nil {
-		t.Fatalf("Failed to setup test server: %v", err)
-	}
+	srv := setupTestServer(t)
+	mux := srv.GetMux()
 
 	// Request non-existent path
 	req := httptest.NewRequest("GET", "/nonexistent", nil)

@@ -8,29 +8,28 @@ import (
 	"time"
 )
 
-// GenerateDataURI creates an Apple Calendar data URI from validated form data.
+// GenerateDownloadURL creates a download URL for an Apple Calendar .ics file.
+// This is the CORRECT approach for iOS/macOS - Safari cannot handle data:text/calendar URIs.
 //
-// Expected data fields (validated by schema.json):
-//   - title: string (required)
-//   - start: string in datetime-local format "2006-01-02T15:04" (required)
-//   - end: string in datetime-local format "2006-01-02T15:04" (required)
-//   - location: string (optional)
-//   - description: string (optional)
-//   - allDay: boolean (optional, default false)
-//   - TODO: attendees, recurrence, reminders (future enhancement)
-//
-// This function assumes data has already been validated against schema.json.
-// It does NOT perform validation - that's the JSON Schema's job!
-//
-// Returns a data URI: data:text/calendar;base64,<base64-encoded ICS>
-func GenerateDataURI(data map[string]interface{}) (string, error) {
-	// Generate ICS file content
+// Returns a URL like: /apple/calendar/download?event=<base64_encoded_ics>
+func GenerateDownloadURL(data map[string]interface{}) (string, error) {
 	icsBytes, err := GenerateICS(data)
 	if err != nil {
 		return "", err
 	}
+	encoded := base64.URLEncoding.EncodeToString(icsBytes)
+	return "/apple/calendar/download?event=" + encoded, nil
+}
 
-	// Encode as base64 data URI
+// GenerateDataURI creates an Apple Calendar data URI from validated form data.
+// NOTE: This doesn't work on Safari/iOS! Use GenerateDownloadURL() instead.
+//
+// Returns a data URI: data:text/calendar;base64,<base64-encoded ICS>
+func GenerateDataURI(data map[string]interface{}) (string, error) {
+	icsBytes, err := GenerateICS(data)
+	if err != nil {
+		return "", err
+	}
 	encoded := base64.StdEncoding.EncodeToString(icsBytes)
 	return fmt.Sprintf("data:text/calendar;base64,%s", encoded), nil
 }
@@ -109,10 +108,88 @@ func GenerateICS(data map[string]interface{}) ([]byte, error) {
 		buf.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", escapeICS(description)))
 	}
 
-	// TODO: Handle complex fields when form supports them
-	// - attendees (array of objects)
-	// - recurrence (object)
-	// - reminders (array)
+	// Handle attendees (array of objects)
+	if attendeesRaw, ok := data["attendees"]; ok {
+		if attendees, ok := attendeesRaw.([]interface{}); ok {
+			for _, attendeeRaw := range attendees {
+				if attendee, ok := attendeeRaw.(map[string]interface{}); ok {
+					email, _ := attendee["email"].(string)
+					name, _ := attendee["name"].(string)
+					required, _ := attendee["required"].(bool)
+
+					if email != "" {
+						// Build ATTENDEE line
+						var attendeeLine string
+						if name != "" {
+							attendeeLine = fmt.Sprintf("ATTENDEE;CN=%s", escapeICS(name))
+						} else {
+							attendeeLine = "ATTENDEE"
+						}
+
+						// Add role (REQ-PARTICIPANT or OPT-PARTICIPANT)
+						if required {
+							attendeeLine += ";ROLE=REQ-PARTICIPANT"
+						} else {
+							attendeeLine += ";ROLE=OPT-PARTICIPANT"
+						}
+
+						// Add RSVP and email
+						attendeeLine += fmt.Sprintf(";RSVP=TRUE:mailto:%s\r\n", email)
+						buf.WriteString(attendeeLine)
+					}
+				}
+			}
+		}
+	}
+
+	// Handle recurrence (object)
+	if recurrenceRaw, ok := data["recurrence"]; ok {
+		if recurrence, ok := recurrenceRaw.(map[string]interface{}); ok {
+			frequency, _ := recurrence["frequency"].(string)
+			if frequency != "" {
+				// Start RRULE
+				rrule := fmt.Sprintf("RRULE:FREQ=%s", frequency)
+
+				// Add interval if specified
+				if interval, ok := recurrence["interval"].(float64); ok && interval > 1 {
+					rrule += fmt.Sprintf(";INTERVAL=%d", int(interval))
+				}
+
+				// Add count (number of occurrences)
+				if count, ok := recurrence["count"].(float64); ok && count > 0 {
+					rrule += fmt.Sprintf(";COUNT=%d", int(count))
+				}
+
+				// Add until date
+				if until, ok := recurrence["until"].(string); ok && until != "" {
+					// Parse date format YYYY-MM-DD
+					if untilTime, err := time.Parse("2006-01-02", until); err == nil {
+						rrule += fmt.Sprintf(";UNTIL=%s", formatICSDate(untilTime))
+					}
+				}
+
+				buf.WriteString(rrule + "\r\n")
+			}
+		}
+	}
+
+	// Handle reminders (array of objects)
+	if remindersRaw, ok := data["reminders"]; ok {
+		if reminders, ok := remindersRaw.([]interface{}); ok {
+			for _, reminderRaw := range reminders {
+				if reminder, ok := reminderRaw.(map[string]interface{}); ok {
+					minutesBefore, ok := reminder["minutesBefore"].(float64)
+					if ok && minutesBefore >= 0 {
+						// Convert minutes to duration format (e.g., PT15M)
+						buf.WriteString("BEGIN:VALARM\r\n")
+						buf.WriteString("ACTION:DISPLAY\r\n")
+						buf.WriteString(fmt.Sprintf("TRIGGER:-PT%dM\r\n", int(minutesBefore)))
+						buf.WriteString("END:VALARM\r\n")
+					}
+				}
+			}
+		}
+	}
 
 	// ICS file footer
 	buf.WriteString("END:VEVENT\r\n")

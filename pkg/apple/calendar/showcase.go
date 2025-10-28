@@ -82,4 +82,67 @@ var ShowcaseExamples = []ShowcaseExample{
 			"description": "Remember to wish John a happy birthday!",
 		},
 	},
+	{
+		Name:        "🎯 Meeting with Attendees",
+		Description: "Demonstrates inviting people (ATTENDEE fields)",
+		Data: map[string]interface{}{
+			"title":       "Product Planning Meeting",
+			"start":       "2025-11-22T14:00",
+			"end":         "2025-11-22T15:30",
+			"location":    "Conference Room B",
+			"description": "Quarterly product roadmap discussion",
+			"attendees": []interface{}{
+				map[string]interface{}{
+					"email":    "alice@example.com",
+					"name":     "Alice Johnson",
+					"required": true,
+				},
+				map[string]interface{}{
+					"email":    "bob@example.com",
+					"name":     "Bob Smith",
+					"required": true,
+				},
+				map[string]interface{}{
+					"email":    "carol@example.com",
+					"name":     "Carol White",
+					"required": false,
+				},
+			},
+		},
+	},
+	{
+		Name:        "🔄 Recurring Weekly Standup",
+		Description: "Demonstrates recurrence (RRULE)",
+		Data: map[string]interface{}{
+			"title":       "Weekly Team Standup",
+			"start":       "2025-11-18T09:00",
+			"end":         "2025-11-18T09:30",
+			"location":    "Zoom",
+			"description": "Brief sync to align on priorities",
+			"recurrence": map[string]interface{}{
+				"frequency": "WEEKLY",
+				"interval":  float64(1),
+				"count":     float64(12), // 12 weeks
+			},
+		},
+	},
+	{
+		Name:        "🔔 Event with Reminders",
+		Description: "Demonstrates alerts (VALARM)",
+		Data: map[string]interface{}{
+			"title":       "Important Client Call",
+			"start":       "2025-11-25T11:00",
+			"end":         "2025-11-25T12:00",
+			"location":    "Conference Call",
+			"description": "Critical discussion about contract renewal",
+			"reminders": []interface{}{
+				map[string]interface{}{
+					"minutesBefore": float64(15),
+				},
+				map[string]interface{}{
+					"minutesBefore": float64(60),
+				},
+			},
+		},
+	},
 }

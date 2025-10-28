@@ -207,6 +207,101 @@
             min-height: 80px;
         }
 
+        /* Array and object input styles */
+        .array-input {
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            background: #fafafa;
+        }
+
+        .array-items {
+            margin-bottom: 15px;
+        }
+
+        .array-item {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            padding: 12px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+
+        .array-item-content {
+            flex: 1;
+        }
+
+        .array-item input,
+        .array-item select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .array-item .form-group {
+            margin-bottom: 10px;
+        }
+
+        .array-item .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .array-item label {
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .btn-add-array-item {
+            background: #4299e1;
+            color: white;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+        }
+
+        .btn-add-array-item:hover {
+            background: #3182ce;
+        }
+
+        .btn-remove-array-item {
+            background: #f56565;
+            color: white;
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .btn-remove-array-item:hover {
+            background: #e53e3e;
+        }
+
+        .object-input {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            background: #fafafa;
+        }
+
+        .object-input .form-group {
+            margin-bottom: 12px;
+        }
+
+        .object-input .form-group:last-child {
+            margin-bottom: 0;
+        }
+
         button, .btn {
             padding: 14px 28px;
             border-radius: 8px;
@@ -418,6 +513,40 @@
                 });
             });
         });
+
+        // Array input management functions
+        let arrayIndexes = {};
+
+        function addArrayItem(fieldName) {
+            // Initialize index counter for this field
+            if (!arrayIndexes[fieldName]) {
+                arrayIndexes[fieldName] = 0;
+            }
+
+            const index = arrayIndexes[fieldName]++;
+            const container = document.getElementById(fieldName + '-items');
+            const template = document.getElementById(fieldName + '-template');
+
+            if (!container || !template) return;
+
+            // Clone template and replace {index} placeholder
+            let html = template.innerHTML;
+            html = html.replace(/\{index\}/g, index);
+
+            // Create a temporary div to parse HTML
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+
+            // Append to container
+            container.appendChild(temp.firstElementChild);
+        }
+
+        function removeArrayItem(button) {
+            const arrayItem = button.closest('.array-item');
+            if (arrayItem) {
+                arrayItem.remove();
+            }
+        }
     </script>
 </body>
 </html>

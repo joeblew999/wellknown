@@ -21,36 +21,34 @@ type GCPSetupStatus struct {
 	EnvPath      string `json:"env_path"`
 }
 
-var gcpSetupStatus GCPSetupStatus
-
-// RegisterGCPSetupRoutes registers all GCP setup routes with the given mux
-func RegisterGCPSetupRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/tools/gcp-setup", handleGCPSetup)
-	mux.HandleFunc("/api/gcp-setup/status", handleGCPSetupStatus)
-	mux.HandleFunc("/api/gcp-setup/save-project", handleGCPSaveProject)
-	mux.HandleFunc("/api/gcp-setup/save-creds", handleGCPSaveCreds)
-	mux.HandleFunc("/api/gcp-setup/reset", handleGCPReset)
+// registerGCPSetupRoutes registers all GCP setup routes
+func (s *Server) registerGCPSetupRoutes() {
+	s.mux.HandleFunc("/tools/gcp-setup", s.handleGCPSetup)
+	s.mux.HandleFunc("/api/gcp-setup/status", s.handleGCPSetupStatus)
+	s.mux.HandleFunc("/api/gcp-setup/save-project", s.handleGCPSaveProject)
+	s.mux.HandleFunc("/api/gcp-setup/save-creds", s.handleGCPSaveCreds)
+	s.mux.HandleFunc("/api/gcp-setup/reset", s.handleGCPReset)
 }
 
 // handleGCPSetup renders the GCP setup page
-func handleGCPSetup(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleGCPSetup(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request: GET %s", r.URL.Path)
 
 	// Load current status from .env
-	loadGCPEnvStatus()
+	s.loadGCPEnvStatus()
 
-	log.Printf("GCP Status loaded: ProjectID=%s, EnvPath=%s", gcpSetupStatus.ProjectID, gcpSetupStatus.EnvPath)
+	log.Printf("GCP Status loaded: ProjectID=%s, EnvPath=%s", s.gcpSetupStatus.ProjectID, s.gcpSetupStatus.EnvPath)
 
 	// Render template using base template with navigation
-	err := Templates.ExecuteTemplate(w, "base", PageData{
+	err := s.templates.ExecuteTemplate(w, "base", PageData{
 		Platform:     "tools",
 		AppType:      "gcp-setup",
 		CurrentPage:  "gcp-setup",
 		TemplateName: "gcp_tool",
-		GCPStatus:    gcpSetupStatus,
-		LocalURL:     LocalURL,
-		MobileURL:    MobileURL,
-		Navigation:   GetNavigation(r.URL.Path),
+		GCPStatus:    s.gcpSetupStatus,
+		LocalURL:     s.LocalURL,
+		MobileURL:    s.MobileURL,
+		Navigation:   s.registry.GetNavigation(r.URL.Path),
 	})
 	if err != nil {
 		log.Printf("Template execution error: %v", err)
@@ -59,19 +57,19 @@ func handleGCPSetup(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleGCPSetupStatus returns current setup status as JSON
-func handleGCPSetupStatus(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleGCPSetupStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	loadGCPEnvStatus()
+	s.loadGCPEnvStatus()
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(gcpSetupStatus)
+	json.NewEncoder(w).Encode(s.gcpSetupStatus)
 }
 
 // handleGCPSaveProject saves project ID and name
-func handleGCPSaveProject(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleGCPSaveProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -88,11 +86,11 @@ func handleGCPSaveProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update status
-	gcpSetupStatus.ProjectID = req.ProjectID
-	gcpSetupStatus.ProjectDone = true
+	s.gcpSetupStatus.ProjectID = req.ProjectID
+	s.gcpSetupStatus.ProjectDone = true
 
 	// Save to .env
-	if err := saveGCPEnvFile(); err != nil {
+	if err := s.saveGCPEnvFile(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -102,7 +100,7 @@ func handleGCPSaveProject(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleGCPSaveCreds saves OAuth credentials
-func handleGCPSaveCreds(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleGCPSaveCreds(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -119,12 +117,12 @@ func handleGCPSaveCreds(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update status
-	gcpSetupStatus.ClientID = req.ClientID
-	gcpSetupStatus.ClientSecret = req.ClientSecret
-	gcpSetupStatus.CredsDone = true
+	s.gcpSetupStatus.ClientID = req.ClientID
+	s.gcpSetupStatus.ClientSecret = req.ClientSecret
+	s.gcpSetupStatus.CredsDone = true
 
 	// Save to .env
-	if err := saveGCPEnvFile(); err != nil {
+	if err := s.saveGCPEnvFile(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -134,7 +132,7 @@ func handleGCPSaveCreds(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleGCPReset resets the setup (deletes .env file)
-func handleGCPReset(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleGCPReset(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -147,7 +145,7 @@ func handleGCPReset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reset status
-	gcpSetupStatus = GCPSetupStatus{EnvPath: envPath}
+	s.gcpSetupStatus = GCPSetupStatus{EnvPath: envPath}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
@@ -181,40 +179,40 @@ func getGCPEnvPath() string {
 }
 
 // loadGCPEnvStatus loads status from .env file using EnvManager
-func loadGCPEnvStatus() {
+func (s *Server) loadGCPEnvStatus() {
 	em, err := NewEnvManager()
 	if err != nil {
 		log.Printf("Warning: Could not create EnvManager: %v", err)
 		return
 	}
 
-	gcpSetupStatus.EnvPath = em.GetFilePath()
+	s.gcpSetupStatus.EnvPath = em.GetFilePath()
 
 	// Get GCP section variables
 	vars := em.GetSection("Google Cloud Platform (GCP)")
 	log.Printf("DEBUG: EnvManager returned %d variables for GCP section: %+v", len(vars), vars)
 
 	if projectID, ok := vars["GCP_PROJECT_ID"]; ok && projectID != "" {
-		gcpSetupStatus.ProjectID = projectID
-		gcpSetupStatus.ProjectDone = true
+		s.gcpSetupStatus.ProjectID = projectID
+		s.gcpSetupStatus.ProjectDone = true
 		log.Printf("DEBUG: Found GCP_PROJECT_ID=%s", projectID)
 	} else {
 		log.Printf("DEBUG: GCP_PROJECT_ID not found or empty. ok=%v", ok)
 	}
 
 	if clientID, ok := vars["GOOGLE_CLIENT_ID"]; ok {
-		gcpSetupStatus.ClientID = clientID
+		s.gcpSetupStatus.ClientID = clientID
 	}
 
 	if clientSecret, ok := vars["GOOGLE_CLIENT_SECRET"]; ok {
-		gcpSetupStatus.ClientSecret = clientSecret
-		gcpSetupStatus.CredsDone = (gcpSetupStatus.ClientID != "" && clientSecret != "")
+		s.gcpSetupStatus.ClientSecret = clientSecret
+		s.gcpSetupStatus.CredsDone = (s.gcpSetupStatus.ClientID != "" && clientSecret != "")
 	}
 }
 
 // saveGCPEnvFile saves the current status to .env file using EnvManager
 // Only updates the GCP section, leaves other sections (Cloudflare, Fly.io) untouched
-func saveGCPEnvFile() error {
+func (s *Server) saveGCPEnvFile() error {
 	em, err := NewEnvManager()
 	if err != nil {
 		return fmt.Errorf("failed to create EnvManager: %w", err)
@@ -222,10 +220,10 @@ func saveGCPEnvFile() error {
 
 	// Build GCP variables map
 	gcpVars := map[string]string{
-		"GCP_PROJECT_ID":          gcpSetupStatus.ProjectID,
-		"GOOGLE_CLIENT_ID":        gcpSetupStatus.ClientID,
-		"GOOGLE_CLIENT_SECRET":    gcpSetupStatus.ClientSecret,
-		"GOOGLE_REDIRECT_URL":     "http://localhost:8090/auth/google/callback",
+		"GCP_PROJECT_ID":       s.gcpSetupStatus.ProjectID,
+		"GOOGLE_CLIENT_ID":     s.gcpSetupStatus.ClientID,
+		"GOOGLE_CLIENT_SECRET": s.gcpSetupStatus.ClientSecret,
+		"GOOGLE_REDIRECT_URL":  "http://localhost:8090/auth/google/callback",
 	}
 
 	// Update only the GCP section

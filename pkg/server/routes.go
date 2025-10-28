@@ -1,27 +1,106 @@
 package server
 
-import "net/http"
+import (
+	"net/http"
 
-// RegisterRoutes registers all HTTP routes with the given mux.
-// This is exported for testing and can be used with custom mux implementations.
-// Each feature registers its own routes via self-registration functions.
-func RegisterRoutes(mux *http.ServeMux) {
-	// Calendar services
-	RegisterGoogleCalendarRoutes(mux)
-	RegisterAppleCalendarRoutes(mux)
+	applecalendar "github.com/joeblew999/wellknown/pkg/apple/calendar"
+	googlecalendar "github.com/joeblew999/wellknown/pkg/google/calendar"
+)
+
+// registerAllRoutes registers all HTTP routes with the server's mux and registry
+// This is called during Server.New() initialization
+func (s *Server) registerAllRoutes() {
+	// Create handler context for all handlers
+	hc := s.newHandlerContext()
+
+	// Register calendar services
+	s.registerCalendarServices(hc)
 
 	// Maps services (stubs for now)
-	RegisterMapsRoutes(mux)
+	s.registerMapsRoutes()
 
 	// Tools
-	RegisterGCPSetupRoutes(mux)
+	s.registerGCPSetupRoutes()
 
 	// Homepage - shows all available services
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			Home(w, r)
+			s.handleHome(w, r)
 			return
 		}
 		http.NotFound(w, r)
 	})
+}
+
+// registerCalendarServices registers all calendar services
+func (s *Server) registerCalendarServices(hc *HandlerContext) {
+	// Define all calendar services in ONE place
+	services := []struct {
+		Platform     string
+		AppType      string
+		Title        string
+		SuccessLabel string
+		GenerateURL  CalendarURLGenerator
+		ExtraRoutes  map[string]http.HandlerFunc
+	}{
+		{
+			Platform:     "google",
+			AppType:      "calendar",
+			Title:        "Google Calendar",
+			SuccessLabel: "URL",
+			GenerateURL:  googlecalendar.GenerateURL,
+			ExtraRoutes:  nil,
+		},
+		{
+			Platform:     "apple",
+			AppType:      "calendar",
+			Title:        "Apple Calendar",
+			SuccessLabel: "Download Link",
+			GenerateURL:  applecalendar.GenerateDownloadURL,
+			ExtraRoutes: map[string]http.HandlerFunc{
+				"/apple/calendar/download": s.handleAppleCalendarDownload,
+			},
+		},
+	}
+
+	for _, svc := range services {
+		// Create calendar handler with server context
+		handler := s.makeGenericCalendarHandler(hc, CalendarConfig{
+			Platform:     svc.Platform,
+			AppType:      svc.AppType,
+			SuccessLabel: svc.SuccessLabel,
+			GenerateURL:  svc.GenerateURL,
+		})
+
+		// Create showcase handler with server context
+		var showcaseExamples interface{}
+		if svc.Platform == "google" {
+			showcaseExamples = googlecalendar.ShowcaseExamples
+		} else {
+			showcaseExamples = applecalendar.ShowcaseExamples
+		}
+		showcaseHandler := s.makeShowcaseHandler(hc, svc.Platform, svc.AppType, showcaseExamples)
+
+		// Register main handler
+		mainPath := "/" + svc.Platform + "/" + svc.AppType
+		s.mux.HandleFunc(mainPath, handler)
+
+		// Register showcase handler
+		showcasePath := mainPath + "/showcase"
+		s.mux.HandleFunc(showcasePath, showcaseHandler)
+
+		// Register extra routes (if any)
+		for path, extraHandler := range svc.ExtraRoutes {
+			s.mux.HandleFunc(path, extraHandler)
+		}
+
+		// Register for navigation
+		s.registry.Register(ServiceConfig{
+			Platform:    svc.Platform,
+			AppType:     svc.AppType,
+			Title:       svc.Title,
+			HasCustom:   true,
+			HasShowcase: true,
+		})
+	}
 }

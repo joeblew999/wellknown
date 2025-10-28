@@ -53,37 +53,30 @@
     },
     {
       "type": "Label",
-      "text": "🔔 Advanced Features"
+      "text": "👥 Attendees"
     },
     {
-      "type": "Group",
-      "title": "Attendees (Coming Soon)",
-      "elements": [
-        {
-          "type": "Control",
-          "scope": "#/properties/attendees"
-        }
-      ]
+      "type": "Control",
+      "scope": "#/properties/attendees",
+      "label": "Invite People"
     },
     {
-      "type": "Group",
-      "title": "Recurrence (Coming Soon)",
-      "elements": [
-        {
-          "type": "Control",
-          "scope": "#/properties/recurrence"
-        }
-      ]
+      "type": "Label",
+      "text": "🔄 Recurrence"
     },
     {
-      "type": "Group",
-      "title": "Reminders (Coming Soon)",
-      "elements": [
-        {
-          "type": "Control",
-          "scope": "#/properties/reminders"
-        }
-      ]
+      "type": "Control",
+      "scope": "#/properties/recurrence",
+      "label": "Repeat Settings"
+    },
+    {
+      "type": "Label",
+      "text": "🔔 Reminders"
+    },
+    {
+      "type": "Control",
+      "scope": "#/properties/reminders",
+      "label": "Alert Notifications"
     }
   ]
 }

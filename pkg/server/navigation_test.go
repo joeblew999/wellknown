@@ -8,40 +8,24 @@ import (
 	"testing"
 )
 
-// setupTestServer initializes templates and registers routes for testing
-func setupTestServer() (*http.ServeMux, error) {
-	// Initialize templates if not already done
-	if Templates == nil {
-		_, err := initTemplates()
-		if err != nil {
-			return nil, err
-		}
+// setupTestServer creates a Server instance for testing
+func setupTestServer(t *testing.T) *Server {
+	t.Helper()
+
+	srv, err := New("8080")
+	if err != nil {
+		t.Fatalf("Failed to create test server: %v", err)
 	}
 
-	// Set URLs for handlers
-	LocalURL = "http://localhost:8080"
-	MobileURL = "http://localhost:8080"
-
-	// Create a fresh mux for testing
-	mux := http.NewServeMux()
-
-	// Clear registered services to avoid duplication
-	ClearRegisteredServices()
-
-	// Register routes on our test mux
-	RegisterRoutes(mux)
-
-	return mux, nil
+	return srv
 }
 
 // TestNavigationLinksAreValid ensures all links in navigation point to registered routes.
 // This prevents dead links after route deletions (see PREVENTION.md Issue 1).
 func TestNavigationLinksAreValid(t *testing.T) {
-	// Create test server with templates initialized
-	mux, err := setupTestServer()
-	if err != nil {
-		t.Fatalf("Failed to setup test server: %v", err)
-	}
+	// Create test server
+	srv := setupTestServer(t)
+	mux := srv.GetMux()
 
 	// Get home page to extract navigation links
 	req := httptest.NewRequest("GET", "/google/calendar", nil)
@@ -96,7 +80,7 @@ func TestNavigationLinksAreValid(t *testing.T) {
 
 	if len(deadLinks) > 0 {
 		t.Errorf("Found %d dead navigation links: %v", len(deadLinks), deadLinks)
-		t.Error("Fix: Update navigation in templates/base.html or register missing routes in server.go")
+		t.Error("Fix: Update navigation in templates/base.html or register missing routes in routes.go")
 	}
 
 	t.Logf("✅ Validated %d unique navigation links - all working", len(tested))
@@ -105,11 +89,9 @@ func TestNavigationLinksAreValid(t *testing.T) {
 // TestAllRegisteredRoutesWork ensures all registered routes return valid responses.
 // This is the inverse test - ensures registered routes actually work.
 func TestAllRegisteredRoutesWork(t *testing.T) {
-	// Create test server with templates initialized
-	mux, err := setupTestServer()
-	if err != nil {
-		t.Fatalf("Failed to setup test server: %v", err)
-	}
+	// Create test server
+	srv := setupTestServer(t)
+	mux := srv.GetMux()
 
 	// List of all routes that should be registered
 	routes := []string{

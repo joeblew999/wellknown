@@ -28,10 +28,31 @@
         {{end}}
     </div>
 
-    {{/* Generate URL using form action - showcase doesn't have ExpectedURL */}}
+    {{/* Generate URL using form action - properly encode arrays and objects */}}
     <form method="POST" action="/{{$.Platform}}/{{$.AppType}}" target="_blank" style="margin-top: 10px;">
         {{range $key, $value := $case.Data}}
-        <input type="hidden" name="{{$key}}" value="{{$value}}">
+            {{if eq (printf "%T" $value) "[]interface {}"}}
+                {{/* Array: encode each item */}}
+                {{range $index, $item := $value}}
+                    {{if eq (printf "%T" $item) "map[string]interface {}"}}
+                        {{/* Array of objects */}}
+                        {{range $subkey, $subvalue := $item}}
+                            <input type="hidden" name="{{$key}}[{{$index}}].{{$subkey}}" value="{{$subvalue}}">
+                        {{end}}
+                    {{else}}
+                        {{/* Array of primitives */}}
+                        <input type="hidden" name="{{$key}}[{{$index}}]" value="{{$item}}">
+                    {{end}}
+                {{end}}
+            {{else if eq (printf "%T" $value) "map[string]interface {}"}}
+                {{/* Nested object */}}
+                {{range $subkey, $subvalue := $value}}
+                    <input type="hidden" name="{{$key}}.{{$subkey}}" value="{{$subvalue}}">
+                {{end}}
+            {{else}}
+                {{/* Simple value */}}
+                <input type="hidden" name="{{$key}}" value="{{$value}}">
+            {{end}}
         {{end}}
         <div class="actions">
             <button type="submit" class="btn-open">Generate & Open</button>

@@ -2,11 +2,13 @@ package schema
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
@@ -131,67 +133,8 @@ func (v *ValidatorV6) ValidateWithContext(ctx context.Context, data map[string]i
 	return errors
 }
 
-// ==================== BACKWARDS COMPATIBILITY ====================
-// These functions maintain compatibility with existing server code that
-// uses the old custom validator. Eventually, the server should be refactored
-// to use ValidatorV6 directly instead of these legacy functions.
-
-// ValidateAgainstSchema validates form data against a JSON Schema
-// This is a backwards-compatible shim for existing server code.
-//
-// DEPRECATED: New code should use ValidatorV6 directly.
-func ValidateAgainstSchema(data map[string]interface{}, customSchema *JSONSchema) ValidationErrors {
-	// Convert the custom JSONSchema struct to actual JSON
-	schemaBytes, err := json.Marshal(customSchema)
-	if err != nil {
-		return ValidationErrors{
-			"_error": fmt.Sprintf("Failed to marshal schema: %v", err),
-		}
-	}
-
-	// Create a new compiler and compile the schema
-	compiler := jsonschema.NewCompiler()
-
-	// Unmarshal the schema JSON into interface{} for the compiler
-	var schemaDoc interface{}
-	if err := json.Unmarshal(schemaBytes, &schemaDoc); err != nil {
-		return ValidationErrors{
-			"_error": fmt.Sprintf("Failed to unmarshal schema: %v", err),
-		}
-	}
-
-	// Add the schema to compiler using the correct method
-	if err := compiler.AddResource("schema.json", schemaDoc); err != nil {
-		return ValidationErrors{
-			"_error": fmt.Sprintf("Failed to add schema resource: %v", err),
-		}
-	}
-
-	// Compile the schema
-	schema, err := compiler.Compile("schema.json")
-	if err != nil {
-		return ValidationErrors{
-			"_error": fmt.Sprintf("Failed to compile schema: %v", err),
-		}
-	}
-
-	// Validate the data
-	validationErr := schema.Validate(data)
-	if validationErr == nil {
-		return ValidationErrors{} // No errors
-	}
-
-	// Convert validation errors
-	if valErr, ok := validationErr.(*jsonschema.ValidationError); ok {
-		return convertValidationErrorV6(valErr)
-	}
-
-	return ValidationErrors{
-		"_error": validationErr.Error(),
-	}
-}
-
 // FormDataToMap converts HTML form data to a map suitable for validation
+// Supports arrays (field[0]), nested objects (field.subfield), and array of objects (field[0].subfield)
 func FormDataToMap(formData map[string][]string) map[string]interface{} {
 	result := make(map[string]interface{})
 
@@ -200,28 +143,90 @@ func FormDataToMap(formData map[string][]string) map[string]interface{} {
 			continue
 		}
 
-		value := values[0] // Take first value for now
+		value := values[0] // Take first value
 
-		// Type coercion: HTML forms send everything as strings, but JSON Schema expects types
-		var typedValue interface{} = value
+		// Type coercion: HTML forms send everything as strings
+		typedValue := coerceType(value)
 
-		// Convert boolean strings to actual booleans
-		if value == "true" {
-			typedValue = true
-		} else if value == "false" {
-			typedValue = false
-		}
-
-		// Handle nested objects with dot notation (e.g., "organizer.name")
-		if strings.Contains(key, ".") {
-			parts := strings.Split(key, ".")
-			setNestedValue(result, parts, typedValue)
-		} else {
-			result[key] = typedValue
-		}
+		// Parse the key to handle arrays and nested objects
+		setValueByPath(result, key, typedValue)
 	}
 
 	return result
+}
+
+// coerceType converts string values to appropriate types
+func coerceType(value string) interface{} {
+	// Convert boolean strings
+	if value == "true" {
+		return true
+	} else if value == "false" {
+		return false
+	}
+
+	// Try to convert to number - always return float64 like JSON unmarshaling does
+	if num, err := strconv.ParseFloat(value, 64); err == nil {
+		return num
+	}
+
+	// Return as string
+	return value
+}
+
+// setValueByPath sets a value in a nested structure based on a path
+// Supports: "field", "field.nested", "field[0]", "field[0].nested"
+func setValueByPath(m map[string]interface{}, path string, value interface{}) {
+	// Check for array notation: field[index] or field[index].nested
+	arrayRegex := regexp.MustCompile(`^([^\[]+)\[(\d+)\](.*)$`)
+	if matches := arrayRegex.FindStringSubmatch(path); matches != nil {
+		fieldName := matches[1]
+		index, _ := strconv.Atoi(matches[2])
+		remainder := strings.TrimPrefix(matches[3], ".")
+
+		// Ensure the field is an array
+		if _, exists := m[fieldName]; !exists {
+			m[fieldName] = make([]interface{}, 0)
+		}
+
+		arr, ok := m[fieldName].([]interface{})
+		if !ok {
+			arr = make([]interface{}, 0)
+		}
+
+		// Expand array if necessary
+		for len(arr) <= index {
+			arr = append(arr, nil)
+		}
+
+		if remainder == "" {
+			// Simple array element: field[0]
+			arr[index] = value
+		} else {
+			// Array of objects: field[0].nested
+			if arr[index] == nil {
+				arr[index] = make(map[string]interface{})
+			}
+			obj, ok := arr[index].(map[string]interface{})
+			if !ok {
+				obj = make(map[string]interface{})
+				arr[index] = obj
+			}
+			setValueByPath(obj, remainder, value)
+		}
+
+		m[fieldName] = arr
+		return
+	}
+
+	// Check for dot notation: field.nested
+	if strings.Contains(path, ".") {
+		parts := strings.Split(path, ".")
+		setNestedValue(m, parts, value)
+		return
+	}
+
+	// Simple field
+	m[path] = value
 }
 
 // setNestedValue sets a value in a nested map using a path
@@ -244,4 +249,90 @@ func setNestedValue(m map[string]interface{}, path []string, value interface{}) 
 	}
 
 	setNestedValue(nested, path[1:], value)
+}
+
+// ============================================================================
+// Schema Loading and Caching
+// ============================================================================
+
+// uiSchemaCache caches loaded UI schemas (JSON strings) in memory
+var uiSchemaCache = struct {
+	sync.RWMutex
+	schemas map[string]string
+}{
+	schemas: make(map[string]string),
+}
+
+// LoadUISchemaFromFile loads a UI Schema JSON file with caching
+func LoadUISchemaFromFile(platform, appType string) (string, error) {
+	// Create cache key
+	cacheKey := fmt.Sprintf("%s/%s/uischema", platform, appType)
+
+	// Check cache first (read lock)
+	uiSchemaCache.RLock()
+	if cached, exists := uiSchemaCache.schemas[cacheKey]; exists {
+		uiSchemaCache.RUnlock()
+		return cached, nil
+	}
+	uiSchemaCache.RUnlock()
+
+	// Not in cache, load from file (write lock)
+	uiSchemaCache.Lock()
+	defer uiSchemaCache.Unlock()
+
+	// Double-check cache (another goroutine might have loaded it)
+	if cached, exists := uiSchemaCache.schemas[cacheKey]; exists {
+		return cached, nil
+	}
+
+	// Try relative path from project root first
+	path := fmt.Sprintf("pkg/%s/%s/uischema.json", platform, appType)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		// If that fails, try from cmd/server/ directory (Air case)
+		path = fmt.Sprintf("../../pkg/%s/%s/uischema.json", platform, appType)
+		content, err = os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("failed to read UI schema file: %w", err)
+		}
+	}
+
+	// Store in cache
+	uiSchemaStr := string(content)
+	uiSchemaCache.schemas[cacheKey] = uiSchemaStr
+
+	return uiSchemaStr, nil
+}
+
+// LoadSchemasForRendering loads everything needed for form rendering and validation
+// Returns: (uiSchemaJSON, compiledSchema, validator, error)
+// This is the SINGLE function that should be called to get schemas for a platform/appType
+func LoadSchemasForRendering(platform, appType string) (string, *jsonschema.Schema, *ValidatorV6, error) {
+	// Load UI Schema JSON (cached)
+	uiSchemaJSON, err := LoadUISchemaFromFile(platform, appType)
+	if err != nil {
+		return "", nil, nil, fmt.Errorf("failed to load UI schema: %w", err)
+	}
+
+	// Create validator and load compiled schema (cached internally by validator)
+	validator := NewValidatorV6()
+
+	// Try multiple paths (project root, then from cmd/server, then from pkg/server for tests)
+	schemaPaths := []string{
+		fmt.Sprintf("pkg/%s/%s/schema.json", platform, appType),           // From project root
+		fmt.Sprintf("../../pkg/%s/%s/schema.json", platform, appType),     // From cmd/server
+		fmt.Sprintf("../%s/%s/schema.json", platform, appType),            // From pkg/server (tests)
+	}
+
+	var compiledSchema *jsonschema.Schema
+	var lastErr error
+	for _, schemaPath := range schemaPaths {
+		compiledSchema, err = validator.LoadSchemaFromFile(schemaPath)
+		if err == nil {
+			return uiSchemaJSON, compiledSchema, validator, nil
+		}
+		lastErr = err
+	}
+
+	return "", nil, nil, fmt.Errorf("failed to compile schema (tried %d paths): %w", len(schemaPaths), lastErr)
 }

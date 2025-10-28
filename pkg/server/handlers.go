@@ -6,13 +6,6 @@ import (
 	"github.com/joeblew999/wellknown/pkg/schema"
 )
 
-// Package-level variables for templates and URLs
-var (
-	Templates *template.Template
-	LocalURL  string
-	MobileURL string
-)
-
 // NavLink represents a single navigation link
 type NavLink struct {
 	Label    string

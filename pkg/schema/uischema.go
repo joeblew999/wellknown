@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
+
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 // UISchema represents the UI layout configuration for a form
@@ -53,12 +55,12 @@ func ParseUISchema(uiSchemaJSON string) (*UISchema, error) {
 }
 
 // GenerateFormHTML generates HTML from UI Schema and JSON Schema
-func (u *UISchema) GenerateFormHTML(jsonSchema *JSONSchema) template.HTML {
+func (u *UISchema) GenerateFormHTML(jsonSchema *jsonschema.Schema) template.HTML {
 	return u.GenerateFormHTMLWithData(jsonSchema, nil, nil)
 }
 
 // GenerateFormHTMLWithData generates HTML with validation errors and pre-filled data
-func (u *UISchema) GenerateFormHTMLWithData(jsonSchema *JSONSchema, formData map[string]interface{}, validationErrors ValidationErrors) template.HTML {
+func (u *UISchema) GenerateFormHTMLWithData(jsonSchema *jsonschema.Schema, formData map[string]interface{}, validationErrors ValidationErrors) template.HTML {
 	var html strings.Builder
 	html.WriteString(`<div class="ui-schema-form">` + "\n")
 	u.renderElementWithData(Element{Type: u.Type, Elements: u.Elements}, jsonSchema, formData, validationErrors, &html, 0)
@@ -66,13 +68,8 @@ func (u *UISchema) GenerateFormHTMLWithData(jsonSchema *JSONSchema, formData map
 	return template.HTML(html.String())
 }
 
-// renderElement renders a single UI element (backward compatibility - no validation)
-func (u *UISchema) renderElement(elem Element, jsonSchema *JSONSchema, html *strings.Builder, depth int) {
-	u.renderElementWithData(elem, jsonSchema, nil, nil, html, depth)
-}
-
 // renderElementWithData renders a single UI element with validation errors and form data
-func (u *UISchema) renderElementWithData(elem Element, jsonSchema *JSONSchema, formData map[string]interface{}, validationErrors ValidationErrors, html *strings.Builder, depth int) {
+func (u *UISchema) renderElementWithData(elem Element, jsonSchema *jsonschema.Schema, formData map[string]interface{}, validationErrors ValidationErrors, html *strings.Builder, depth int) {
 	indent := strings.Repeat("  ", depth)
 
 	switch elem.Type {
@@ -115,13 +112,8 @@ func (u *UISchema) renderElementWithData(elem Element, jsonSchema *JSONSchema, f
 	}
 }
 
-// renderControl renders a form control based on schema (backward compatibility)
-func (u *UISchema) renderControl(elem Element, jsonSchema *JSONSchema, html *strings.Builder, depth int) {
-	u.renderControlWithData(elem, jsonSchema, nil, nil, html, depth)
-}
-
 // renderControlWithData renders a form control with validation errors and form data
-func (u *UISchema) renderControlWithData(elem Element, jsonSchema *JSONSchema, formData map[string]interface{}, validationErrors ValidationErrors, html *strings.Builder, depth int) {
+func (u *UISchema) renderControlWithData(elem Element, jsonSchema *jsonschema.Schema, formData map[string]interface{}, validationErrors ValidationErrors, html *strings.Builder, depth int) {
 	indent := strings.Repeat("  ", depth)
 
 	// Parse scope to get field name (e.g., "#/properties/title" -> "title")
@@ -198,92 +190,90 @@ func (u *UISchema) renderControlWithData(elem Element, jsonSchema *JSONSchema, f
 
 	// Render validation error
 	if fieldError != "" {
-		html.WriteString(indent + `  <div class="field-error">` + fieldError + `</div>` + "\n")
+		html.WriteString(indent + `  <span class="field-error">` + fieldError + `</span>` + "\n")
 	}
 
 	// End form group
 	html.WriteString(indent + "</div>\n")
 }
 
-// renderInput renders the actual input element (backward compatibility)
-func (u *UISchema) renderInput(elem Element, fieldName string, prop Property, required bool, html *strings.Builder, indent string) {
-	u.renderInputWithData(elem, fieldName, prop, required, "", html, indent)
+// parseScopeToFieldName extracts field name from JSON pointer scope
+func (u *UISchema) parseScopeToFieldName(scope string) string {
+	// Scope format: "#/properties/fieldName"
+	parts := strings.Split(scope, "/")
+	if len(parts) >= 3 && parts[1] == "properties" {
+		return parts[2]
+	}
+	return ""
 }
 
-// renderInputWithData renders the actual input element with pre-filled value
-func (u *UISchema) renderInputWithData(elem Element, fieldName string, prop Property, required bool, fieldValue string, html *strings.Builder, indent string) {
+// renderInputWithData renders an input field based on schema type with form data
+func (u *UISchema) renderInputWithData(elem Element, fieldName string, prop *jsonschema.Schema, required bool, fieldValue string, html *strings.Builder, indent string) {
 	requiredAttr := ""
 	if required {
 		requiredAttr = " required"
 	}
 
+	// Get placeholder from UI Schema options or schema examples
 	placeholder := ""
 	if elem.Options != nil && elem.Options.Placeholder != "" {
 		placeholder = fmt.Sprintf(` placeholder="%s"`, elem.Options.Placeholder)
 	} else if len(prop.Examples) > 0 {
-		placeholder = fmt.Sprintf(` placeholder="%s"`, prop.Examples[0])
+		placeholder = fmt.Sprintf(` placeholder="%v"`, prop.Examples[0])
 	}
 
-	// Determine format (UI Schema overrides JSON Schema)
-	format := prop.Format
+	// Get format from UI Schema options or schema
+	format := ""
 	if elem.Options != nil && elem.Options.Format != "" {
 		format = elem.Options.Format
+	} else if prop.Format != nil {
+		format = prop.Format.Name
 	}
 
-	switch prop.Type {
+	// Determine type (from jsonschema Types field)
+	propType := u.getSchemaType(prop)
+
+	// Pre-filled value
+	valueAttr := ""
+	if fieldValue != "" {
+		valueAttr = fmt.Sprintf(` value="%s"`, fieldValue)
+	}
+
+	switch propType {
 	case "string":
-		switch format {
-		case "datetime-local":
-			valueAttr := ""
-			if fieldValue != "" {
-				valueAttr = fmt.Sprintf(` value="%s"`, fieldValue)
-			}
-			html.WriteString(indent + `  <input type="datetime-local" id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + valueAttr + `>` + "\n")
-		case "date":
-			valueAttr := ""
-			if fieldValue != "" {
-				valueAttr = fmt.Sprintf(` value="%s"`, fieldValue)
-			}
-			html.WriteString(indent + `  <input type="date" id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + valueAttr + `>` + "\n")
-		case "email":
-			valueAttr := ""
-			if fieldValue != "" {
-				valueAttr = fmt.Sprintf(` value="%s"`, fieldValue)
-			}
-			html.WriteString(indent + `  <input type="email" id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + valueAttr + placeholder + `>` + "\n")
-		default:
-			// Check for enum (select dropdown)
-			if len(prop.Enum) > 0 {
-				html.WriteString(indent + `  <select id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + `>` + "\n")
-				html.WriteString(indent + `    <option value="">-- Select --</option>` + "\n")
-				for _, option := range prop.Enum {
-					html.WriteString(indent + `    <option value="` + option + `">` + option + `</option>` + "\n")
+		// Check for enum (dropdown)
+		if prop.Enum != nil && len(prop.Enum.Values) > 0 {
+			html.WriteString(indent + `  <select id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + `>` + "\n")
+			html.WriteString(indent + `    <option value="">-- Select --</option>` + "\n")
+			for _, option := range prop.Enum.Values {
+				selected := ""
+				if fmt.Sprintf("%v", option) == fieldValue {
+					selected = " selected"
 				}
-				html.WriteString(indent + `  </select>` + "\n")
-			} else if elem.Options != nil && elem.Options.Multi || prop.MaxLength > 200 {
-				// Textarea for multi-line or long text
-				maxlength := ""
-				if prop.MaxLength > 0 {
-					maxlength = fmt.Sprintf(` maxlength="%d"`, prop.MaxLength)
-				}
-				html.WriteString(indent + `  <textarea id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + maxlength + placeholder + `>` + fieldValue + `</textarea>` + "\n")
-			} else {
-				// Regular text input
-				maxlength := ""
-				if prop.MaxLength > 0 {
-					maxlength = fmt.Sprintf(` maxlength="%d"`, prop.MaxLength)
-				}
-				valueAttr := ""
-				if fieldValue != "" {
-					valueAttr = fmt.Sprintf(` value="%s"`, fieldValue)
-				}
-				html.WriteString(indent + `  <input type="text" id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + maxlength + valueAttr + placeholder + `>` + "\n")
+				html.WriteString(indent + fmt.Sprintf(`    <option value="%v"%s>%v</option>`, option, selected, option) + "\n")
 			}
+			html.WriteString(indent + `  </select>` + "\n")
+		} else if elem.Options != nil && elem.Options.Multi {
+			// Multi-line text
+			html.WriteString(indent + `  <textarea id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + placeholder + `>` + fieldValue + `</textarea>` + "\n")
+		} else {
+			// Single-line input with format-specific type
+			inputType := "text"
+			if format == "datetime-local" {
+				inputType = "datetime-local"
+			} else if format == "date" {
+				inputType = "date"
+			} else if format == "email" {
+				inputType = "email"
+			} else if format == "uri" || format == "url" {
+				inputType = "url"
+			}
+			html.WriteString(indent + `  <input type="` + inputType + `" id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + placeholder + valueAttr + `>` + "\n")
 		}
 
 	case "boolean":
 		checked := ""
-		if prop.Default != nil && prop.Default == true {
+		if fieldValue == "true" {
 			checked = " checked"
 		}
 		html.WriteString(indent + `  <input type="checkbox" id="` + fieldName + `" name="` + fieldName + `" value="true"` + checked + `>` + "\n")
@@ -291,47 +281,193 @@ func (u *UISchema) renderInputWithData(elem Element, fieldName string, prop Prop
 	case "integer", "number":
 		min := ""
 		max := ""
-		if prop.Minimum > 0 {
-			min = fmt.Sprintf(` min="%d"`, prop.Minimum)
+		if prop.Minimum != nil {
+			min = fmt.Sprintf(` min="%v"`, *prop.Minimum)
 		}
-		if prop.Maximum > 0 {
-			max = fmt.Sprintf(` max="%d"`, prop.Maximum)
-		}
-		valueAttr := ""
-		if fieldValue != "" {
-			valueAttr = fmt.Sprintf(` value="%s"`, fieldValue)
+		if prop.Maximum != nil {
+			max = fmt.Sprintf(` max="%v"`, *prop.Maximum)
 		}
 		html.WriteString(indent + `  <input type="number" id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + min + max + valueAttr + `>` + "\n")
 
 	case "array":
-		html.WriteString(indent + `  <div class="array-input-placeholder">` + "\n")
-		html.WriteString(indent + `    <p><em>Array input - Coming soon</em></p>` + "\n")
-		html.WriteString(indent + `  </div>` + "\n")
+		u.renderArrayInput(fieldName, prop, html, indent)
 
 	case "object":
-		html.WriteString(indent + `  <div class="object-input-placeholder">` + "\n")
-		html.WriteString(indent + `    <p><em>Nested object - Coming soon</em></p>` + "\n")
-		html.WriteString(indent + `  </div>` + "\n")
+		u.renderObjectInput(fieldName, prop, html, indent)
+
+	default:
+		html.WriteString(indent + `  <input type="text" id="` + fieldName + `" name="` + fieldName + `"` + requiredAttr + placeholder + valueAttr + `>` + "\n")
 	}
 }
 
-// parseScopeToFieldName extracts field name from JSON pointer scope
-// e.g., "#/properties/title" -> "title"
-func (u *UISchema) parseScopeToFieldName(scope string) string {
-	// Remove leading "#/"
-	scope = strings.TrimPrefix(scope, "#/")
+// getSchemaType determines the type from jsonschema.Schema
+func (u *UISchema) getSchemaType(prop *jsonschema.Schema) string {
+	if prop.Types == nil {
+		return "string" // default
+	}
+	// Convert Types to string slice and take the first one
+	types := prop.Types.ToStrings()
+	if len(types) > 0 {
+		return types[0]
+	}
+	return "string"
+}
 
-	// Split by "/" and get last part
-	parts := strings.Split(scope, "/")
-	if len(parts) == 0 {
-		return ""
+// renderArrayInput renders an array input with dynamic add/remove
+func (u *UISchema) renderArrayInput(fieldName string, prop *jsonschema.Schema, html *strings.Builder, indent string) {
+	title := prop.Title
+	if title == "" {
+		title = fieldName
 	}
 
-	// For "#/properties/fieldname", return "fieldname"
-	// For "#/fieldname", return "fieldname"
-	if len(parts) >= 2 && parts[0] == "properties" {
-		return parts[1]
+	html.WriteString(indent + `  <div class="array-input" data-field-name="` + fieldName + `">` + "\n")
+	html.WriteString(indent + `    <div class="array-items" id="` + fieldName + `-items"></div>` + "\n")
+	html.WriteString(indent + `    <button type="button" class="btn-add-array-item" onclick="addArrayItem('` + fieldName + `')">` + "\n")
+	html.WriteString(indent + `      ➕ Add ` + title + "\n")
+	html.WriteString(indent + `    </button>` + "\n")
+	html.WriteString(indent + `    <template id="` + fieldName + `-template">` + "\n")
+
+	// Render template for array items
+	if prop.Items != nil {
+		itemSchema, ok := prop.Items.(*jsonschema.Schema)
+		if ok {
+			u.renderArrayItemTemplate(fieldName, itemSchema, html, indent+"    ")
+		}
 	}
 
-	return parts[len(parts)-1]
+	html.WriteString(indent + `    </template>` + "\n")
+	html.WriteString(indent + `  </div>` + "\n")
+}
+
+// renderArrayItemTemplate renders a template for array items
+func (u *UISchema) renderArrayItemTemplate(fieldName string, itemSchema *jsonschema.Schema, html *strings.Builder, indent string) {
+	html.WriteString(indent + `<div class="array-item">` + "\n")
+
+	itemType := u.getSchemaType(itemSchema)
+
+	if itemType == "object" && itemSchema.Properties != nil {
+		// Array of objects - render nested fields
+		for propName, propSchema := range itemSchema.Properties {
+			isRequired := contains(itemSchema.Required, propName)
+			label := propSchema.Title
+			if label == "" {
+				label = propName
+			}
+			html.WriteString(indent + `  <div class="form-group">` + "\n")
+			html.WriteString(indent + `    <label>` + label)
+			if isRequired {
+				html.WriteString(" *")
+			}
+			html.WriteString(`</label>` + "\n")
+			u.renderSimpleInput(fieldName+"[INDEX]."+propName, propSchema, isRequired, html, indent+"    ")
+			html.WriteString(indent + `  </div>` + "\n")
+		}
+	} else {
+		// Array of primitives
+		u.renderSimpleInput(fieldName+"[INDEX]", itemSchema, false, html, indent+"  ")
+	}
+
+	html.WriteString(indent + `  <button type="button" class="btn-remove-array-item" onclick="removeArrayItem(this)">✖</button>` + "\n")
+	html.WriteString(indent + `</div>` + "\n")
+}
+
+// renderSimpleInput renders a simple input (used in array templates)
+func (u *UISchema) renderSimpleInput(fieldName string, prop *jsonschema.Schema, required bool, html *strings.Builder, indent string) {
+	requiredAttr := ""
+	if required {
+		requiredAttr = " required"
+	}
+
+	propType := u.getSchemaType(prop)
+	placeholder := prop.Title
+	if placeholder == "" {
+		placeholder = fieldName
+	}
+
+	switch propType {
+	case "string":
+		format := ""
+		if prop.Format != nil {
+			format = prop.Format.Name
+		}
+		if format == "email" {
+			html.WriteString(indent + `<input type="email" name="` + fieldName + `"` + requiredAttr + ` placeholder="` + placeholder + `">` + "\n")
+		} else {
+			html.WriteString(indent + `<input type="text" name="` + fieldName + `"` + requiredAttr + ` placeholder="` + placeholder + `">` + "\n")
+		}
+
+	case "integer", "number":
+		html.WriteString(indent + `<input type="number" name="` + fieldName + `"` + requiredAttr + ` placeholder="` + placeholder + `">` + "\n")
+	default:
+		html.WriteString(indent + `<input type="text" name="` + fieldName + `"` + requiredAttr + ` placeholder="` + placeholder + `">` + "\n")
+	}
+}
+
+// renderObjectInput renders a nested object input
+func (u *UISchema) renderObjectInput(fieldName string, prop *jsonschema.Schema, html *strings.Builder, indent string) {
+	html.WriteString(indent + `  <div class="object-input">` + "\n")
+
+	if prop.Properties != nil {
+		for propName, propSchema := range prop.Properties {
+			isRequired := contains(prop.Required, propName)
+			label := propSchema.Title
+			if label == "" {
+				label = propName
+			}
+			html.WriteString(indent + `    <div class="form-group">` + "\n")
+			html.WriteString(indent + `      <label>` + label)
+			if isRequired {
+				html.WriteString(" *")
+			}
+			html.WriteString(`</label>` + "\n")
+			u.renderNestedInput(fieldName+"."+propName, propSchema, isRequired, html, indent+"      ")
+			html.WriteString(indent + `    </div>` + "\n")
+		}
+	}
+
+	html.WriteString(indent + `  </div>` + "\n")
+}
+
+// renderNestedInput renders an input for nested object properties
+func (u *UISchema) renderNestedInput(fieldName string, prop *jsonschema.Schema, required bool, html *strings.Builder, indent string) {
+	requiredAttr := ""
+	if required {
+		requiredAttr = " required"
+	}
+
+	propType := u.getSchemaType(prop)
+
+	switch propType {
+	case "string":
+		format := ""
+		if prop.Format != nil {
+			format = prop.Format.Name
+		}
+		if format == "date" {
+			html.WriteString(indent + `<input type="date" name="` + fieldName + `"` + requiredAttr + `>` + "\n")
+		} else if prop.Enum != nil && len(prop.Enum.Values) > 0 {
+			html.WriteString(indent + `<select name="` + fieldName + `"` + requiredAttr + `>` + "\n")
+			html.WriteString(indent + `  <option value="">-- Select --</option>` + "\n")
+			for _, option := range prop.Enum.Values {
+				html.WriteString(indent + fmt.Sprintf(`  <option value="%v">%v</option>`, option, option) + "\n")
+			}
+			html.WriteString(indent + `</select>` + "\n")
+		} else {
+			html.WriteString(indent + `<input type="text" name="` + fieldName + `"` + requiredAttr + `>` + "\n")
+		}
+	case "integer", "number":
+		html.WriteString(indent + `<input type="number" name="` + fieldName + `"` + requiredAttr + `>` + "\n")
+	default:
+		html.WriteString(indent + `<input type="text" name="` + fieldName + `"` + requiredAttr + `>` + "\n")
+	}
+}
+
+// contains checks if a slice contains a string
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }

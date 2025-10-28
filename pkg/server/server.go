@@ -2,6 +2,7 @@ package server
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -13,54 +14,54 @@ import (
 //go:embed templates/*
 var templatesFS embed.FS
 
-// Server represents the wellknown demo/test server
-// Navigation types and functions are in navigation.go
+// Server represents the wellknown demo/test server with all dependencies
 type Server struct {
 	Port      string
 	LocalURL  string
 	MobileURL string
+
+	// Dependencies (no more globals!)
+	templates *template.Template
+	mux       *http.ServeMux
+	registry  *ServiceRegistry
+
+	// State (no more package-level globals!)
+	gcpSetupStatus GCPSetupStatus
 }
 
-// initTemplates initializes the templates (exported for testing)
-func initTemplates() (*template.Template, error) {
-	funcMap := template.FuncMap{
-		"title": strings.Title,
-	}
-	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse templates: %w", err)
-	}
-	Templates = tmpl
-	return tmpl, nil
-}
-
-// New creates a new Server instance with the specified port
+// New creates a new Server instance with all dependencies initialized
 func New(port string) (*Server, error) {
 	if port == "" {
 		port = "8080"
 	}
 
-	// Parse all templates with custom functions
-	_, err := initTemplates()
+	// Initialize templates
+	funcMap := template.FuncMap{
+		"title": strings.Title,
+		"toJSON": func(v interface{}) template.JS {
+			b, _ := json.Marshal(v)
+			return template.JS(b)
+		},
+	}
+	tmpl, err := template.New("").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}
 
 	addr := ":" + port
 	localIP := getLocalIP()
 
-	// Set package-level URLs for use in handlers
-	LocalURL = "http://localhost" + addr
-	MobileURL = "http://" + localIP + addr
-
 	server := &Server{
 		Port:      port,
-		LocalURL:  LocalURL,
-		MobileURL: MobileURL,
+		LocalURL:  "http://localhost" + addr,
+		MobileURL: "http://" + localIP + addr,
+		templates: tmpl,
+		mux:       http.NewServeMux(),
+		registry:  NewServiceRegistry(),
 	}
 
-	// Register all HTTP routes using default mux
-	RegisterRoutes(http.DefaultServeMux)
+	// Register all routes with server's mux and registry
+	server.registerAllRoutes()
 
 	return server, nil
 }
@@ -75,10 +76,25 @@ func (s *Server) Start() error {
 	log.Println("")
 	log.Println("💡 Press Ctrl+C to stop")
 
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	if err := http.ListenAndServe(addr, s.mux); err != nil {
 		return fmt.Errorf("server failed: %w", err)
 	}
 	return nil
+}
+
+// GetTemplates returns the server's template instance (for handlers)
+func (s *Server) GetTemplates() *template.Template {
+	return s.templates
+}
+
+// GetMux returns the server's HTTP mux (for testing)
+func (s *Server) GetMux() *http.ServeMux {
+	return s.mux
+}
+
+// GetRegistry returns the server's service registry (for handlers)
+func (s *Server) GetRegistry() *ServiceRegistry {
+	return s.registry
 }
 
 // getLocalIP returns the local IP address of the machine

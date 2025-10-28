@@ -18,28 +18,24 @@ type CalendarConfig struct {
 	SuccessLabel string               // "URL" or "data URI"
 }
 
-// GenericCalendarHandler creates a handler for calendar event creation
+// makeGenericCalendarHandler creates a handler for calendar event creation bound to server context
 // This eliminates code duplication between Google and Apple Calendar handlers
-func GenericCalendarHandler(cfg CalendarConfig) http.HandlerFunc {
+// The handler receives dependencies via HandlerContext instead of using globals
+func (s *Server) makeGenericCalendarHandler(hc *HandlerContext, cfg CalendarConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			// Load schemas from external JSON files
-			schemaJSON, err := loadSchemaFromFile(cfg.Platform, cfg.AppType, "schema")
+			// Load schemas once - returns compiled schema + UI schema
+			uiSchemaJSON, compiledSchema, _, err := loadAndCompileSchemas(cfg.Platform, cfg.AppType)
 			if err != nil {
-				http.Error(w, "Failed to load schema: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "Failed to load schemas: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			uiSchemaJSON, err := loadSchemaFromFile(cfg.Platform, cfg.AppType, "uischema")
-			if err != nil {
-				http.Error(w, "Failed to load UI schema: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			renderUISchemaBasedForm(w, r, cfg.Platform, cfg.AppType, schemaJSON, uiSchemaJSON)
+			hc.renderUISchemaBasedForm(w, r, cfg.Platform, cfg.AppType, compiledSchema, uiSchemaJSON)
 			return
 		}
 
 		if r.Method == "POST" {
-			handleCalendarPost(w, r, cfg)
+			s.handleCalendarPost(hc, w, r, cfg)
 			return
 		}
 
@@ -48,7 +44,7 @@ func GenericCalendarHandler(cfg CalendarConfig) http.HandlerFunc {
 }
 
 // handleCalendarPost handles POST requests with validation for calendar events
-func handleCalendarPost(w http.ResponseWriter, r *http.Request, cfg CalendarConfig) {
+func (s *Server) handleCalendarPost(hc *HandlerContext, w http.ResponseWriter, r *http.Request, cfg CalendarConfig) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
 
 	// Parse form data
@@ -57,38 +53,25 @@ func handleCalendarPost(w http.ResponseWriter, r *http.Request, cfg CalendarConf
 		return
 	}
 
-	// Load schemas for validation
-	schemaJSON, err := loadSchemaFromFile(cfg.Platform, cfg.AppType, "schema")
+	// Load schemas once - returns compiled schema + UI schema + validator
+	uiSchemaJSON, compiledSchema, validator, err := loadAndCompileSchemas(cfg.Platform, cfg.AppType)
 	if err != nil {
 		log.Printf("Schema load error: %v", err)
-		http.Error(w, "Failed to load schema: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	uiSchemaJSON, err := loadSchemaFromFile(cfg.Platform, cfg.AppType, "uischema")
-	if err != nil {
-		log.Printf("UI schema load error: %v", err)
-		http.Error(w, "Failed to load UI schema: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Parse schema
-	jsonSchema, err := schema.ParseSchema(schemaJSON)
-	if err != nil {
-		log.Printf("Schema parse error: %v", err)
-		http.Error(w, "Failed to parse schema: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to load schemas: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Convert form data to map
+	// Properly parses arrays (field[0]), nested objects (field.sub), and array of objects (field[0].sub)
 	formData := schema.FormDataToMap(r.Form)
 
-	// Validate against schema
-	validationErrors := schema.ValidateAgainstSchema(formData, jsonSchema)
+	// Validate against schema using V6 validator
+	validationErrors := validator.Validate(formData, compiledSchema)
 
 	// If there are validation errors, re-render form with errors
 	if len(validationErrors) > 0 {
 		log.Printf("Validation errors: %v", validationErrors)
-		renderUISchemaBasedFormWithErrors(w, r, cfg.Platform, cfg.AppType, schemaJSON, uiSchemaJSON, formData, validationErrors)
+		hc.renderUISchemaBasedFormWithErrors(w, r, cfg.Platform, cfg.AppType, compiledSchema, uiSchemaJSON, formData, validationErrors)
 		return
 	}
 
@@ -101,5 +84,12 @@ func handleCalendarPost(w http.ResponseWriter, r *http.Request, cfg CalendarConf
 	}
 
 	log.Printf("SUCCESS! Generated %s %s (length: %d bytes)", cfg.Platform, cfg.SuccessLabel, len(url))
-	renderSuccess(w, r, cfg.Platform, cfg.AppType, url)
+	hc.renderSuccess(w, r, cfg.Platform, cfg.AppType, url)
+}
+
+// makeShowcaseHandler creates a showcase handler bound to server context
+func (s *Server) makeShowcaseHandler(hc *HandlerContext, platform, appType string, examples interface{}) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		hc.renderShowcase(w, r, platform, appType, examples)
+	}
 }
