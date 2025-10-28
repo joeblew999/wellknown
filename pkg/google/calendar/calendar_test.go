@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/joeblew999/wellknown/pkg/types"
 )
 
 // NOTE: Filenames must match schema.ExamplesFilename and schema.FailuresFilename constants
@@ -19,7 +21,7 @@ var failuresData []byte
 // TestGenerateURL_ValidExamples tests all valid examples from data-examples.json
 func TestGenerateURL_ValidExamples(t *testing.T) {
 	var examples struct {
-		Examples []ShowcaseExample `json:"examples"`
+		Examples []types.ShowcaseExample `json:"examples"`
 	}
 
 	if err := json.Unmarshal(examplesData, &examples); err != nil {

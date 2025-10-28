@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Apple Calendar Test Data",
+  "description": "Invalid and edge case test data for Apple Calendar",
+  "invalid_cases": [
+    {
+      "name": "Missing title",
+      "input": {
+        "start": "2025-11-01T10:00",
+        "end": "2025-11-01T11:00"
+      },
+      "expect_error": "missing or invalid title"
+    },
+    {
+      "name": "Missing start time",
+      "input": {
+        "title": "Meeting",
+        "end": "2025-11-01T11:00"
+      },
+      "expect_error": "missing or invalid start"
+    },
+    {
+      "name": "Missing end time",
+      "input": {
+        "title": "Meeting",
+        "start": "2025-11-01T10:00"
+      },
+      "expect_error": "missing or invalid end"
+    }
+  ],
+  "edge_cases": [
+    {
+      "name": "All-day event",
+      "input": {
+        "title": "All Day Event",
+        "start": "2025-11-01T00:00",
+        "end": "2025-11-02T00:00",
+        "allDay": true
+      },
+      "expect": {
+        "contains": ["BEGIN:VCALENDAR", "BEGIN:VEVENT"]
+      }
+    }
+  ]
+}

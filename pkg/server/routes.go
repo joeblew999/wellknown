@@ -1,10 +1,12 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	applecalendar "github.com/joeblew999/wellknown/pkg/apple/calendar"
 	googlecalendar "github.com/joeblew999/wellknown/pkg/google/calendar"
+	"github.com/joeblew999/wellknown/pkg/types"
 )
 
 // registerAllRoutes registers all HTTP routes with the server's mux and registry
@@ -69,13 +71,9 @@ func (s *Server) registerCalendarServices() {
 			GenerateURL:  svc.GenerateURL,
 		})
 
-		// Create showcase handler
-		var showcaseExamples interface{}
-		if svc.Platform == "google" {
-			showcaseExamples = googlecalendar.ShowcaseExamples
-		} else {
-			showcaseExamples = applecalendar.ShowcaseExamples
-		}
+		// Load showcase examples from JSON
+		examplesPath := fmt.Sprintf("pkg/%s/%s/data-examples.json", svc.Platform, svc.AppType)
+		showcaseExamples, _ := types.LoadExamples(examplesPath)
 		showcaseHandler := s.makeShowcaseHandler(svc.Platform, svc.AppType, showcaseExamples)
 
 		// Register main handler
