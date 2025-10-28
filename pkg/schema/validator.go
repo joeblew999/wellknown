@@ -202,12 +202,22 @@ func FormDataToMap(formData map[string][]string) map[string]interface{} {
 
 		value := values[0] // Take first value for now
 
+		// Type coercion: HTML forms send everything as strings, but JSON Schema expects types
+		var typedValue interface{} = value
+
+		// Convert boolean strings to actual booleans
+		if value == "true" {
+			typedValue = true
+		} else if value == "false" {
+			typedValue = false
+		}
+
 		// Handle nested objects with dot notation (e.g., "organizer.name")
 		if strings.Contains(key, ".") {
 			parts := strings.Split(key, ".")
-			setNestedValue(result, parts, value)
+			setNestedValue(result, parts, typedValue)
 		} else {
-			result[key] = value
+			result[key] = typedValue
 		}
 	}
 
@@ -215,7 +225,7 @@ func FormDataToMap(formData map[string][]string) map[string]interface{} {
 }
 
 // setNestedValue sets a value in a nested map using a path
-func setNestedValue(m map[string]interface{}, path []string, value string) {
+func setNestedValue(m map[string]interface{}, path []string, value interface{}) {
 	if len(path) == 0 {
 		return
 	}

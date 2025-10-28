@@ -14,40 +14,29 @@
     {{end}}
 
     <div class="details">
-        {{/* Calendar-specific details */}}
-        {{if $case.Event}}
-            <strong>Title:</strong> {{$case.Event.Title}}<br>
-            {{if $case.Event.StartTime}}
-            <strong>Time:</strong> {{$case.Event.StartTime.Format "2006-01-02 15:04"}} - {{$case.Event.EndTime.Format "15:04"}}<br>
+        {{/* Calendar-specific details - now using Data map */}}
+        {{if $case.Data}}
+            {{if index $case.Data "title"}}<strong>Title:</strong> {{index $case.Data "title"}}<br>{{end}}
+            {{if index $case.Data "start"}}
+            <strong>Start:</strong> {{index $case.Data "start"}}
+            {{if index $case.Data "end"}} - {{index $case.Data "end"}}{{end}}
+            {{if index $case.Data "allDay"}} (All Day){{end}}
+            <br>
             {{end}}
-            {{if $case.Event.Location}}<strong>Location:</strong> {{$case.Event.Location}}<br>{{end}}
-            {{if $case.Event.Description}}<strong>Description:</strong> {{$case.Event.Description}}<br>{{end}}
+            {{if index $case.Data "location"}}<strong>Location:</strong> {{index $case.Data "location"}}<br>{{end}}
+            {{if index $case.Data "description"}}<strong>Description:</strong> {{index $case.Data "description"}}<br>{{end}}
         {{end}}
     </div>
 
-    <div class="url">{{$case.ExpectedURL}}</div>
-    <div class="actions">
-        <button class="btn-open" onclick="window.open('{{$case.ExpectedURL}}', '_blank')">Open</button>
-        <button class="btn-copy" onclick="copyURL('{{$case.ExpectedURL}}', this)">Copy URL</button>
-    </div>
-
-    <div style="margin-top: 15px; text-align: center;">
-        <div id="qrcode-showcase-{{$index}}" class="qr-container" data-url="{{$case.ExpectedURL}}" style="display: inline-block;"></div>
-        <p style="font-size: 11px; color: #666; margin-top: 5px;">Scan to open</p>
-    </div>
+    {{/* Generate URL using form action - showcase doesn't have ExpectedURL */}}
+    <form method="POST" action="/{{$.Platform}}/{{$.AppType}}" target="_blank" style="margin-top: 10px;">
+        {{range $key, $value := $case.Data}}
+        <input type="hidden" name="{{$key}}" value="{{$value}}">
+        {{end}}
+        <div class="actions">
+            <button type="submit" class="btn-open">Generate & Open</button>
+        </div>
+    </form>
 </div>
 {{end}}
-
-<script>
-    // Generate all QR codes after DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        const qrContainers = document.querySelectorAll('.qr-container');
-        qrContainers.forEach(container => {
-            const url = container.getAttribute('data-url');
-            if (url) {
-                generateQR(url, container.id);
-            }
-        });
-    });
-</script>
 {{end}}
