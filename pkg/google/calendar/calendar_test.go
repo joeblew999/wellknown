@@ -21,7 +21,7 @@ var failuresData []byte
 // TestGenerateURL_ValidExamples tests all valid examples from data-examples.json
 func TestGenerateURL_ValidExamples(t *testing.T) {
 	var examples struct {
-		Examples []types.ShowcaseExample `json:"examples"`
+		Examples []types.Example `json:"examples"`
 	}
 
 	if err := json.Unmarshal(examplesData, &examples); err != nil {

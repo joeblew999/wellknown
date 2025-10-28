@@ -6,23 +6,23 @@ import (
 	"os"
 )
 
-type ShowcaseExample struct {
+type Example struct {
 	Name        string                 `json:"name"`
 	Description string                 `json:"description"`
 	Data        map[string]interface{} `json:"data"`
 }
 
-func (e ShowcaseExample) GetName() string        { return e.Name }
-func (e ShowcaseExample) GetDescription() string { return e.Description }
+func (e Example) GetName() string        { return e.Name }
+func (e Example) GetDescription() string { return e.Description }
 
-func LoadExamples(path string) ([]ShowcaseExample, error) {
+func LoadExamples(path string) ([]Example, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read examples file: %w", err)
 	}
 
 	var result struct {
-		Examples []ShowcaseExample `json:"examples"`
+		Examples []Example `json:"examples"`
 	}
 
 	if err := json.Unmarshal(data, &result); err != nil {

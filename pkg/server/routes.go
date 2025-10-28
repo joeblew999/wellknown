@@ -73,8 +73,8 @@ func (s *Server) registerCalendarServices() {
 
 		// Load showcase examples from JSON
 		examplesPath := fmt.Sprintf("pkg/%s/%s/data-examples.json", svc.Platform, svc.AppType)
-		showcaseExamples, _ := types.LoadExamples(examplesPath)
-		showcaseHandler := s.makeShowcaseHandler(svc.Platform, svc.AppType, showcaseExamples)
+		examples, _ := types.LoadExamples(examplesPath)
+		examplesHandler := s.makeExamplesHandler(svc.Platform, svc.AppType, examples)
 
 		// Register main handler
 		mainPath := "/" + svc.Platform + "/" + svc.AppType
@@ -82,7 +82,7 @@ func (s *Server) registerCalendarServices() {
 
 		// Register showcase handler
 		showcasePath := mainPath + "/showcase"
-		s.mux.HandleFunc(showcasePath, showcaseHandler)
+		s.mux.HandleFunc(showcasePath, examplesHandler)
 
 		// Register extra routes (if any)
 		for path, extraHandler := range svc.ExtraRoutes {
@@ -95,7 +95,7 @@ func (s *Server) registerCalendarServices() {
 			AppType:     svc.AppType,
 			Title:       svc.Title,
 			HasCustom:   true,
-			HasShowcase: true,
+			HasExamples: true,
 		})
 	}
 }

@@ -8,7 +8,7 @@ type ServiceConfig struct {
 	AppType     string
 	Title       string
 	HasCustom   bool
-	HasShowcase bool
+	HasExamples bool
 }
 
 // ServiceRegistry manages registered services (no more global state!)
@@ -54,10 +54,10 @@ func (r *ServiceRegistry) GetNavigation(currentPath string) []NavSection {
 			})
 		}
 
-		if service.HasShowcase {
+		if service.HasExamples {
 			showcaseURL := fmt.Sprintf("/%s/%s/showcase", service.Platform, service.AppType)
 			links = append(links, NavLink{
-				Label:    "Showcase",
+				Label:    "Examples",
 				URL:      showcaseURL,
 				IsActive: currentPath == showcaseURL,
 			})

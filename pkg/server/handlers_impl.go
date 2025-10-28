@@ -51,7 +51,7 @@ func (s *Server) registerMapsRoutes() {
 		AppType:     "maps",
 		Title:       "Google Maps",
 		HasCustom:   true,
-		HasShowcase: true,
+		HasExamples: true,
 	})
 
 	// Apple Maps
@@ -62,7 +62,7 @@ func (s *Server) registerMapsRoutes() {
 		AppType:     "maps",
 		Title:       "Apple Maps",
 		HasCustom:   true,
-		HasShowcase: true,
+		HasExamples: true,
 	})
 }
 
