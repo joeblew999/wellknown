@@ -41,5 +41,89 @@
         "contains": ["BEGIN:VCALENDAR", "BEGIN:VEVENT"]
       }
     }
+  ],
+  "advanced_cases": [
+    {
+      "name": "Event with attendees",
+      "description": "Test ATTENDEE field generation with required and optional participants",
+      "input": {
+        "title": "Team Meeting",
+        "start": "2025-11-15T10:00",
+        "end": "2025-11-15T11:00",
+        "description": "Weekly sync",
+        "attendees": [
+          {"email": "john@example.com", "name": "John Doe", "required": true},
+          {"email": "jane@example.com", "name": "Jane Smith", "required": false}
+        ]
+      },
+      "expect": {
+        "contains": [
+          "ATTENDEE;CN=John Doe;ROLE=REQ-PARTICIPANT;RSVP=TRUE:mailto:john@example.com",
+          "ATTENDEE;CN=Jane Smith;ROLE=OPT-PARTICIPANT;RSVP=TRUE:mailto:jane@example.com"
+        ]
+      }
+    },
+    {
+      "name": "Recurring event (weekly)",
+      "description": "Test RRULE with FREQ=WEEKLY and COUNT",
+      "input": {
+        "title": "Weekly Review",
+        "start": "2025-11-01T14:00",
+        "end": "2025-11-01T15:00",
+        "recurrence": {"frequency": "WEEKLY", "count": 10}
+      },
+      "expect": {
+        "contains": ["RRULE:FREQ=WEEKLY", "COUNT=10"]
+      }
+    },
+    {
+      "name": "Recurring event with UNTIL",
+      "description": "Test RRULE with UNTIL date parameter",
+      "input": {
+        "title": "Daily Standup",
+        "start": "2025-11-01T09:00",
+        "end": "2025-11-01T09:30",
+        "recurrence": {"frequency": "DAILY", "until": "2025-12-31T23:59:59Z"}
+      },
+      "expect": {
+        "contains": ["RRULE:FREQ=DAILY;UNTIL=20251231"]
+      }
+    },
+    {
+      "name": "Event with reminders",
+      "description": "Test VALARM generation with multiple reminders",
+      "input": {
+        "title": "Important Meeting",
+        "start": "2025-11-20T10:00",
+        "end": "2025-11-20T11:00",
+        "reminders": [{"minutes": 15}, {"minutes": 60}]
+      },
+      "expect": {
+        "contains": ["BEGIN:VALARM", "TRIGGER:-PT15M", "TRIGGER:-PT1H"]
+      }
+    },
+    {
+      "name": "All advanced features combined",
+      "description": "Test event with attendees, recurrence, and reminders together",
+      "input": {
+        "title": "Project Kickoff",
+        "start": "2025-11-01T10:00",
+        "end": "2025-11-01T12:00",
+        "location": "Main Conference Room",
+        "description": "Q4 project planning",
+        "attendees": [{"email": "alice@example.com", "name": "Alice Johnson", "required": true}],
+        "recurrence": {"frequency": "WEEKLY", "count": 4},
+        "reminders": [{"minutes": 30}]
+      },
+      "expect": {
+        "contains": [
+          "ATTENDEE;CN=Alice Johnson;ROLE=REQ-PARTICIPANT;RSVP=TRUE:mailto:alice@example.com",
+          "RRULE:FREQ=WEEKLY",
+          "COUNT=4",
+          "BEGIN:VALARM",
+          "TRIGGER:-PT30M"
+        ]
+      }
+    }
   ]
 }
