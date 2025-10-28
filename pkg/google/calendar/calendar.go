@@ -52,27 +52,26 @@ func GenerateURL(data map[string]interface{}) (string, error) {
 	formattedEnd := formatTime(endTime)
 
 	// Build URL with parameters
-	baseURL := "https://calendar.google.com/calendar/render"
 	params := url.Values{}
-	params.Set("action", "TEMPLATE")
-	params.Set("text", title)
-	params.Set("dates", fmt.Sprintf("%s/%s", formattedStart, formattedEnd))
+	params.Set(QueryParamAction, ActionParam)
+	params.Set(FieldMapping["title"], title)
+	params.Set(QueryParamDates, fmt.Sprintf("%s/%s", formattedStart, formattedEnd))
 
 	// Add optional fields if present
 	if location, ok := data["location"].(string); ok && location != "" {
-		params.Set("location", location)
+		params.Set(FieldMapping["location"], location)
 	}
 
 	if description, ok := data["description"].(string); ok && description != "" {
-		params.Set("details", description)
+		params.Set(FieldMapping["description"], description)
 	}
 
-	return baseURL + "?" + params.Encode(), nil
+	return BaseURL + "?" + params.Encode(), nil
 }
 
 
 // formatTime converts a time.Time to Google Calendar format: 20060102T150405Z
 // Google Calendar requires UTC time in this specific format
 func formatTime(t time.Time) string {
-	return t.UTC().Format("20060102T150405Z")
+	return t.UTC().Format(TimeFormat)
 }
