@@ -127,15 +127,15 @@ func (s *Server) handleCalendarPOST(w http.ResponseWriter, r *http.Request, cfg 
 	})
 }
 
-// makeExamplesHandler creates a showcase handler
+// makeExamplesHandler creates a examples handler
 func (s *Server) makeExamplesHandler(platform, appType string, examples interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Request: %s %s", r.Method, r.URL.Path)
 		s.render(w, r, PageData{
 			Platform:     platform,
 			AppType:      appType,
-			CurrentPage:  "showcase",
-			TemplateName: "showcase",
+			CurrentPage:  "examples",
+			TemplateName: "examples",
 			TestCases:    examples,
 		})
 	}

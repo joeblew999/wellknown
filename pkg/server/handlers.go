@@ -23,7 +23,7 @@ type NavSection struct {
 type PageData struct {
 	Platform         string
 	AppType          string
-	CurrentPage      string            // "custom" or "showcase"
+	CurrentPage      string            // "custom" or "examples"
 	TemplateName     string            // Template to render within base
 	IsStub           bool              // True for stub/placeholder pages
 	GeneratedURL     string            // Generated deep link URL (for success pages)

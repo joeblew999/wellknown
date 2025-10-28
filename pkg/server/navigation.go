@@ -55,11 +55,11 @@ func (r *ServiceRegistry) GetNavigation(currentPath string) []NavSection {
 		}
 
 		if service.HasExamples {
-			showcaseURL := fmt.Sprintf("/%s/%s/showcase", service.Platform, service.AppType)
+			examplesURL := fmt.Sprintf("/%s/%s/examples", service.Platform, service.AppType)
 			links = append(links, NavLink{
 				Label:    "Examples",
-				URL:      showcaseURL,
-				IsActive: currentPath == showcaseURL,
+				URL:      examplesURL,
+				IsActive: currentPath == examplesURL,
 			})
 		}
 

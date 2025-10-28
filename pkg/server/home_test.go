@@ -62,8 +62,8 @@ func TestHomepage(t *testing.T) {
 	if !strings.Contains(body, "/google/calendar") {
 		t.Error("Homepage should link to /google/calendar")
 	}
-	if !strings.Contains(body, "/google/calendar/showcase") {
-		t.Error("Homepage should link to /google/calendar/showcase")
+	if !strings.Contains(body, "/google/calendar/examples") {
+		t.Error("Homepage should link to /google/calendar/examples")
 	}
 
 	t.Log("✅ Homepage rendered successfully with all services")

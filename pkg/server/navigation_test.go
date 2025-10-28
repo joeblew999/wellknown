@@ -96,14 +96,14 @@ func TestAllRegisteredRoutesWork(t *testing.T) {
 	// List of all routes that should be registered
 	routes := []string{
 		"/google/calendar",
-		"/google/calendar/showcase",
+		"/google/calendar/examples",
 		"/apple/calendar",
-		"/apple/calendar/showcase",
+		"/apple/calendar/examples",
 		"/apple/calendar/download",
 		"/google/maps",
-		"/google/maps/showcase",
+		"/google/maps/examples",
 		"/apple/maps",
-		"/apple/maps/showcase",
+		"/apple/maps/examples",
 	}
 
 	for _, route := range routes {

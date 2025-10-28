@@ -27,8 +27,8 @@ func (s *Server) makeStubHandler(platform, appType string) http.HandlerFunc {
 		log.Printf("Request: %s %s (stub)", r.Method, r.URL.Path)
 
 		currentPage := "custom"
-		if strings.HasSuffix(r.URL.Path, "/showcase") {
-			currentPage = "showcase"
+		if strings.HasSuffix(r.URL.Path, "/examples") {
+			currentPage = "examples"
 		}
 
 		// Use the SINGLE render method
@@ -45,7 +45,7 @@ func (s *Server) makeStubHandler(platform, appType string) http.HandlerFunc {
 func (s *Server) registerMapsRoutes() {
 	// Google Maps
 	s.mux.HandleFunc("/google/maps", s.makeStubHandler("google", "maps"))
-	s.mux.HandleFunc("/google/maps/showcase", s.makeStubHandler("google", "maps"))
+	s.mux.HandleFunc("/google/maps/examples", s.makeStubHandler("google", "maps"))
 	s.registry.Register(ServiceConfig{
 		Platform:    "google",
 		AppType:     "maps",
@@ -56,7 +56,7 @@ func (s *Server) registerMapsRoutes() {
 
 	// Apple Maps
 	s.mux.HandleFunc("/apple/maps", s.makeStubHandler("apple", "maps"))
-	s.mux.HandleFunc("/apple/maps/showcase", s.makeStubHandler("apple", "maps"))
+	s.mux.HandleFunc("/apple/maps/examples", s.makeStubHandler("apple", "maps"))
 	s.registry.Register(ServiceConfig{
 		Platform:    "apple",
 		AppType:     "maps",
