@@ -78,32 +78,38 @@
 wellknown/
 ├── pkg/                     # Core library
 │   ├── types/              # Shared low-level types only (errors, etc.)
+│   ├── schema/             # JSON Schema validation and UI generation
+│   │   ├── validator.go           # ValidatorV6 - single source of truth for validation
+│   │   ├── ui_schema.go           # UI Schema parser and HTML form generator
+│   │   └── loader.go              # Schema loading utilities
 │   ├── google/calendar/    # Google Calendar (platform-specific)
-│   │   ├── event.go               # 5-field Event (Title, StartTime, EndTime, Location, Description)
-│   │   ├── examples.go            # 6 basic examples
-│   │   ├── testdata.go            # Comprehensive test cases
-│   │   └── event_test.go          # 24 passing tests
+│   │   ├── schema.json            # JSON Schema for Google Calendar events
+│   │   ├── ui_schema.json         # UI Schema for form generation
+│   │   ├── generator.go           # Schema-driven URL generator
+│   │   └── generator_test.go      # 4 passing tests
 │   ├── apple/calendar/     # Apple Calendar (platform-specific)
-│   │   ├── types.go               # ICS types (RecurrenceRule, Attendee, Organizer, Reminder, etc.)
-│   │   ├── event.go               # Full ICS Event with 15+ fields
-│   │   ├── examples.go            # 6 examples (basic + advanced features)
-│   │   └── event_test.go          # 12 passing tests
+│   │   ├── schema.json            # JSON Schema for Apple Calendar ICS events
+│   │   ├── ui_schema.json         # UI Schema for form generation
+│   │   ├── generator.go           # Schema-driven ICS generator
+│   │   └── generator_test.go      # 9 passing tests
 │   └── server/             # Web server for testing deep links
-│       ├── server.go              # Server type with embedded templates
+│       ├── server.go              # Server type - OWNS all dependencies (no globals!)
 │       ├── handlers.go            # PageData, handler types
-│       ├── generic.go             # Service registry, handler factories
-│       ├── google_calendar.go     # Google Calendar service (19 lines)
-│       ├── apple_calendar.go      # Apple Calendar service (19 lines)
-│       ├── stub.go                # Stub handler for unimplemented services
+│       ├── navigation.go          # ServiceRegistry (no global state)
+│       ├── calendar_generic.go    # Generic calendar handler (schema-driven)
+│       ├── handlers_impl.go       # Home, stub handlers (use s.render())
+│       ├── routes.go              # Route registration
+│       ├── gcp_setup.go           # GCP OAuth setup wizard
+│       ├── env_manager.go         # .env file manager
 │       └── templates/             # Embedded HTML templates
 │           ├── base.html          # Layout with navigation
-│           ├── custom.html        # Generic custom form template
+│           ├── schema_form.html   # Schema-driven form template
 │           ├── showcase.html      # Generic showcase template
+│           ├── gcp_tool.html      # GCP setup wizard
 │           └── stub.html          # Coming soon page
 ├── cmd/
-│   ├── wellknown-server/   # Test server binary (18 lines of code)
-│   │   ├── main.go                # Imports pkg/server, starts server
-│   │   └── .air.toml              # Air hot-reload config
+│   ├── server/             # Test server binary
+│   │   └── main.go                # Imports pkg/server, starts server
 │   └── wellknown-mcp/      # MCP server (future)
 ├── docs/                   # User-facing documentation
 ├── CLAUDE.md              # This file (AI agent instructions)
@@ -111,57 +117,43 @@ wellknown/
 ```
 
 **Key Decisions**:
-- **Server in pkg/**: The web server is essential for testing, not just a demo - moved to `pkg/server/`
+- **Schema-Driven Architecture**: JSON Schema is the single source of truth
+  - ValidatorV6 validates all inputs (no custom validation code)
+  - UI Schema generates HTML forms automatically
+  - Schemas live in platform directories (e.g., `pkg/google/calendar/schema.json`)
+- **Zero Global State**: Server struct owns ALL dependencies
+  - No package-level variables (Templates, LocalURL, MobileURL, etc.)
+  - ServiceRegistry is owned by Server (not global)
+  - Perfect for testing and concurrency
+- **Single Render Method**: `Server.render()` is THE ONLY place that calls ExecuteTemplate
+  - Auto-populates LocalURL, MobileURL, Navigation
+  - All handlers use `s.render()` - zero duplication
+  - Perfect DRY compliance
 - **Embedded templates**: Server uses `//go:embed` to embed all HTML templates (zero external files needed)
-- **Minimal cmd/**: `cmd/wellknown-server/main.go` is just 18 lines that import and start `pkg/server`
-- **Service registry pattern**: Services self-register with `RegisterService()`
-- **Generic templates**: `custom.html` and `showcase.html` work for all services via template conditionals
-- **Full platform separation**: Each platform has completely separate Event types, examples, and generators
-  - **Why**: Google Calendar URL vs Apple Calendar ICS have fundamentally different capabilities
-  - **Google**: 5 basic fields only (Title, StartTime, EndTime, Location, Description) - limited by URL length
+- **Full platform separation**: Each platform has completely separate schemas and generators
+  - **Google**: 5 basic fields (Title, StartTime, EndTime, Location, Description) - URL-based
   - **Apple**: Full ICS spec with recurring events, attendees, reminders, priority, status, etc.
-  - **Benefit**: Each platform can use its full feature set without compromise
+  - **Benefit**: Each platform uses its native capabilities without compromise
 
-### Web Demo Architecture Evolution (Completed Phases)
+### Current Server Architecture
 
-**Phase 1-2: Template & Handler Generalization** (Completed)
-- Created generic `custom.html` and `showcase.html` templates
-- Built handler factories: `CalendarHandler(config)`, `ShowcaseHandler(config)`
-- Reduced code duplication from 125 lines to 19 lines per service (84% reduction)
+**Schema-Driven Design:**
+- JSON Schema (`schema.json`) defines data structure and validation rules
+- UI Schema (`ui_schema.json`) defines form generation (labels, placeholders, field types)
+- ValidatorV6 (`pkg/schema/validator.go`) validates all inputs
+- Forms auto-generate from schemas - zero manual HTML
 
-**Phase 3: Service Registry & Auto-Registration** (Completed)
-- Created `ServiceRegistry` pattern in `handlers/generic.go`
-- Services self-register with `RegisterService(ServiceConfig)`
-- Routes auto-create via `RegisterRoutes()` - zero manual registration
-- Example: Adding Apple Calendar auto-created `/apple/calendar` and `/apple/calendar/showcase`
+**Zero Global State:**
+- Server struct owns ALL dependencies (templates, mux, registry, gcpSetupStatus)
+- ServiceRegistry is owned by Server (not package-level global)
+- Thread-safe, testable, clear dependency graph
 
-**Phase 4: Type Safety Improvements** (Completed)
-- Changed `PageData.Event` from `interface{}` to `*types.CalendarEvent`
-- Added `ServiceExample` interface for examples
-- Improved compile-time type checking
-- Better IDE autocomplete and error detection
+**Single Render Method:**
+- `Server.render()` is THE ONLY place that calls ExecuteTemplate
+- Auto-populates LocalURL, MobileURL, Navigation
+- All handlers use `s.render()` - perfect DRY compliance
 
-**Phase 5: Full Platform Separation** (Completed 2025-10-27)
-- **Problem**: Google Calendar URL and Apple Calendar ICS have different capabilities
-- **Solution**: Complete separation of Event types, examples, and generation logic
-- **Google Calendar**: `pkg/google/calendar/event.go` with 5-field Event type
-  - GenerateURL() returns Google Calendar web URL
-  - Examples show basic calendar functionality only
-- **Apple Calendar**: `pkg/apple/calendar/event.go` with full ICS Event type
-  - types.go defines RecurrenceRule, Attendee, Organizer, Reminder, EventStatus
-  - GenerateDataURI() returns base64-encoded ICS data URI
-  - GenerateICS() returns RFC 5545 iCalendar format
-  - Examples showcase both basic AND advanced features (recurring, attendees, reminders)
-- **Handler updates**: CalendarGenerator now accepts `interface{}` with platform-specific type assertions
-- **Result**: Each platform can evolve independently with full access to its native features
-
-**Result**: Adding a new service requires ~19 lines + platform-specific Event implementation!
-
-**Current Template Strategy:**
-- **Generic HTML templates**: `custom.html` and `showcase.html` work for all services
-- **Conditional rendering**: Templates use `{{if eq .AppType "calendar"}}` for service-specific sections
-- **Go's html/template**: Standard library, zero external dependencies
-- **Template loading**: All templates loaded via `template.ParseGlob("templates/*.html")`
+**Test Coverage:** 17/17 tests passing (9 Apple Calendar + 4 Google Calendar + 4 Server)
 
 ### API Design Patterns
 
@@ -419,102 +411,112 @@ make dev
 - Prevents multiple server instances from running
 - Consistent development experience
 
-**Web Demo Architecture:**
+**Server Architecture:**
 ```
-examples/basic/
-├── main.go                    # Entry point (calls RegisterRoutes())
-├── handlers/
-│   ├── handlers.go           # PageData, ServiceExample interface
-│   ├── generic.go            # ServiceRegistry, factories, RegisterRoutes()
-│   ├── google_calendar.go    # 19 lines - RegisterService(config)
-│   ├── apple_calendar.go     # 19 lines - RegisterService(config)
-│   └── stub.go               # Generic stub handler
-├── templates/
-│   ├── base.html             # Layout with nav, CSS, JS
-│   ├── custom.html           # Generic form (all services)
-│   ├── showcase.html         # Generic showcase (all services)
-│   └── stub.html             # Coming soon page
-├── .air.toml                 # Air hot-reload configuration
-└── README.md                 # Usage instructions
+pkg/server/
+├── server.go              # Server struct - owns ALL dependencies (no globals!)
+├── navigation.go          # ServiceRegistry (owned by Server)
+├── calendar_generic.go    # Schema-driven calendar handler
+├── handlers_impl.go       # Home, stub handlers (all use s.render())
+├── handlers.go            # PageData, CalendarConfig types
+├── routes.go              # Route registration
+├── gcp_setup.go           # GCP OAuth setup wizard
+├── env_manager.go         # .env file manager
+└── templates/
+    ├── base.html          # Layout with navigation
+    ├── schema_form.html   # Schema-driven form template
+    ├── showcase.html      # Generic showcase template
+    ├── gcp_tool.html      # GCP setup wizard
+    └── stub.html          # Coming soon page
 ```
 
 **Key Patterns:**
-- **Service Registry**: Services self-register, routes auto-created
-- **Generic Templates**: One template works for all services (conditional rendering)
-- **Handler Factories**: `CalendarHandler(config)`, `ShowcaseHandler(config)`
-- **Type Safety**: PageData uses `*types.CalendarEvent` not `interface{}`
-- **Adding Services**: Only ~15-19 lines of config code needed!
+- **Zero Global State**: Server owns templates, mux, registry, gcpSetupStatus
+- **Single Render Method**: `Server.render()` is THE ONLY ExecuteTemplate call
+- **Schema-Driven**: Forms auto-generate from JSON Schema + UI Schema
+- **DRY Compliance**: All handlers use `s.render()` - zero duplication
 - **Mobile URLs**: Auto-detected local network IP for easy mobile testing
 - **Responsive**: Hamburger menu on mobile (≤768px), fixed sidebar on desktop
-- **Air Config**: Watches handlers/ and templates/ directories
 
-### Adding a New Service (Step-by-Step)
+### Adding a New Service (Schema-Driven Approach)
 
 **Example: Adding Apple Maps**
 
-**Step 1:** Create core implementation in `pkg/apple/maps.go`
-```go
-package apple
-
-import "github.com/joeblew999/wellknown/pkg/types"
-
-func Maps(location types.Location) (string, error) {
-    // Implementation
-    return fmt.Sprintf("maps://?q=%s", url.QueryEscape(location.Address)), nil
+**Step 1:** Create JSON Schema in `pkg/apple/maps/schema.json`
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Search query or address"
+    },
+    "latitude": {"type": "number"},
+    "longitude": {"type": "number"}
+  },
+  "required": ["query"]
 }
 ```
 
-**Step 2:** Create examples in `pkg/examples/maps.go` (shared across all platforms!)
-```go
-package examples
-
-type MapsExample struct {
-    Name        string
-    Description string
-    Location    types.Location
+**Step 2:** Create UI Schema in `pkg/apple/maps/ui_schema.json`
+```json
+{
+  "fields": [
+    {
+      "key": "query",
+      "type": "text",
+      "label": "Search Query",
+      "placeholder": "Enter address or place name"
+    },
+    {
+      "key": "latitude",
+      "type": "number",
+      "label": "Latitude (optional)"
+    },
+    {
+      "key": "longitude",
+      "type": "number",
+      "label": "Longitude (optional)"
+    }
+  ]
 }
-
-func (e MapsExample) GetName() string { return e.Name }
-func (e MapsExample) GetDescription() string { return e.Description }
-
-var MapsExamples = []MapsExample{...}
 ```
 
-**Why `pkg/examples/`?** If the feature works the same across Google Maps and Apple Maps,
-share the test data! This ensures consistency and reduces duplication.
-
-**Step 3:** Register service in `examples/basic/handlers/apple_maps.go` (**only ~15-19 lines!**)
+**Step 3:** Create generator in `pkg/apple/maps/generator.go`
 ```go
-package handlers
+package maps
 
-import (
-    "github.com/joeblew999/wellknown/pkg/apple"
-    "github.com/joeblew999/wellknown/pkg/examples"
-)
+func GenerateURL(data map[string]interface{}) (string, error) {
+    query, _ := data["query"].(string)
+    return fmt.Sprintf("maps://?q=%s", url.QueryEscape(query)), nil
+}
+```
 
-var AppleMapsService = RegisterService(ServiceConfig{
-    Platform:  "apple",
-    AppType:   "maps",
-    Examples:  examples.MapsExamples,  // Shared examples!
-    Generator: apple.Maps,  // Adapt if different signature
+**Step 4:** Register route in `pkg/server/routes.go`
+```go
+// Add to registerMapsRoutes()
+handler := s.makeGenericCalendarHandler(CalendarConfig{
+    Platform:     "apple",
+    AppType:      "maps",
+    SuccessLabel: "Deep Link",
+    GenerateURL:  maps.GenerateURL,
 })
-
-var AppleMaps = AppleMapsService.CustomHandler
-var AppleMapsShowcase = AppleMapsService.ShowcaseHandler
+s.mux.HandleFunc("/apple/maps", handler)
 ```
 
-**Step 4:** Done! Routes auto-register
-- `/apple/maps` - Custom form
-- `/apple/maps/showcase` - Examples showcase
-- Navigation sidebar automatically shows links (if already in base.html)
+**That's it!** The schema-driven system handles:
+- ✅ Form generation from UI Schema
+- ✅ Validation from JSON Schema
+- ✅ Type coercion (strings to numbers, etc.)
+- ✅ Error messages
+- ✅ Zero custom validation code needed
 
-**That's it!** The service registry handles:
-- ✅ Route registration
-- ✅ Handler creation
-- ✅ Template rendering
-- ✅ QR code generation
-
-**Optional:** Add unit tests in `pkg/apple/maps_test.go`
+**Benefits:**
+- Schema changes don't require Go code changes
+- Forms auto-update when schema changes
+- Single source of truth for validation rules
 
 ---
 
@@ -588,19 +590,25 @@ func Calendar(event Event, opts ...Option) (string, error) {
 
 ---
 
-## Project Status and Roadmap
+## Current Status
 
-**For current status, completed work, and next tasks**: See `git log` for commit history
+**Architecture:**
+- ✅ **Schema-Driven**: JSON Schema validates, UI Schema generates forms
+- ✅ **Zero Global State**: Server owns all dependencies
+- ✅ **Single Render Method**: Perfect DRY compliance
+- ✅ **Test Coverage**: 17/17 Go tests passing
 
-**Recent major milestones:**
-- ✅ Web demo with Air hot-reload
-- ✅ Phase 3 & 4 refactoring (service registry, type safety)
-- ✅ Google Calendar (web URL approach)
-- ✅ Apple Calendar (ICS data URI approach)
-- ✅ Generic template system (custom.html, showcase.html)
-- ✅ Auto-registration pattern (~15 lines to add new service)
-- ✅ **Toast notification system** - Replaced ALL 13 alert/confirm dialogs (2025-10-27)
-- ✅ **100% E2E test pass rate** - 13/13 tests passing in 8.7 seconds (2025-10-27)
+**Implemented Services:**
+- ✅ **Google Calendar**: 5-field event generator (web URL approach)
+- ✅ **Apple Calendar**: Full ICS spec with advanced features (HTTP-served .ics files)
+- ✅ **GCP Setup Wizard**: OAuth credential management with toast notifications
+
+**Infrastructure:**
+- ✅ **Air hot-reload**: Development server with instant updates
+- ✅ **Playwright E2E tests**: 13/13 passing in 8.7 seconds
+- ✅ **Mobile testing**: Auto-detected network IP for device testing
+
+**For detailed history**: See `git log` for commit history
 
 ---
 
