@@ -1,7 +1,6 @@
 package server
 
 import (
-	"html/template"
 	"log"
 	"net/http"
 
@@ -107,44 +106,3 @@ func (hc *HandlerContext) renderSuccess(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
-// makeRenderShowcase creates a showcase renderer bound to server context
-func (s *Server) makeRenderShowcase() func(w http.ResponseWriter, r *http.Request, platform, appType string, examples interface{}) {
-	hc := s.newHandlerContext()
-	return hc.renderShowcase
-}
-
-// makeRenderUISchemaBasedForm creates a form renderer bound to server context
-func (s *Server) makeRenderUISchemaBasedForm() func(w http.ResponseWriter, r *http.Request, platform, appType string, compiledSchema *jsonschema.Schema, uiSchemaJSON string) {
-	hc := s.newHandlerContext()
-	return hc.renderUISchemaBasedForm
-}
-
-// makeRenderUISchemaBasedFormWithErrors creates an error form renderer bound to server context
-func (s *Server) makeRenderUISchemaBasedFormWithErrors() func(w http.ResponseWriter, r *http.Request, platform, appType string, compiledSchema *jsonschema.Schema, uiSchemaJSON string, formData map[string]interface{}, validationErrors schema.ValidationErrors) {
-	hc := s.newHandlerContext()
-	return hc.renderUISchemaBasedFormWithErrors
-}
-
-// makeRenderSuccess creates a success renderer bound to server context
-func (s *Server) makeRenderSuccess() func(w http.ResponseWriter, r *http.Request, platform, appType, generatedURL string) {
-	hc := s.newHandlerContext()
-	return hc.renderSuccess
-}
-
-// renderPageDataWithTemplate is a low-level helper that renders PageData with a specific template
-func (s *Server) renderPageDataWithTemplate(w http.ResponseWriter, templateName string, data PageData) error {
-	return s.templates.ExecuteTemplate(w, templateName, data)
-}
-
-// makePageDataWithNavigation creates PageData with navigation populated from current request
-func (s *Server) makePageDataWithNavigation(r *http.Request, base PageData) PageData {
-	base.LocalURL = s.LocalURL
-	base.MobileURL = s.MobileURL
-	base.Navigation = s.registry.GetNavigation(r.URL.Path)
-	return base
-}
-
-// Helper function to convert PageData fields to template.HTML safely
-func toHTML(s string) template.HTML {
-	return template.HTML(s)
-}
