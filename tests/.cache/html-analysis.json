@@ -1,0 +1,186 @@
+{
+  "file": "gcp_tool.html",
+  "totalElements": 27,
+  "withTestId": 27,
+  "withoutTestId": 0,
+  "elements": [
+    {
+      "type": "button",
+      "text": "📋 Copy Path",
+      "selector": "button"
+    },
+    {
+      "type": "button",
+      "testId": "view-projects-btn",
+      "text": "📋 View All GCP Projects",
+      "selector": "button"
+    },
+    {
+      "type": "button",
+      "testId": "reset-setup-btn",
+      "text": "🔄 Reset Setup",
+      "selector": "button"
+    },
+    {
+      "type": "button",
+      "testId": "delete-project-btn",
+      "id": "deleteBtn",
+      "text": "🗑️ Open GCP Console to Delete",
+      "selector": "button"
+    },
+    {
+      "type": "button",
+      "text": "Close",
+      "selector": "button"
+    },
+    {
+      "type": "button",
+      "testId": "save-project-btn",
+      "text": "Save & Continue",
+      "selector": "button"
+    },
+    {
+      "type": "button",
+      "testId": "copy-project-id-btn",
+      "text": "📋 Copy",
+      "selector": "button"
+    },
+    {
+      "type": "button",
+      "testId": "mark-project-done-btn",
+      "text": "Mark as Done",
+      "selector": "button"
+    },
+    {
+      "type": "button",
+      "testId": "mark-api-done-btn",
+      "text": "Mark as Done",
+      "selector": "button"
+    },
+    {
+      "type": "button",
+      "testId": "mark-consent-done-btn",
+      "text": "Mark as Done",
+      "selector": "button"
+    },
+    {
+      "type": "button",
+      "testId": "save-credentials-btn",
+      "text": "Save Credentials",
+      "selector": "button"
+    },
+    {
+      "type": "link",
+      "testId": "create-project-btn",
+      "id": "createProjectBtn",
+      "text": "Open GCP Console →",
+      "selector": "a"
+    },
+    {
+      "type": "link",
+      "testId": "enable-calendar-api-btn",
+      "id": "enableCalendarBtn",
+      "text": "Enable Calendar API →",
+      "selector": "a"
+    },
+    {
+      "type": "link",
+      "testId": "enable-oauth2-api-btn",
+      "id": "enableOAuthBtn",
+      "text": "Enable OAuth2 API →",
+      "selector": "a"
+    },
+    {
+      "type": "link",
+      "testId": "configure-consent-btn",
+      "id": "consentBtn",
+      "text": "Open OAuth Consent →",
+      "selector": "a"
+    },
+    {
+      "type": "link",
+      "testId": "create-oauth-creds-btn",
+      "id": "credsBtn",
+      "text": "Create OAuth Client →",
+      "selector": "a"
+    },
+    {
+      "type": "input",
+      "testId": "project-id-input",
+      "id": "projectId",
+      "text": "wellknown-cal-dev",
+      "selector": "input"
+    },
+    {
+      "type": "input",
+      "testId": "project-name-input",
+      "id": "projectName",
+      "text": "Same as Project ID",
+      "selector": "input"
+    },
+    {
+      "type": "input",
+      "testId": "client-id-input",
+      "id": "clientId",
+      "text": "your-id.apps.googleusercontent.com",
+      "selector": "input"
+    },
+    {
+      "type": "input",
+      "testId": "client-secret-input",
+      "id": "clientSecret",
+      "text": "your-secret",
+      "selector": "input"
+    },
+    {
+      "type": "status",
+      "testId": "step1-status",
+      "id": "status1",
+      "text": "Pending",
+      "selector": ".status-badge"
+    },
+    {
+      "type": "status",
+      "testId": "step2-status",
+      "id": "status2",
+      "text": "Pending",
+      "selector": ".status-badge"
+    },
+    {
+      "type": "status",
+      "testId": "step3-status",
+      "id": "status3",
+      "text": "Pending",
+      "selector": ".status-badge"
+    },
+    {
+      "type": "status",
+      "testId": "step4-status",
+      "id": "status4",
+      "text": "Pending",
+      "selector": ".status-badge"
+    },
+    {
+      "type": "status",
+      "testId": "step5-status",
+      "id": "status5",
+      "text": "Pending",
+      "selector": ".status-badge"
+    },
+    {
+      "type": "message",
+      "testId": "project-id-error",
+      "id": "projectIdError",
+      "text": null,
+      "selector": ".error-message"
+    },
+    {
+      "type": "message",
+      "testId": "success-message",
+      "id": "successMessage",
+      "text": null,
+      "selector": ".success-message"
+    }
+  ],
+  "missingTestIds": []
+}

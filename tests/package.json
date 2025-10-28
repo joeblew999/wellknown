@@ -9,7 +9,10 @@
     "test:headed": "bun run playwright test --headed",
     "test:report": "bun run playwright show-report",
     "codegen": "bun run playwright codegen http://localhost:8080/tools/gcp-setup",
-    "install:browsers": "bun run playwright install --with-deps"
+    "install:browsers": "bun run playwright install --with-deps",
+    "analyze": "bun scripts/analyze-html.ts",
+    "generate": "bun scripts/generate-helpers.ts",
+    "sync": "bun scripts/analyze-html.ts && bun scripts/generate-helpers.ts"
   },
   "keywords": [
     "bun",
@@ -22,6 +25,7 @@
   "devDependencies": {
     "@playwright/test": "^1.40.0",
     "@types/node": "^20.10.0",
+    "node-html-parser": "^7.0.1",
     "typescript": "^5.3.0"
   },
   "trustedDependencies": [
