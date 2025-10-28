@@ -352,14 +352,30 @@
     </div>
 </div>
 
+<!-- .env File Location -->
+<div style="margin-bottom: 20px; padding: 12px; background: #f5f7ff; border: 1px solid #e0e0e0; border-radius: 6px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div>
+            <strong style="color: #555;">📄 Configuration File:</strong>
+            <code style="background: white; padding: 4px 8px; border-radius: 3px; margin-left: 8px; font-size: 13px;">{{.GCPStatus.EnvPath}}</code>
+        </div>
+        <button class="gcp-btn" onclick="copyEnvPath()" style="margin: 0; font-size: 13px; padding: 6px 12px;">
+            📋 Copy Path
+        </button>
+    </div>
+    <div style="margin-top: 10px; font-size: 13px; color: #666;">
+        Open this file in your editor to view/edit all configuration values (GCP, Cloudflare, Fly.io, Pocketbase)
+    </div>
+</div>
+
 <div class="gcp-btn-group">
-    <button class="gcp-btn gcp-btn-success" onclick="showProjectsList()">
+    <button class="gcp-btn gcp-btn-success" onclick="showProjectsList()" data-testid="view-projects-btn">
         📋 View All GCP Projects
     </button>
-    <button class="gcp-btn gcp-btn-danger" onclick="resetSetup()">
+    <button class="gcp-btn gcp-btn-danger" onclick="resetSetup()" data-testid="reset-setup-btn">
         🔄 Reset Setup
     </button>
-    <button class="gcp-btn gcp-btn-warning" onclick="openDeleteProject()" id="deleteBtn" disabled>
+    <button class="gcp-btn gcp-btn-warning" onclick="openDeleteProject()" id="deleteBtn" data-testid="delete-project-btn" disabled>
         🗑️ Open GCP Console to Delete
     </button>
 </div>
@@ -385,7 +401,7 @@
         <div class="step-number">1</div>
         <div class="step-title">
             Set Project ID
-            <span class="status-badge status-pending" id="status1">Pending</span>
+            <span class="status-badge status-pending" id="status1" data-testid="step1-status">Pending</span>
         </div>
     </div>
     <div class="step-content">
@@ -394,16 +410,16 @@
         </p>
         <div class="input-group">
             <label>Project ID (6-30 chars, lowercase, numbers, hyphens):</label>
-            <input type="text" id="projectId" placeholder="wellknown-cal-dev"
+            <input type="text" id="projectId" data-testid="project-id-input" placeholder="wellknown-cal-dev"
                    value="{{.GCPStatus.ProjectID}}">
-            <div id="projectIdError" class="error-message"></div>
+            <div id="projectIdError" class="error-message" data-testid="project-id-error"></div>
         </div>
         <div class="input-group">
             <label>Project Name (display name in console):</label>
-            <input type="text" id="projectName" placeholder="Same as Project ID"
+            <input type="text" id="projectName" data-testid="project-name-input" placeholder="Same as Project ID"
                    value="{{.GCPStatus.ProjectID}}">
         </div>
-        <button class="gcp-btn" onclick="saveProject()">Save & Continue</button>
+        <button class="gcp-btn" onclick="saveProject()" data-testid="save-project-btn">Save & Continue</button>
     </div>
 </div>
 
@@ -413,7 +429,7 @@
         <div class="step-number">2</div>
         <div class="step-title">
             Create GCP Project
-            <span class="status-badge status-pending" id="status2">Pending</span>
+            <span class="status-badge status-pending" id="status2" data-testid="step2-status">Pending</span>
         </div>
     </div>
     <div class="step-content">
@@ -425,8 +441,8 @@
         <div class="info-box" style="background: #fff3cd; border-color: #ffc107;">
             <strong>📋 Copy this Project ID:</strong>
             <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
-                <code id="projectIdToCopy" style="font-size: 16px; padding: 8px 12px; background: white; border: 1px solid #ddd; border-radius: 4px; flex: 1;">{{.GCPStatus.ProjectID}}</code>
-                <button class="gcp-btn" onclick="copyProjectId(event)" style="margin: 0;">📋 Copy</button>
+                <code id="projectIdToCopy" data-testid="project-id-to-copy" style="font-size: 16px; padding: 8px 12px; background: white; border: 1px solid #ddd; border-radius: 4px; flex: 1;">{{.GCPStatus.ProjectID}}</code>
+                <button class="gcp-btn" onclick="copyProjectId(event)" data-testid="copy-project-id-btn" style="margin: 0;">📋 Copy</button>
             </div>
         </div>
 
@@ -444,10 +460,10 @@
             <strong>Note:</strong> You'll need a Google account and billing enabled (free tier is fine - no charges for our usage).
         </div>
 
-        <a href="#" class="gcp-btn" id="createProjectBtn" onclick="openProjectCreate(); return false;">
+        <a href="#" class="gcp-btn" id="createProjectBtn" data-testid="create-project-btn" onclick="openProjectCreate(); return false;">
             Open GCP Console →
         </a>
-        <button class="gcp-btn gcp-btn-success" onclick="markProjectDone()" style="margin-left: 10px;">
+        <button class="gcp-btn gcp-btn-success" onclick="markProjectDone()" data-testid="mark-project-done-btn" style="margin-left: 10px;">
             Mark as Done
         </button>
     </div>
@@ -459,20 +475,20 @@
         <div class="step-number">3</div>
         <div class="step-title">
             Enable APIs
-            <span class="status-badge status-pending" id="status3">Pending</span>
+            <span class="status-badge status-pending" id="status3" data-testid="step3-status">Pending</span>
         </div>
     </div>
     <div class="step-content">
         <p class="step-description">
             Enable Google Calendar API and OAuth2 API (just click "ENABLE" for each).
         </p>
-        <a href="#" class="gcp-btn" id="enableCalendarBtn" onclick="openEnableAPI('calendar-json'); return false;">
+        <a href="#" class="gcp-btn" id="enableCalendarBtn" data-testid="enable-calendar-api-btn" onclick="openEnableAPI('calendar-json'); return false;">
             Enable Calendar API →
         </a>
-        <a href="#" class="gcp-btn" id="enableOAuthBtn" onclick="openEnableAPI('oauth2'); return false;" style="margin-left: 10px;">
+        <a href="#" class="gcp-btn" id="enableOAuthBtn" data-testid="enable-oauth2-api-btn" onclick="openEnableAPI('oauth2'); return false;" style="margin-left: 10px;">
             Enable OAuth2 API →
         </a>
-        <button class="gcp-btn gcp-btn-success" onclick="markAPIDone()" style="margin-left: 10px;">
+        <button class="gcp-btn gcp-btn-success" onclick="markAPIDone()" data-testid="mark-api-done-btn" style="margin-left: 10px;">
             Mark as Done
         </button>
     </div>
@@ -484,7 +500,7 @@
         <div class="step-number">4</div>
         <div class="step-title">
             Configure OAuth Consent
-            <span class="status-badge status-pending" id="status4">Pending</span>
+            <span class="status-badge status-pending" id="status4" data-testid="step4-status">Pending</span>
         </div>
     </div>
     <div class="step-content">
@@ -492,10 +508,10 @@
             Configure the OAuth consent screen. Select "External" and fill in your email.
             Click "Save and Continue" through all 4 steps.
         </p>
-        <a href="#" class="gcp-btn" id="consentBtn" onclick="openConsent(); return false;">
+        <a href="#" class="gcp-btn" id="consentBtn" data-testid="configure-consent-btn" onclick="openConsent(); return false;">
             Open OAuth Consent →
         </a>
-        <button class="gcp-btn gcp-btn-success" onclick="markConsentDone()" style="margin-left: 10px;">
+        <button class="gcp-btn gcp-btn-success" onclick="markConsentDone()" data-testid="mark-consent-done-btn" style="margin-left: 10px;">
             Mark as Done
         </button>
     </div>
@@ -507,7 +523,7 @@
         <div class="step-number">5</div>
         <div class="step-title">
             Create OAuth Credentials
-            <span class="status-badge status-pending" id="status5">Pending</span>
+            <span class="status-badge status-pending" id="status5" data-testid="step5-status">Pending</span>
         </div>
     </div>
     <div class="step-content">
@@ -519,28 +535,28 @@
             • http://localhost:8090/auth/google/callback<br>
             • http://127.0.0.1:8090/auth/google/callback
         </div>
-        <a href="#" class="gcp-btn" id="credsBtn" onclick="openCredentials(); return false;">
+        <a href="#" class="gcp-btn" id="credsBtn" data-testid="create-oauth-creds-btn" onclick="openCredentials(); return false;">
             Create OAuth Client →
         </a>
 
         <div style="margin-top: 20px;">
             <div class="input-group">
                 <label>Client ID:</label>
-                <input type="text" id="clientId" placeholder="your-id.apps.googleusercontent.com"
+                <input type="text" id="clientId" data-testid="client-id-input" placeholder="your-id.apps.googleusercontent.com"
                        value="{{.GCPStatus.ClientID}}">
             </div>
             <div class="input-group">
                 <label>Client Secret:</label>
-                <input type="text" id="clientSecret" placeholder="your-secret"
+                <input type="text" id="clientSecret" data-testid="client-secret-input" placeholder="your-secret"
                        value="{{.GCPStatus.ClientSecret}}">
             </div>
-            <button class="gcp-btn gcp-btn-success" onclick="saveCreds()">Save Credentials</button>
+            <button class="gcp-btn gcp-btn-success" onclick="saveCreds()" data-testid="save-credentials-btn">Save Credentials</button>
         </div>
     </div>
 </div>
 
 <!-- Success Message -->
-<div class="success-message" id="successMessage" style="display: none;">
+<div class="success-message" id="successMessage" data-testid="success-message" style="display: none;">
     <h2>🎉 Setup Complete!</h2>
     <p>Your .env file has been generated at: <code>{{.GCPStatus.EnvPath}}</code></p>
     <div class="code-block">
@@ -729,6 +745,16 @@ make pb-server
         if (num === 4) return status.api_done && !status.consent_done;
         if (num === 5) return status.consent_done && !status.creds_done;
         return false;
+    }
+
+
+    function copyEnvPath() {
+        const envPath = '{{.GCPStatus.EnvPath}}';
+        navigator.clipboard.writeText(envPath).then(() => {
+            showToast('✅ Path copied to clipboard!', 'success');
+        }).catch(err => {
+            showToast('Failed to copy: ' + err, 'error');
+        });
     }
 
     function showError(message) {
