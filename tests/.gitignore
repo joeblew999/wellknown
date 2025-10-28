@@ -20,6 +20,8 @@ tsconfig.tsbuildinfo
 # OS
 .DS_Store
 Thumbs.db
-# Test automation cache
-tests/.cache/
-tests/helpers/gcp-selectors.ts
+
+# Test automation (auto-generated files)
+.cache/
+.env
+helpers/gcp-selectors.ts
