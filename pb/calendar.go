@@ -8,69 +8,63 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/joeblew999/wellknown/pb/models"
 	"github.com/pocketbase/pocketbase/core"
 	"golang.org/x/oauth2"
-	"google.golang.org/api/calendar/v3"
+	calendar "google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 )
 
 // registerCalendarRoutes sets up Google Calendar API routes
+// NOTE: Calendar URL/ICS generation is handled by the main server (pkg/server), not here!
+// PocketBase only handles OAuth + Calendar API calls (list/create events using stored tokens)
 func registerCalendarRoutes(wk *Wellknown, e *core.ServeEvent) error {
 	// Protected routes - require authentication
-	e.Router.HandleFunc("GET /api/calendar/events", requireAuth(wk, handleListEvents(wk)))
-	e.Router.HandleFunc("POST /api/calendar/events", requireAuth(wk, handleCreateEvent(wk)))
+	e.Router.GET("/api/calendar/events", handleListEvents(wk)).BindFunc(requireAuthMiddleware(wk))
+	e.Router.POST("/api/calendar/events", handleCreateEvent(wk)).BindFunc(requireAuthMiddleware(wk))
 
-	log.Println("✅ Calendar API routes registered")
-	return nil
+	log.Println("✅ Calendar API routes registered (OAuth + Calendar API only)")
+	return e.Next()
 }
 
-// requireAuth middleware checks for valid auth token
-func requireAuth(wk *Wellknown, next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		authCookie, err := r.Cookie("pb_auth")
+// requireAuthMiddleware checks for valid auth token
+func requireAuthMiddleware(wk *Wellknown) func(e *core.RequestEvent) error {
+	return func(e *core.RequestEvent) error {
+		authCookie, err := e.Request.Cookie("pb_auth")
 		if err != nil || authCookie.Value == "" {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{
+			return e.JSON(http.StatusUnauthorized, map[string]string{
 				"error": "Authentication required",
 			})
-			w.WriteHeader(http.StatusUnauthorized)
-			return
 		}
 
 		// Store user ID in context (simplified - should verify token properly)
 		// For now, pass through
-		next(w, r)
+		return e.Next()
 	}
 }
 
 // handleListEvents lists user's calendar events
-func handleListEvents(wk *Wellknown) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func handleListEvents(wk *Wellknown) func(e *core.RequestEvent) error {
+	return func(e *core.RequestEvent) error {
 		// Get user from auth cookie (simplified - should extract from JWT)
-		authCookie, _ := r.Cookie("pb_auth")
+		authCookie, _ := e.Request.Cookie("pb_auth")
 		userID := authCookie.Value // TODO: Extract real user ID from JWT
 
 		// Get Google token for user
 		token, err := getGoogleToken(wk, userID)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
+			return e.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Failed to get Google token",
 			})
-			return
 		}
 
 		// Create Calendar API client
 		client := googleOAuthConfig.Client(context.Background(), token)
 		srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
+			return e.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Failed to create Calendar service",
 			})
-			return
 		}
 
 		// List upcoming events
@@ -84,24 +78,20 @@ func handleListEvents(wk *Wellknown) http.HandlerFunc {
 
 		if err != nil {
 			log.Printf("Failed to list events: %v", err)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
+			return e.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Failed to list events",
 			})
-			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(events.Items)
+		return e.JSON(http.StatusOK, events.Items)
 	}
 }
 
 // handleCreateEvent creates a new calendar event
-func handleCreateEvent(wk *Wellknown) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func handleCreateEvent(wk *Wellknown) func(e *core.RequestEvent) error {
+	return func(e *core.RequestEvent) error {
 		// Get user from auth cookie (simplified)
-		authCookie, _ := r.Cookie("pb_auth")
+		authCookie, _ := e.Request.Cookie("pb_auth")
 		userID := authCookie.Value // TODO: Extract real user ID from JWT
 
 		// Parse request body
@@ -113,36 +103,27 @@ func handleCreateEvent(wk *Wellknown) http.HandlerFunc {
 			EndTime     time.Time `json:"end_time"`
 		}
 
-		if err := json.NewDecoder(r.Body).Decode(&eventData); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{
+		if err := json.NewDecoder(e.Request.Body).Decode(&eventData); err != nil {
+			return e.JSON(http.StatusBadRequest, map[string]string{
 				"error": "Invalid request body",
 			})
-			return
 		}
 
 		// Get Google token for user
 		token, err := getGoogleToken(wk, userID)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
+			return e.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Failed to get Google token",
 			})
-			return
 		}
 
 		// Create Calendar API client
 		client := googleOAuthConfig.Client(context.Background(), token)
 		srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
+			return e.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Failed to create Calendar service",
 			})
-			return
 		}
 
 		// Create event
@@ -161,21 +142,16 @@ func handleCreateEvent(wk *Wellknown) http.HandlerFunc {
 		createdEvent, err := srv.Events.Insert("primary", event).Do()
 		if err != nil {
 			log.Printf("Failed to create event: %v", err)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
+			return e.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Failed to create event",
 			})
-			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(createdEvent)
+		return e.JSON(http.StatusCreated, createdEvent)
 	}
 }
 
-// getGoogleToken retrieves stored OAuth token for user
+// getGoogleToken retrieves stored OAuth token for user using type-safe proxy
 func getGoogleToken(wk *Wellknown, userID string) (*oauth2.Token, error) {
 	collection, err := wk.FindCollectionByNameOrId("google_tokens")
 	if err != nil {
@@ -189,17 +165,19 @@ func getGoogleToken(wk *Wellknown, userID string) (*oauth2.Token, error) {
 		return nil, fmt.Errorf("failed to find token for user: %w", err)
 	}
 
-	// Parse expiry
-	expiryStr := record.GetString("expiry")
-	expiry, err := time.Parse(time.RFC3339, expiryStr)
+	// Wrap record in type-safe proxy
+	tokenProxy, err := models.WrapRecord[models.GoogleTokens](record)
 	if err != nil {
-		expiry = time.Now().Add(time.Hour) // Default to 1 hour if parse fails
+		return nil, fmt.Errorf("failed to wrap record as GoogleTokens: %w", err)
 	}
 
+	// Parse expiry using type-safe getter
+	expiry := tokenProxy.Expiry().Time()
+
 	token := &oauth2.Token{
-		AccessToken:  record.GetString("access_token"),
-		RefreshToken: record.GetString("refresh_token"),
-		TokenType:    record.GetString("token_type"),
+		AccessToken:  tokenProxy.AccessToken(),
+		RefreshToken: tokenProxy.RefreshToken(),
+		TokenType:    tokenProxy.TokenType(),
 		Expiry:       expiry,
 	}
 
@@ -212,7 +190,7 @@ func getGoogleToken(wk *Wellknown, userID string) (*oauth2.Token, error) {
 		}
 
 		// Update stored token
-		if err := storeGoogleToken(wk, userID, newToken, record.GetString("email")); err != nil {
+		if err := storeGoogleToken(wk, userID, newToken, tokenProxy.UserEmail()); err != nil {
 			log.Printf("Warning: failed to update refreshed token: %v", err)
 		}
 

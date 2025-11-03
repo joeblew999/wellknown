@@ -1,0 +1,3 @@
+# Migrations directory
+# The migratecmd plugin will generate migrations here
+# Run: ./wellknown-pb migrate create "migration_name"

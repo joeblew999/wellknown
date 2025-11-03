@@ -25,36 +25,33 @@ func setupCollections(wk *Wellknown) error {
 func createGoogleTokensCollection(wk *Wellknown) error {
 	collection := core.NewBaseCollection("google_tokens")
 
-	// Add fields
-	collection.Schema.AddField(&core.TextField{
-		Name:     "user_id",
-		Required: true,
-	})
-
-	collection.Schema.AddField(&core.TextField{
-		Name:     "access_token",
-		Required: true,
-	})
-
-	collection.Schema.AddField(&core.TextField{
-		Name:     "refresh_token",
-		Required: false,
-	})
-
-	collection.Schema.AddField(&core.TextField{
-		Name:     "token_type",
-		Required: false,
-	})
-
-	collection.Schema.AddField(&core.DateField{
-		Name:     "expiry",
-		Required: false,
-	})
-
-	collection.Schema.AddField(&core.EmailField{
-		Name:     "email",
-		Required: false,
-	})
+	// Add fields using the new API
+	collection.Fields.Add(
+		&core.TextField{
+			Name:     "user_id",
+			Required: true,
+		},
+		&core.TextField{
+			Name:     "access_token",
+			Required: true,
+		},
+		&core.TextField{
+			Name:     "refresh_token",
+			Required: false,
+		},
+		&core.TextField{
+			Name:     "token_type",
+			Required: false,
+		},
+		&core.DateField{
+			Name:     "expiry",
+			Required: false,
+		},
+		&core.TextField{
+			Name:     "email",
+			Required: false,
+		},
+	)
 
 	// Save collection
 	if err := wk.Save(collection); err != nil {

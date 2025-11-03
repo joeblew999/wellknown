@@ -43,21 +43,25 @@ go get github.com/joeblew999/wellknown
 
 The wellknown library includes a web server for testing deep links on real devices. This is **essential infrastructure**, not just a demo, because deep links can only be properly tested in a browser on mobile devices.
 
-### Running the Test Server
+### Development Setup
 
-The server is located in `cmd/server/`:
+For hot-reload during development, install Air (optional but recommended):
+
+```bash
+go install github.com/air-verse/air@latest
+```
+
+### Running the Test Server
 
 ```bash
 # Development mode with hot-reload (recommended)
-cd cmd/server
-air
+make dev
 
 # Or standard mode
-cd cmd/server
-go run main.go
+go run ./cmd/server
 
 # Or build and run
-go build -o server ./cmd/server
+go build -o wellknown-server ./cmd/server
 ./wellknown-server
 ```
 

@@ -5,7 +5,34 @@ import (
 	"fmt"
 	"net/url"
 	"time"
+
+	cal "github.com/joeblew999/wellknown/pkg/calendar"
 )
+
+// Google Calendar URL constants (exported for tests)
+const (
+	BaseURL          = "https://calendar.google.com/calendar/render"
+	ActionParam      = "TEMPLATE"
+	TimeFormat       = "20060102T150405Z"
+	QueryParamAction = "action"
+	QueryParamDates  = "dates"
+)
+
+// Re-export shared field names from pkg/calendar for backwards compatibility
+const (
+	FieldTitle       = cal.FieldTitle
+	FieldStart       = cal.FieldStart
+	FieldEnd         = cal.FieldEnd
+	FieldLocation    = cal.FieldLocation
+	FieldDescription = cal.FieldDescription
+)
+
+// FieldMapping maps schema fields to Google Calendar URL parameters (exported for tests)
+var FieldMapping = map[string]string{
+	cal.FieldTitle:       "text",
+	cal.FieldLocation:    "location",
+	cal.FieldDescription: "details",
+}
 
 // GenerateURL creates a Google Calendar web URL from validated form data.
 //
@@ -20,17 +47,17 @@ import (
 // It does NOT perform validation - that's the JSON Schema's job!
 func GenerateURL(data map[string]interface{}) (string, error) {
 	// Extract required fields from validated data
-	title, ok := data["title"].(string)
+	title, ok := data[FieldTitle].(string)
 	if !ok || title == "" {
 		return "", fmt.Errorf("missing or invalid title field")
 	}
 
-	startStr, ok := data["start"].(string)
+	startStr, ok := data[FieldStart].(string)
 	if !ok || startStr == "" {
 		return "", fmt.Errorf("missing or invalid start field")
 	}
 
-	endStr, ok := data["end"].(string)
+	endStr, ok := data[FieldEnd].(string)
 	if !ok || endStr == "" {
 		return "", fmt.Errorf("missing or invalid end field")
 	}
@@ -54,16 +81,16 @@ func GenerateURL(data map[string]interface{}) (string, error) {
 	// Build URL with parameters
 	params := url.Values{}
 	params.Set(QueryParamAction, ActionParam)
-	params.Set(FieldMapping["title"], title)
+	params.Set(FieldMapping[FieldTitle], title)
 	params.Set(QueryParamDates, fmt.Sprintf("%s/%s", formattedStart, formattedEnd))
 
 	// Add optional fields if present
-	if location, ok := data["location"].(string); ok && location != "" {
-		params.Set(FieldMapping["location"], location)
+	if location, ok := data[FieldLocation].(string); ok && location != "" {
+		params.Set(FieldMapping[FieldLocation], location)
 	}
 
-	if description, ok := data["description"].(string); ok && description != "" {
-		params.Set(FieldMapping["description"], description)
+	if description, ok := data[FieldDescription].(string); ok && description != "" {
+		params.Set(FieldMapping[FieldDescription], description)
 	}
 
 	return BaseURL + "?" + params.Encode(), nil

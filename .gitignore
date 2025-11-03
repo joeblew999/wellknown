@@ -39,5 +39,13 @@ go.work.sum
 .src/
 
 tmp/
-bin/
+pb/tmp/
+.bin/
 /server
+.dist/
+
+# PocketBase - ignore generated/runtime files
+pb/base/pb_data/
+pb/models/
+
+# Track hooks and migrations (they're part of your code)

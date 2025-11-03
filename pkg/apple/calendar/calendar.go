@@ -6,7 +6,49 @@ import (
 	"encoding/base64"
 	"fmt"
 	"time"
+
+	cal "github.com/joeblew999/wellknown/pkg/calendar"
 )
+
+// Apple Calendar ICS constants (exported for tests and code generation)
+const (
+	ProductID      = "-//wellknown//Calendar//EN"
+	CalendarScale  = "GREGORIAN"
+	ICSVersion     = "2.0"
+	DateFormat     = "20060102"
+	DateTimeFormat = "20060102T150405Z"
+)
+
+// ICS format keywords (RFC 5545) - exported for test data generation
+const (
+	ICSBeginCalendar = "BEGIN:VCALENDAR"
+	ICSEndCalendar   = "END:VCALENDAR"
+	ICSBeginEvent    = "BEGIN:VEVENT"
+	ICSEndEvent      = "END:VEVENT"
+	ICSSummary       = "SUMMARY"
+	ICSRule          = "RRULE"
+	ICSAttendee      = "ATTENDEE"
+)
+
+// Re-export shared field names from pkg/calendar for backwards compatibility
+const (
+	FieldTitle       = cal.FieldTitle
+	FieldStart       = cal.FieldStart
+	FieldEnd         = cal.FieldEnd
+	FieldLocation    = cal.FieldLocation
+	FieldDescription = cal.FieldDescription
+	FieldAllDay      = cal.FieldAllDay
+	FieldAttendees   = cal.FieldAttendees
+	FieldRecurrence  = cal.FieldRecurrence
+	FieldReminders   = cal.FieldReminders
+	FieldOrganizer   = cal.FieldOrganizer
+	FieldAlarm       = cal.FieldAlarm
+)
+
+// AdvancedFeatures lists field names that indicate advanced calendar functionality
+// Used for automatic test categorization (basic vs advanced)
+// Re-exported from pkg/calendar for backwards compatibility
+var AdvancedFeatures = cal.AdvancedFields
 
 // GenerateDownloadURL creates a download URL for an Apple Calendar .ics file.
 // This is the CORRECT approach for iOS/macOS - Safari cannot handle data:text/calendar URIs.
@@ -38,17 +80,17 @@ func GenerateDataURI(data map[string]interface{}) (string, error) {
 // Returns raw ICS bytes that can be served as a download or encoded as data URI.
 func GenerateICS(data map[string]interface{}) ([]byte, error) {
 	// Extract required fields from validated data
-	title, ok := data["title"].(string)
+	title, ok := data[FieldTitle].(string)
 	if !ok || title == "" {
 		return nil, fmt.Errorf("missing or invalid title field")
 	}
 
-	startStr, ok := data["start"].(string)
+	startStr, ok := data[FieldStart].(string)
 	if !ok || startStr == "" {
 		return nil, fmt.Errorf("missing or invalid start field")
 	}
 
-	endStr, ok := data["end"].(string)
+	endStr, ok := data[FieldEnd].(string)
 	if !ok || endStr == "" {
 		return nil, fmt.Errorf("missing or invalid end field")
 	}
@@ -66,7 +108,7 @@ func GenerateICS(data map[string]interface{}) ([]byte, error) {
 
 	// Check for all-day flag
 	allDay := false
-	if allDayVal, ok := data["allDay"].(bool); ok {
+	if allDayVal, ok := data[FieldAllDay].(bool); ok {
 		allDay = allDayVal
 	}
 
@@ -74,14 +116,14 @@ func GenerateICS(data map[string]interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 
 	// ICS file header
-	buf.WriteString("BEGIN:VCALENDAR\r\n")
-	buf.WriteString("VERSION:2.0\r\n")
-	buf.WriteString("PRODID:-//wellknown//Calendar//EN\r\n")
-	buf.WriteString("CALSCALE:GREGORIAN\r\n")
+	buf.WriteString(ICSBeginCalendar + "\r\n")
+	buf.WriteString("VERSION:" + ICSVersion + "\r\n")
+	buf.WriteString("PRODID:" + ProductID + "\r\n")
+	buf.WriteString("CALSCALE:" + CalendarScale + "\r\n")
 	buf.WriteString("METHOD:PUBLISH\r\n")
 
 	// Event
-	buf.WriteString("BEGIN:VEVENT\r\n")
+	buf.WriteString(ICSBeginEvent + "\r\n")
 	buf.WriteString(fmt.Sprintf("UID:%d@wellknown\r\n", time.Now().Unix()))
 	buf.WriteString(fmt.Sprintf("DTSTAMP:%s\r\n", formatICSTime(time.Now())))
 
@@ -100,16 +142,16 @@ func GenerateICS(data map[string]interface{}) ([]byte, error) {
 	buf.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", escapeICS(title)))
 
 	// Optional fields
-	if location, ok := data["location"].(string); ok && location != "" {
+	if location, ok := data[FieldLocation].(string); ok && location != "" {
 		buf.WriteString(fmt.Sprintf("LOCATION:%s\r\n", escapeICS(location)))
 	}
 
-	if description, ok := data["description"].(string); ok && description != "" {
+	if description, ok := data[FieldDescription].(string); ok && description != "" {
 		buf.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", escapeICS(description)))
 	}
 
 	// Handle attendees (array of objects)
-	if attendeesRaw, ok := data["attendees"]; ok {
+	if attendeesRaw, ok := data[FieldAttendees]; ok {
 		if attendees, ok := attendeesRaw.([]interface{}); ok {
 			for _, attendeeRaw := range attendees {
 				if attendee, ok := attendeeRaw.(map[string]interface{}); ok {
@@ -121,9 +163,9 @@ func GenerateICS(data map[string]interface{}) ([]byte, error) {
 						// Build ATTENDEE line
 						var attendeeLine string
 						if name != "" {
-							attendeeLine = fmt.Sprintf("ATTENDEE;CN=%s", escapeICS(name))
+							attendeeLine = fmt.Sprintf("%s;CN=%s", ICSAttendee, escapeICS(name))
 						} else {
-							attendeeLine = "ATTENDEE"
+							attendeeLine = ICSAttendee
 						}
 
 						// Add role (REQ-PARTICIPANT or OPT-PARTICIPANT)
@@ -143,12 +185,12 @@ func GenerateICS(data map[string]interface{}) ([]byte, error) {
 	}
 
 	// Handle recurrence (object)
-	if recurrenceRaw, ok := data["recurrence"]; ok {
+	if recurrenceRaw, ok := data[FieldRecurrence]; ok {
 		if recurrence, ok := recurrenceRaw.(map[string]interface{}); ok {
 			frequency, _ := recurrence["frequency"].(string)
 			if frequency != "" {
 				// Start RRULE
-				rrule := fmt.Sprintf("RRULE:FREQ=%s", frequency)
+				rrule := fmt.Sprintf("%s:FREQ=%s", ICSRule, frequency)
 
 				// Add interval if specified
 				if interval, ok := recurrence["interval"].(float64); ok && interval > 1 {
@@ -174,7 +216,7 @@ func GenerateICS(data map[string]interface{}) ([]byte, error) {
 	}
 
 	// Handle reminders (array of objects)
-	if remindersRaw, ok := data["reminders"]; ok {
+	if remindersRaw, ok := data[FieldReminders]; ok {
 		if reminders, ok := remindersRaw.([]interface{}); ok {
 			for _, reminderRaw := range reminders {
 				if reminder, ok := reminderRaw.(map[string]interface{}); ok {
@@ -192,8 +234,8 @@ func GenerateICS(data map[string]interface{}) ([]byte, error) {
 	}
 
 	// ICS file footer
-	buf.WriteString("END:VEVENT\r\n")
-	buf.WriteString("END:VCALENDAR\r\n")
+	buf.WriteString(ICSEndEvent + "\r\n")
+	buf.WriteString(ICSEndCalendar + "\r\n")
 
 	return buf.Bytes(), nil
 }

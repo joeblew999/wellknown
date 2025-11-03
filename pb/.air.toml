@@ -1,0 +1,47 @@
+root = "."
+testdata_dir = ""
+tmp_dir = "tmp"
+
+[build]
+  args_bin = ["serve", "--dir=./base/pb_data"]
+  bin = "./tmp/wellknown-pb"
+  cmd = "go build -o ./tmp/wellknown-pb ./base"
+  delay = 1000
+  exclude_dir = ["base/pb_data", "base/pb_migrations", "models", "tmp", "vendor", ".git"]
+  exclude_file = []
+  exclude_regex = ["_test.go"]
+  exclude_unchanged = false
+  follow_symlink = false
+  full_bin = ""
+  include_dir = [".", "base"]
+  include_ext = ["go", "js"]
+  include_file = []
+  kill_delay = "500ms"
+  log = "build-errors.log"
+  poll = false
+  poll_interval = 0
+  post_cmd = []
+  pre_cmd = []
+  rerun = false
+  rerun_delay = 500
+  send_interrupt = true
+  stop_on_error = false
+
+[color]
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  silent = false
+  time = false
+
+[misc]
+  clean_on_exit = true
+
+[screen]
+  clear_on_rebuild = true
+  keep_scroll = true

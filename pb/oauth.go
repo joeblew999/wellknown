@@ -9,7 +9,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/joeblew999/wellknown/pb/models"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/types"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -31,23 +33,23 @@ func registerOAuthRoutes(wk *Wellknown, e *core.ServeEvent) error {
 		Endpoint: google.Endpoint,
 	}
 
-	// Server-based OAuth routes (no JS SDK) - using standard http mux
-	e.Router.HandleFunc("GET /auth/google", handleGoogleLogin)
-	e.Router.HandleFunc("GET /auth/google/callback", handleGoogleCallback(wk))
-	e.Router.HandleFunc("GET /auth/logout", handleLogout(wk))
-	e.Router.HandleFunc("GET /auth/status", handleAuthStatus(wk))
+	// Server-based OAuth routes (no JS SDK)
+	e.Router.GET("/auth/google", handleGoogleLogin)
+	e.Router.GET("/auth/google/callback", handleGoogleCallback(wk))
+	e.Router.GET("/auth/logout", handleLogout(wk))
+	e.Router.GET("/auth/status", handleAuthStatus(wk))
 
 	log.Println("✅ Google OAuth routes registered (server-based)")
-	return nil
+	return e.Next()
 }
 
 // handleGoogleLogin initiates the OAuth flow
-func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
+func handleGoogleLogin(e *core.RequestEvent) error {
 	// Generate state token for CSRF protection
 	state := generateStateToken()
 
 	// Store state in session cookie
-	http.SetCookie(w, &http.Cookie{
+	http.SetCookie(e.Response, &http.Cookie{
 		Name:     "oauth_state",
 		Value:    state,
 		Path:     "/",
@@ -59,32 +61,29 @@ func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to Google OAuth consent page
 	url := googleOAuthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	return e.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 // handleGoogleCallback processes the OAuth callback
-func handleGoogleCallback(wk *Wellknown) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func handleGoogleCallback(wk *Wellknown) func(e *core.RequestEvent) error {
+	return func(e *core.RequestEvent) error {
 		// Verify state token
-		stateCookie, err := r.Cookie("oauth_state")
+		stateCookie, err := e.Request.Cookie("oauth_state")
 		if err != nil {
-			http.Error(w, "Missing state cookie", http.StatusBadRequest)
-			return
+			return e.String(http.StatusBadRequest, "Missing state cookie")
 		}
 
-		state := r.URL.Query().Get("state")
+		state := e.Request.URL.Query().Get("state")
 		if state != stateCookie.Value {
-			http.Error(w, "Invalid state token", http.StatusBadRequest)
-			return
+			return e.String(http.StatusBadRequest, "Invalid state token")
 		}
 
 		// Exchange code for token
-		code := r.URL.Query().Get("code")
+		code := e.Request.URL.Query().Get("code")
 		token, err := googleOAuthConfig.Exchange(context.Background(), code)
 		if err != nil {
 			log.Printf("Failed to exchange code: %v", err)
-			http.Error(w, "Failed to exchange code", http.StatusInternalServerError)
-			return
+			return e.String(http.StatusInternalServerError, "Failed to exchange code")
 		}
 
 		// Get user info
@@ -92,8 +91,7 @@ func handleGoogleCallback(wk *Wellknown) http.HandlerFunc {
 		resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 		if err != nil {
 			log.Printf("Failed to get user info: %v", err)
-			http.Error(w, "Failed to get user info", http.StatusInternalServerError)
-			return
+			return e.String(http.StatusInternalServerError, "Failed to get user info")
 		}
 		defer resp.Body.Close()
 
@@ -104,15 +102,13 @@ func handleGoogleCallback(wk *Wellknown) http.HandlerFunc {
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
 			log.Printf("Failed to decode user info: %v", err)
-			http.Error(w, "Failed to decode user info", http.StatusInternalServerError)
-			return
+			return e.String(http.StatusInternalServerError, "Failed to decode user info")
 		}
 
 		// Find or create user in Pocketbase
 		userCollection, err := wk.FindCollectionByNameOrId("users")
 		if err != nil {
-			http.Error(w, "Failed to find users collection", http.StatusInternalServerError)
-			return
+			return e.String(http.StatusInternalServerError, "Failed to find users collection")
 		}
 
 		// Try to find existing user by email
@@ -132,8 +128,7 @@ func handleGoogleCallback(wk *Wellknown) http.HandlerFunc {
 
 			if err := wk.Save(user); err != nil {
 				log.Printf("Failed to create user: %v", err)
-				http.Error(w, "Failed to create user", http.StatusInternalServerError)
-				return
+				return e.String(http.StatusInternalServerError, "Failed to create user")
 			}
 			log.Printf("Created new user: %s", userInfo.Email)
 		}
@@ -141,20 +136,18 @@ func handleGoogleCallback(wk *Wellknown) http.HandlerFunc {
 		// Store Google OAuth token
 		if err := storeGoogleToken(wk, user.Id, token, userInfo.Email); err != nil {
 			log.Printf("Failed to store token: %v", err)
-			http.Error(w, "Failed to store token", http.StatusInternalServerError)
-			return
+			return e.String(http.StatusInternalServerError, "Failed to store token")
 		}
 
 		// Generate JWT token for the user
-		authToken, err := wk.NewAuthToken(user.Collection().Name, user.Id)
+		authToken, err := user.NewAuthToken()
 		if err != nil {
 			log.Printf("Failed to generate auth token: %v", err)
-			http.Error(w, "Failed to generate auth token", http.StatusInternalServerError)
-			return
+			return e.String(http.StatusInternalServerError, "Failed to generate auth token")
 		}
 
 		// Set auth cookie
-		http.SetCookie(w, &http.Cookie{
+		http.SetCookie(e.Response, &http.Cookie{
 			Name:     "pb_auth",
 			Value:    authToken,
 			Path:     "/",
@@ -165,15 +158,15 @@ func handleGoogleCallback(wk *Wellknown) http.HandlerFunc {
 		})
 
 		// Redirect to home or dashboard
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return e.Redirect(http.StatusTemporaryRedirect, "/")
 	}
 }
 
 // handleLogout logs out the user
-func handleLogout(wk *Wellknown) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func handleLogout(wk *Wellknown) func(e *core.RequestEvent) error {
+	return func(e *core.RequestEvent) error {
 		// Clear auth cookie
-		http.SetCookie(w, &http.Cookie{
+		http.SetCookie(e.Response, &http.Cookie{
 			Name:     "pb_auth",
 			Value:    "",
 			Path:     "/",
@@ -181,30 +174,27 @@ func handleLogout(wk *Wellknown) http.HandlerFunc {
 			HttpOnly: true,
 		})
 
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return e.Redirect(http.StatusTemporaryRedirect, "/")
 	}
 }
 
 // handleAuthStatus returns current auth status
-func handleAuthStatus(wk *Wellknown) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		authCookie, err := r.Cookie("pb_auth")
+func handleAuthStatus(wk *Wellknown) func(e *core.RequestEvent) error {
+	return func(e *core.RequestEvent) error {
+		authCookie, err := e.Request.Cookie("pb_auth")
 		if err != nil || authCookie.Value == "" {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			return e.JSON(http.StatusOK, map[string]interface{}{
 				"authenticated": false,
 			})
-			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		return e.JSON(http.StatusOK, map[string]interface{}{
 			"authenticated": true,
 		})
 	}
 }
 
-// storeGoogleToken stores the OAuth token in the database
+// storeGoogleToken stores the OAuth token in the database using type-safe proxy
 func storeGoogleToken(wk *Wellknown, userID string, token *oauth2.Token, email string) error {
 	collection, err := wk.FindCollectionByNameOrId("google_tokens")
 	if err != nil {
@@ -216,24 +206,30 @@ func storeGoogleToken(wk *Wellknown, userID string, token *oauth2.Token, email s
 		"user_id": userID,
 	})
 
-	var record *core.Record
+	var tokenProxy *models.GoogleTokens
 	if err != nil {
-		// Token doesn't exist, create new record
-		record = core.NewRecord(collection)
+		// Token doesn't exist, create new proxy
+		tokenProxy, err = models.NewProxy[models.GoogleTokens](wk)
+		if err != nil {
+			return fmt.Errorf("failed to create GoogleTokens proxy: %w", err)
+		}
 	} else {
-		// Token exists, update it
-		record = existingToken
+		// Token exists, wrap it in proxy
+		tokenProxy, err = models.WrapRecord[models.GoogleTokens](existingToken)
+		if err != nil {
+			return fmt.Errorf("failed to wrap record as GoogleTokens: %w", err)
+		}
 	}
 
-	// Set token fields
-	record.Set("user_id", userID)
-	record.Set("access_token", token.AccessToken)
-	record.Set("refresh_token", token.RefreshToken)
-	record.Set("token_type", token.TokenType)
-	record.Set("expiry", token.Expiry.Format(time.RFC3339))
-	record.Set("email", email)
+	// Set token fields using type-safe setters
+	tokenProxy.SetUserId(userID)
+	tokenProxy.SetAccessToken(token.AccessToken)
+	tokenProxy.SetRefreshToken(token.RefreshToken)
+	tokenProxy.SetTokenType(token.TokenType)
+	tokenProxy.SetExpiry(types.NowDateTime().Add(time.Until(token.Expiry)))
+	tokenProxy.SetUserEmail(email)
 
-	return wk.Save(record)
+	return wk.Save(tokenProxy.ProxyRecord())
 }
 
 // generateStateToken generates a random state token for CSRF protection

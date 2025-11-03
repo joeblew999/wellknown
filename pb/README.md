@@ -1,180 +1,123 @@
-# Wellknown Pocketbase Integration
+# Wellknown PocketBase Integration
 
-Server-based Google OAuth + Calendar API integration for Pocketbase.
+**Server-side access to users' Google Calendar data via OAuth 2.0**
 
-## Architecture
+This PocketBase integration enables server-side Google Calendar operations:
+- Users authenticate via Google OAuth (consent flow)
+- OAuth tokens stored securely in PocketBase database
+- Server can read/write to users' Google Calendar on their behalf
+- Supports listing events, creating events, and more
 
-```
-pb/
-├── wellknown.go          # Main entry point (wraps Pocketbase)
-├── collections.go        # Collection setup (google_tokens)
-├── oauth.go              # Server-based Google OAuth flow
-├── calendar.go           # Google Calendar API routes
-└── base/                 # Demo server
-    ├── main.go           # Standalone server
-    ├── pb_public/        # Static files served by PB
-    │   └── index.html    # OAuth login UI (no JS SDK)
-    └── .env.example      # Environment template
-```
-
-## Features
-
-✅ **Server-Based OAuth** - No client-side JS SDK, all OAuth flow handled server-side
-✅ **Google Calendar API** - List and create events via authenticated API
-✅ **Token Storage** - OAuth tokens stored in Pocketbase collections
-✅ **Automatic Token Refresh** - Expired tokens refreshed automatically
-✅ **Importable Library** - Can be used by other Pocketbase projects
-
-## Setup
-
-### 1. Google Cloud Console
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create or select a project
-3. Enable APIs:
-   - Google Calendar API
-   - Google+ API (for user info)
-4. Create OAuth 2.0 credentials:
-   - Application type: Web application
-   - Authorized redirect URIs: `http://localhost:8090/auth/google/callback`
-5. Copy Client ID and Client Secret
-
-### 2. Environment Variables
+## Quick Start
 
 ```bash
+# 1. Setup (optional - only needed for Google OAuth)
 cd pb/base
 cp .env.example .env
-# Edit .env with your credentials
-```
+# Edit .env with your Google OAuth credentials
 
-Required:
-- `GOOGLE_CLIENT_ID` - From Google Cloud Console
-- `GOOGLE_CLIENT_SECRET` - From Google Cloud Console
-- `GOOGLE_REDIRECT_URL` - `http://localhost:8090/auth/google/callback`
-
-### 3. Run Server
-
-```bash
-# Install dependencies
-cd pb
-go mod tidy
-
-# Run server
-cd base
-source .env  # Load environment variables
-go run main.go serve
+# 2. Run server (auto-creates collections, plugins enabled)
+make pb-server
 ```
 
 Access:
-- **Homepage**: http://localhost:8090
+- **Root**: http://localhost:8090/ (dynamic HTML with all endpoints)
+- **API Index**: http://localhost:8090/api/ (JSON version)
 - **Admin UI**: http://localhost:8090/_/
+- **OAuth**: http://localhost:8090/auth/google
+- **Calendar API**: http://localhost:8090/api/calendar/events
 
-## How It Works
-
-### OAuth Flow (Server-Based)
-
-1. **User clicks "Sign in with Google"** → `/auth/google`
-2. **Server redirects to Google** with OAuth request
-3. **User authorizes** in Google's consent screen
-4. **Google redirects back** → `/auth/google/callback?code=...`
-5. **Server exchanges code for token** (server-to-server)
-6. **Server stores token** in `google_tokens` collection
-7. **Server creates PB session** with auth cookie
-8. **User is logged in** ✅
-
-### API Routes
-
-#### Public Routes
-- `GET /` - Homepage with login UI
-- `GET /auth/google` - Initiate OAuth flow
-- `GET /auth/google/callback` - OAuth callback
-- `GET /auth/status` - Check if authenticated
-
-#### Protected Routes (require auth)
-- `GET /api/calendar/events` - List user's calendar events
-- `POST /api/calendar/events` - Create new event
-- `GET /auth/logout` - Sign out
-
-### Collections
-
-#### `google_tokens`
-Stores OAuth tokens for each user:
-
-```
-- user_id: text (PB user ID)
-- access_token: text
-- refresh_token: text
-- token_type: text
-- expiry: date
-- email: email
-```
-
-Auto-created on first server start.
-
-## Usage in Other Projects
-
-You can import this as a library:
-
-```go
-package main
-
-import (
-    "github.com/joeblew999/wellknown/pb"
-    "github.com/pocketbase/pocketbase"
-)
-
-func main() {
-    // Option 1: Standalone
-    app := wellknown.New()
-    app.Start()
-
-    // Option 2: Add to existing PB app
-    pbApp := pocketbase.New()
-    wk := wellknown.NewWithApp(pbApp)
-    pbApp.Start()
-}
-```
-
-## Development Tools
-
-### pocketbase-gogen
-
-Generate type-safe Go code from PB collections:
+## Commands
 
 ```bash
-# Install
-go install github.com/snonky/pocketbase-gogen@latest
-
-# Generate template
-pocketbase-gogen template ./pb_data ./pb/generated/template.go
-
-# Generate proxies
-pocketbase-gogen generate ./pb/generated/template.go ./pb/generated/proxies.go --utils --hooks
+make help  # See all available commands
 ```
 
-See: [.src/pocketbase-gogen](.src/pocketbase-gogen) for reference.
+**Key Commands**:
+- `make pb-server` - Run server (no hot-reload)
+- `make pb-dev` - Run server with hot-reload (Air)
+- `make pb-build` - Build binary
+- `make pb-release` - Create GitHub release (multi-platform)
+- `make pb-update` - Update from GitHub releases
+- `make pb-gen-template` - Generate type-safe model template
+- `make pb-gen-models` - Generate type-safe model code
 
-## Security Notes
+## Architecture
 
-- OAuth state tokens prevent CSRF attacks
-- Tokens stored server-side (not exposed to client)
-- HTTPS required in production
-- Use secure cookies (`Secure`, `HttpOnly`, `SameSite`)
+**Data-First**: Collections defined in [collections.go](collections.go), auto-created on startup.
 
-## Testing
+**Plugins Enabled** (see [base/main.go](base/main.go)):
+- jsvm: JS hooks (`pb_hooks/*.pb.js`)
+- migratecmd: Database migrations
+- ghupdate: Self-update from GitHub
 
-1. Start server: `go run main.go serve`
-2. Open: http://localhost:8090
-3. Click "Sign in with Google"
-4. Authorize access
-5. View your calendar events
-6. Check PB admin: http://localhost:8090/_/
+**Type-Safe Models**: Optional code generation with pocketbase-gogen.
 
-## Related Documentation
+## API Endpoints
 
-- [POCKETBASE-ARCHITECTURE.md](../docs/POCKETBASE-ARCHITECTURE.md) - Architecture decisions
-- [JSONSCHEMA-POCKETBASE.md](../docs/JSONSCHEMA-POCKETBASE.md) - JSON Schema integration (future)
+**Dynamic Discovery**: The root endpoint (`/`) serves a dynamically-generated HTML page listing all available endpoints. This ensures the index stays in sync as routes are added/removed. For programmatic access, use `/api/` which returns the same information as JSON.
 
----
+### OAuth Routes
+- `GET /auth/google` - Initiate Google OAuth flow
+- `GET /auth/google/callback` - OAuth callback
+- `GET /auth/logout` - Logout
+- `GET /auth/status` - Check auth status
 
-**Last Updated**: 2025-10-27
+### Calendar API Routes (Authenticated - requires OAuth)
+- `GET /api/calendar/events` - List user's Google Calendar events
+- `POST /api/calendar/events` - Create new event in Google Calendar
+
+**Example - List Events**:
+```bash
+curl http://localhost:8090/api/calendar/events \
+  -H "Cookie: pb_auth=YOUR_AUTH_TOKEN"
+```
+
+**Example - Create Event**:
+```bash
+curl -X POST http://localhost:8090/api/calendar/events \
+  -H "Cookie: pb_auth=YOUR_AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "summary": "Team Meeting",
+    "start_time": "2024-03-20T10:00:00Z",
+    "end_time": "2024-03-20T11:00:00Z",
+    "location": "Office",
+    "description": "Weekly sync"
+  }'
+```
+
+## Files
+
+```
+pb/
+├── base/main.go         # Follows .src/presentator pattern
+├── collections.go       # Schema as code
+├── oauth.go            # Google OAuth (stores tokens in DB)
+├── calendar.go         # Calendar API (list/create events)
+├── wellknown.go        # App wrapper
+├── _templates/         # pocketbase-gogen templates
+└── models/             # Generated type-safe models
+```
+
+**Architecture Separation**:
+
+- **PocketBase** (`pb/`) - **Server-side Google Calendar access**
+  - OAuth 2.0 flow (user consent → token storage)
+  - Securely stores OAuth tokens in database
+  - Provides authenticated API to read/write users' Google Calendar
+  - Example: Your app can list a user's calendar events, create events, etc.
+
+- **Main Server** (`pkg/server`) - **Client-side calendar deep links**
+  - Generates Google/Apple Calendar URLs (no auth needed)
+  - Stateless URL/ICS generation
+  - Public-facing web UI for creating calendar links
+
+**Why separate?**
+- **Different use cases**:
+  - PocketBase = Server acts on behalf of user (requires OAuth)
+  - Main Server = User opens calendar link in their own app (no OAuth)
+- **Security**: OAuth tokens stay in PocketBase database, never exposed to client
+- **Flexibility**: Use PocketBase for server-side operations, main server for public links
+
+See `make help` for all commands.
