@@ -43,6 +43,7 @@ pb/tmp/
 .bin/
 /server
 .dist/
+dist/
 
 # PocketBase - ignore generated/runtime files
 pb/base/pb_data/
