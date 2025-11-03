@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/joeblew999/wellknown/pb/models"
+	"github.com/joeblew999/wellknown/pb/codegen/models"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/types"
 	"golang.org/x/oauth2"

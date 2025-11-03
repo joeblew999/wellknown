@@ -78,6 +78,10 @@ Automatic JWT generation & management for NATS users, triggered from PocketBase 
 
 https://github.com/skeeeon/pb-nats
 
+https://github.com/skeeeon/pb-cli
+
+https://github.com/skeeeon/rule-router
+
 ---
 
 NATS emebdded

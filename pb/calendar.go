@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/joeblew999/wellknown/pb/models"
+	"github.com/joeblew999/wellknown/pb/codegen/models"
 	"github.com/pocketbase/pocketbase/core"
 	"golang.org/x/oauth2"
 	calendar "google.golang.org/api/calendar/v3"

@@ -75,8 +75,8 @@ run: build
 PB_DIR := pb/base
 PB_BINARY := .bin/wellknown-pb
 PB_DATA := $(PB_DIR)/pb_data
-PB_TEMPLATE := pb/_templates/google_tokens.go
-PB_MODELS := pb/models
+PB_TEMPLATE := pb/codegen/_templates/google_tokens.go
+PB_MODELS := pb/codegen/models
 DIST_DIR := .dist
 GH_OWNER := joeblew999
 GH_REPO := wellknown
@@ -131,8 +131,8 @@ pb-build:
 
 pb-clean:
 	@echo "🧹 Cleaning PocketBase generated files..."
-	rm -rf pb/tmp pb/models pb/build-errors.log
-	@echo "✅ Cleaned: pb/tmp/, pb/models/, pb/build-errors.log"
+	rm -rf pb/tmp pb/codegen/models pb/build-errors.log
+	@echo "✅ Cleaned: pb/tmp/, pb/codegen/models/, pb/build-errors.log"
 	@echo "💡 Tip: Run 'make pb-gen-models' to regenerate type-safe models"
 
 pb-release:

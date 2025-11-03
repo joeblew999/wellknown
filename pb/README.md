@@ -91,13 +91,14 @@ curl -X POST http://localhost:8090/api/calendar/events \
 
 ```
 pb/
-├── base/main.go         # Follows .src/presentator pattern
+├── base/main.go         # Entry point
 ├── collections.go       # Schema as code
 ├── oauth.go            # Google OAuth (stores tokens in DB)
 ├── calendar.go         # Calendar API (list/create events)
 ├── wellknown.go        # App wrapper
-├── _templates/         # pocketbase-gogen templates
-└── models/             # Generated type-safe models
+└── codegen/            # All code generation
+    ├── _templates/     # pocketbase-gogen input templates
+    └── models/         # Generated type-safe models (output)
 ```
 
 **Architecture Separation**:
