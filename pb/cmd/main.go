@@ -21,6 +21,7 @@ import (
 	"github.com/pocketbase/pocketbase/tools/osutils"
 
 	wellknown "github.com/joeblew999/wellknown/pb"
+	_ "github.com/joeblew999/wellknown/pb/cmd/pb_migrations" // Import migrations
 )
 
 func main() {

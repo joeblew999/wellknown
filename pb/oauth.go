@@ -134,7 +134,7 @@ func handleGoogleCallback(wk *Wellknown) func(e *core.RequestEvent) error {
 		}
 
 		// Store Google OAuth token
-		if err := storeGoogleToken(wk, user.Id, token, userInfo.Email); err != nil {
+		if err := storeGoogleToken(wk, user.Id, token); err != nil {
 			log.Printf("Failed to store token: %v", err)
 			return e.String(http.StatusInternalServerError, "Failed to store token")
 		}
@@ -195,7 +195,7 @@ func handleAuthStatus(wk *Wellknown) func(e *core.RequestEvent) error {
 }
 
 // storeGoogleToken stores the OAuth token in the database using type-safe proxy
-func storeGoogleToken(wk *Wellknown, userID string, token *oauth2.Token, email string) error {
+func storeGoogleToken(wk *Wellknown, userID string, token *oauth2.Token) error {
 	collection, err := wk.FindCollectionByNameOrId("google_tokens")
 	if err != nil {
 		return fmt.Errorf("failed to find google_tokens collection: %w", err)
@@ -227,7 +227,6 @@ func storeGoogleToken(wk *Wellknown, userID string, token *oauth2.Token, email s
 	tokenProxy.SetRefreshToken(token.RefreshToken)
 	tokenProxy.SetTokenType(token.TokenType)
 	tokenProxy.SetExpiry(types.NowDateTime().Add(time.Until(token.Expiry)))
-	tokenProxy.SetUserEmail(email)
 
 	return wk.Save(tokenProxy.ProxyRecord())
 }

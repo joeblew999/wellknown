@@ -1,124 +1,151 @@
-# Wellknown PocketBase Integration
+# Wellknown PocketBase Server
 
-**Server-side access to users' Google Calendar data via OAuth 2.0**
+Server-side Google Calendar access via OAuth 2.0
 
-This PocketBase integration enables server-side Google Calendar operations:
-- Users authenticate via Google OAuth (consent flow)
-- OAuth tokens stored securely in PocketBase database
-- Server can read/write to users' Google Calendar on their behalf
-- Supports listing events, creating events, and more
+## CLAUDE 
+
+MUST keep Makefile, .gitignore, code and air config in sync !!! 
 
 ## Quick Start
 
 ```bash
-# 1. Setup (optional - only needed for Google OAuth)
-cd pb/base
-cp .env.example .env
-# Edit .env with your Google OAuth credentials
+# Run server (migrations auto-apply)
+make server
 
-# 2. Run server (auto-creates collections, plugins enabled)
-make pb-server
+# Or with hot-reload
+make dev
 ```
 
-Access:
-- **Root**: http://localhost:8090/ (dynamic HTML with all endpoints)
-- **API Index**: http://localhost:8090/api/ (JSON version)
-- **Admin UI**: http://localhost:8090/_/
-- **OAuth**: http://localhost:8090/auth/google
-- **Calendar API**: http://localhost:8090/api/calendar/events
+**URLs:**
+- Root: http://localhost:8090/
+- Admin UI: http://localhost:8090/_/
+- Google Login: http://localhost:8090/auth/google
+
+## Data Management Flow
+
+### 1. Migrations (Schema Source of Truth)
+
+```
+pb/cmd/pb_migrations/
+└── 1730709600_init_google_tokens.go  ← Schema definition
+```
+
+**Create new migration:**
+```go
+package pb_migrations
+
+import "github.com/pocketbase/pocketbase/core"
+
+func init() {
+    core.AppMigrations.Register(
+        // Up: Create collection
+        func(txApp core.App) error {
+            collection := core.NewBaseCollection("my_collection")
+            collection.Fields.Add(
+                &core.TextField{Name: "my_field", Required: true},
+            )
+            return txApp.Save(collection)
+        },
+        // Down: Remove collection
+        func(txApp core.App) error {
+            collection, _ := txApp.FindCollectionByNameOrId("my_collection")
+            return txApp.Delete(collection)
+        },
+    )
+}
+```
+
+### 2. Code Generation (Type-Safe Models)
+
+**After adding/modifying migrations:**
+
+```bash
+# Step 1: Run server to apply migrations
+make server  # Creates pb_data/ from migrations
+
+# Step 2: Generate template from database schema
+make gen-template  # Creates codegen/_templates/*.go
+
+# Step 3: Generate type-safe models
+make gen-models  # Creates codegen/models/*.go
+```
+
+**Flow:**
+```
+Migrations → pb_data/ → pocketbase-gogen template → _templates/*.go
+                                                           ↓
+                                               pocketbase-gogen generate
+                                                           ↓
+                                               codegen/models/*.go
+```
+
+**Key Points:**
+- Migrations define ONLY custom fields (no system fields like `id`, `email`)
+- Template includes system fields WITH `// system:` comments
+- Generator skips system fields (inherited from `core.BaseRecordProxy`)
+- No shadowing errors!
+
+### 3. Using Generated Models
+
+```go
+import "github.com/joeblew999/wellknown/pb/codegen/models"
+
+// Create record
+tokenProxy := models.NewGoogleTokens(app, record)
+
+// Use type-safe setters for CUSTOM fields
+tokenProxy.SetUserId("user123")
+tokenProxy.SetAccessToken("token")
+
+// System fields inherited from Record
+record.Id()  // NOT tokenProxy.Id() - uses core.Record method
+```
+
+## Architecture
+
+```
+pb/
+├── cmd/
+│   ├── main.go              # Entry point
+│   └── pb_migrations/       # Schema evolution
+├── codegen/
+│   ├── _templates/          # Generated from pb_data
+│   └── models/              # Generated type-safe code
+├── oauth.go                 # Google OAuth flow
+├── calendar.go              # Calendar API
+└── wellknown.go             # App wrapper
+```
 
 ## Commands
 
 ```bash
-make help  # See all available commands
+make help              # Show all commands
+make server            # Run server
+make dev               # Run with hot-reload (Air)
+make build             # Build binary
+make gen-template      # Generate template from pb_data
+make gen-models        # Generate type-safe models
+make clean             # Clean generated files
+make release           # Create GitHub release
+make debug             # Show Makefile variables
 ```
-
-**Key Commands**:
-- `make pb-server` - Run server (no hot-reload)
-- `make pb-dev` - Run server with hot-reload (Air)
-- `make pb-build` - Build binary
-- `make pb-release` - Create GitHub release (multi-platform)
-- `make pb-update` - Update from GitHub releases
-- `make pb-gen-template` - Generate type-safe model template
-- `make pb-gen-models` - Generate type-safe model code
-
-## Architecture
-
-**Data-First**: Collections defined in [collections.go](collections.go), auto-created on startup.
-
-**Plugins Enabled** (see [base/main.go](base/main.go)):
-- jsvm: JS hooks (`pb_hooks/*.pb.js`)
-- migratecmd: Database migrations
-- ghupdate: Self-update from GitHub
-
-**Type-Safe Models**: Optional code generation with pocketbase-gogen.
 
 ## API Endpoints
 
-**Dynamic Discovery**: The root endpoint (`/`) serves a dynamically-generated HTML page listing all available endpoints. This ensures the index stays in sync as routes are added/removed. For programmatic access, use `/api/` which returns the same information as JSON.
-
-### OAuth Routes
-- `GET /auth/google` - Initiate Google OAuth flow
+**OAuth:**
+- `GET /auth/google` - Login
 - `GET /auth/google/callback` - OAuth callback
 - `GET /auth/logout` - Logout
 - `GET /auth/status` - Check auth status
 
-### Calendar API Routes (Authenticated - requires OAuth)
-- `GET /api/calendar/events` - List user's Google Calendar events
-- `POST /api/calendar/events` - Create new event in Google Calendar
+**Calendar (authenticated):**
+- `GET /api/calendar/events` - List events
+- `POST /api/calendar/events` - Create event
 
-**Example - List Events**:
-```bash
-curl http://localhost:8090/api/calendar/events \
-  -H "Cookie: pb_auth=YOUR_AUTH_TOKEN"
-```
+## Plugins Enabled
 
-**Example - Create Event**:
-```bash
-curl -X POST http://localhost:8090/api/calendar/events \
-  -H "Cookie: pb_auth=YOUR_AUTH_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "summary": "Team Meeting",
-    "start_time": "2024-03-20T10:00:00Z",
-    "end_time": "2024-03-20T11:00:00Z",
-    "location": "Office",
-    "description": "Weekly sync"
-  }'
-```
+- **jsvm**: JS hooks (`pb_hooks/*.pb.js`)
+- **migratecmd**: Database migrations
+- **ghupdate**: Self-update from GitHub
 
-## Files
-
-```
-pb/
-├── base/main.go         # Entry point
-├── collections.go       # Schema as code
-├── oauth.go            # Google OAuth (stores tokens in DB)
-├── calendar.go         # Calendar API (list/create events)
-├── wellknown.go        # App wrapper
-└── codegen/            # All code generation
-    ├── _templates/     # pocketbase-gogen input templates
-    └── models/         # Generated type-safe models (output)
-```
-
-**Architecture Separation**:
-
-- **PocketBase** (`pb/`) - **Server-side Google Calendar access**
-  - OAuth 2.0 flow (user consent → token storage)
-  - Securely stores OAuth tokens in database
-  - Provides authenticated API to read/write users' Google Calendar
-  - Example: Your app can list a user's calendar events, create events, etc.
-
-- **Main Server** (`pkg/server`) - **Client-side calendar deep links**
-  - Generates Google/Apple Calendar URLs (no auth needed)
-  - Stateless URL/ICS generation
-  - Public-facing web UI for creating calendar links
-
-**Why separate?**
-- **Different use cases**:
-  - PocketBase = Server acts on behalf of user (requires OAuth)
-  - Main Server = User opens calendar link in their own app (no OAuth)
-- **Security**: OAuth tokens stay in PocketBase database, never exposed to client
-- **Flexibility**: Use PocketBase for server-side operations, main server for public links
-
-See `make help` for all commands.
+See [cmd/main.go](cmd/main.go) for plugin configuration.

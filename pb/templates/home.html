@@ -1,0 +1,37 @@
+{{template "layout" .}}
+
+{{define "title"}}Welcome - Wellknown{{end}}
+
+{{define "content"}}
+<div class="card">
+    {{if .Authenticated}}
+        <h2>Welcome back!</h2>
+        <p>You're signed in with Google.</p>
+        <p><a href="/calendar" class="btn btn-primary">View Calendar</a></p>
+    {{else}}
+        <h2>Welcome to Wellknown Calendar</h2>
+        <p>Sign in with your Google account to access your calendar events.</p>
+        <div class="alert alert-info">
+            <p><strong>What this demo does:</strong></p>
+            <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                <li>Authenticates via Google OAuth 2.0</li>
+                <li>Stores OAuth tokens in PocketBase</li>
+                <li>Lists your Google Calendar events</li>
+                <li>Allows creating/editing/deleting events</li>
+            </ul>
+        </div>
+        <p style="margin-top: 1rem;">
+            <a href="/auth/google" class="btn btn-primary">Sign in with Google</a>
+        </p>
+    {{end}}
+</div>
+
+<div class="card">
+    <h3>API Endpoints</h3>
+    <ul style="list-style: none;">
+        <li><code>/api/calendar/events</code> - List events (GET, authenticated)</li>
+        <li><code>/api/calendar/events</code> - Create event (POST, authenticated)</li>
+        <li><code>/api/calendar/events/:id</code> - Get/Update/Delete event</li>
+    </ul>
+</div>
+{{end}}

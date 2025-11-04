@@ -31,12 +31,10 @@ func NewWithApp(app *pocketbase.PocketBase) *Wellknown {
 func bindAppHooks(wk *Wellknown) {
 	// Setup collections and routes on server start
 	wk.OnServe().BindFunc(func(e *core.ServeEvent) error {
-		log.Println("🔗 Wellknown: Initializing collections and routes...")
+		log.Println("🔗 Wellknown: Initializing routes...")
 
-		// Setup collections first
-		if err := setupCollections(wk); err != nil {
-			return err
-		}
+		// NOTE: Collections are now managed via migrations in cmd/pb_migrations/
+		// No runtime collection creation needed
 
 		// Define available endpoints (single source of truth)
 		endpoints := map[string]string{

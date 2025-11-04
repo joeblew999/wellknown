@@ -1,0 +1,7 @@
+# Ignore all cloned repositories
+*
+
+# But track these meta files
+!.gitignore
+!README.md
+!Makefile

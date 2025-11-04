@@ -1,0 +1,17 @@
+# PocketBase runtime data (generated from migrations)
+cmd/pb_data/
+
+# PocketBase generated code
+codegen/_templates/*.go
+codegen/models/*.go
+!codegen/models/stub.go
+
+# Environment secrets
+cmd/.env
+
+# Build artifacts
+tmp/
+build-errors.log
+
+# Air hot-reload
+.air/

@@ -51,8 +51,7 @@ type Users struct {
 	// system: tokenKey
 	tokenKey string
 	// system: email
-	// schema-name: email
-	UserEmail string
+	email string
 	// system: emailVisibility
 	emailVisibility bool
 	// system: verified
@@ -72,6 +71,4 @@ type GoogleTokens struct {
 	refresh_token string
 	token_type    string
 	expiry        types.DateTime
-	// schema-name: email
-	UserEmail     string
 }

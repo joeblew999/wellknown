@@ -34,19 +34,10 @@ go.work.sum
 # mcp claude
 .playwright-mcp
 
-
-# External source code for reference (not part of our codebase)
-.src/
-
-tmp/
-pb/tmp/
 .bin/
-/server
 .dist/
-dist/
+tmp/
+/server
 
-# PocketBase - ignore generated/runtime files
-pb/base/pb_data/
-pb/codegen/models/
 
-# Track hooks and migrations (they're part of your code)
+

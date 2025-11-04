@@ -1,0 +1,73 @@
+{{template "layout" .}}
+
+{{define "title"}}Calendar Events - Wellknown{{end}}
+
+{{define "content"}}
+<div class="card">
+    <h2>Your Calendar Events</h2>
+    <p style="margin-bottom: 1rem;">Showing your upcoming Google Calendar events</p>
+
+    <div data-on-load="$$get('/api/calendar/events')">
+        <div data-show="$loading">Loading events...</div>
+
+        <div data-show="!$loading && $error">
+            <div class="alert alert-error">
+                Failed to load events. Please try again or <a href="/auth/google">re-authenticate</a>.
+            </div>
+        </div>
+
+        <div data-show="!$loading && !$error">
+            <div id="events-list" style="margin-top: 1rem;">
+                <template data-for="event in $events">
+                    <div class="card" style="margin-bottom: 0.5rem; padding: 1rem;">
+                        <h3 style="margin-bottom: 0.5rem;" data-text="event.summary">Event Title</h3>
+                        <p style="font-size: 0.875rem; color: #666;">
+                            <span data-text="event.start?.dateTime || event.start?.date">Start Time</span>
+                            <span data-show="event.location"> • <span data-text="event.location"></span></span>
+                        </p>
+                        <p data-show="event.description" style="margin-top: 0.5rem;" data-text="event.description">Description</p>
+                    </div>
+                </template>
+                <div data-show="$events?.length === 0" class="alert alert-info">
+                    No upcoming events found. Create one in Google Calendar!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Create New Event</h3>
+    <form id="create-event-form" data-on-submit="$$post('/api/calendar/events')">
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.25rem; font-weight: 500;">Title</label>
+            <input type="text" name="summary" required
+                   style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.25rem; font-weight: 500;">Description</label>
+            <textarea name="description" rows="3"
+                      style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label style="display: block; margin-bottom: 0.25rem; font-weight: 500;">Start Time</label>
+                <input type="datetime-local" name="start_time" required
+                       style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 0.25rem; font-weight: 500;">End Time</label>
+                <input type="datetime-local" name="end_time" required
+                       style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.25rem; font-weight: 500;">Location</label>
+            <input type="text" name="location"
+                   style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <button type="submit" class="btn btn-primary">Create Event</button>
+        <div data-show="$submitting" style="display: inline-block; margin-left: 1rem;">Creating...</div>
+    </form>
+</div>
+{{end}}

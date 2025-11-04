@@ -190,7 +190,7 @@ func getGoogleToken(wk *Wellknown, userID string) (*oauth2.Token, error) {
 		}
 
 		// Update stored token
-		if err := storeGoogleToken(wk, userID, newToken, tokenProxy.UserEmail()); err != nil {
+		if err := storeGoogleToken(wk, userID, newToken); err != nil {
 			log.Printf("Warning: failed to update refreshed token: %v", err)
 		}
 

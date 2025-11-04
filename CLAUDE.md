@@ -7,10 +7,11 @@
 ## 🚨 Critical Rules
 
 1. **Module name**: `github.com/joeblew999/wellknown` (⚠️ `999` not `99`!)
-2. **Path**: `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
+2. **File Path**: `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
 3. **Never use browser dialogs** (`alert()`, `confirm()`, `prompt()`) - use toast notifications
 4. **Never commit without being asked** - user must explicitly request commits
-4. You MUST ONLY use the Makefile to run the code !!! This ensures the Makefile is the sourth of truth for how to run the system, and forced you to keep it valid with the code. You MUST adapt the Makefile if you need to and not just call into the code directly.
+- You MUST ONLY use the Makefile to run the code !!! This ensures the Makefile is the source of truth for how to run the system, and forced you to keep it valid with the code. You MUST adapt the Makefile if you need to and not just call into the code directly.
+5. MUST use the .src folder is for reference code, because its much quicker than Web Searches. Maintain the Makefile in it too.
 
 
 ---
