@@ -18,8 +18,8 @@ import (
 
 var googleOAuthConfig *oauth2.Config
 
-// registerOAuthRoutes sets up server-based Google OAuth routes
-func registerOAuthRoutes(wk *Wellknown, e *core.ServeEvent) error {
+// RegisterOAuthRoutes sets up server-based Google OAuth routes
+func RegisterOAuthRoutes(wk *Wellknown, e *core.ServeEvent, registry *RouteRegistry) {
 	// Initialize Google OAuth config from environment
 	googleOAuthConfig = &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
@@ -33,6 +33,12 @@ func registerOAuthRoutes(wk *Wellknown, e *core.ServeEvent) error {
 		Endpoint: google.Endpoint,
 	}
 
+	// Register routes with registry
+	registry.Register("OAuth", "/auth/google", "GET", "Initiate Google OAuth login", false)
+	registry.Register("OAuth", "/auth/google/callback", "GET", "Google OAuth callback", false)
+	registry.Register("OAuth", "/auth/logout", "GET", "Logout and clear session", false)
+	registry.Register("OAuth", "/auth/status", "GET", "Check authentication status", false)
+
 	// Server-based OAuth routes (no JS SDK)
 	e.Router.GET("/auth/google", handleGoogleLogin)
 	e.Router.GET("/auth/google/callback", handleGoogleCallback(wk))
@@ -40,7 +46,6 @@ func registerOAuthRoutes(wk *Wellknown, e *core.ServeEvent) error {
 	e.Router.GET("/auth/status", handleAuthStatus(wk))
 
 	log.Println("✅ Google OAuth routes registered (server-based)")
-	return e.Next()
 }
 
 // handleGoogleLogin initiates the OAuth flow

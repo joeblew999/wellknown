@@ -17,14 +17,17 @@ import (
 
 // registerCalendarRoutes sets up Google Calendar API routes
 // NOTE: Calendar URL/ICS generation is handled by the main server (pkg/server), not here!
-// PocketBase only handles OAuth + Calendar API calls (list/create events using stored tokens)
-func registerCalendarRoutes(wk *Wellknown, e *core.ServeEvent) error {
+// RegisterCalendarRoutes handles Calendar API calls (list/create events using stored tokens)
+func RegisterCalendarRoutes(wk *Wellknown, e *core.ServeEvent, registry *RouteRegistry) {
+	// Register routes with registry
+	registry.Register("Calendar", "/api/calendar/events", "GET", "List calendar events", true)
+	registry.Register("Calendar", "/api/calendar/events", "POST", "Create calendar event", true)
+
 	// Protected routes - require authentication
 	e.Router.GET("/api/calendar/events", handleListEvents(wk)).BindFunc(requireAuthMiddleware(wk))
 	e.Router.POST("/api/calendar/events", handleCreateEvent(wk)).BindFunc(requireAuthMiddleware(wk))
 
 	log.Println("✅ Calendar API routes registered (OAuth + Calendar API only)")
-	return e.Next()
 }
 
 // requireAuthMiddleware checks for valid auth token
