@@ -99,7 +99,21 @@ go-mod-upgrade:
 	go install github.com/oligot/go-mod-upgrade@latest
 	go-mod-upgrade
 
-## gen: Generate PocketBase template and type-safe models
+## run: Run PocketBase server (port 8090)
+run:
+	@echo "🚀 Starting PocketBase..."
+	@echo "Admin UI: http://localhost:8090/_/"
+	@echo ""
+	@echo "📁 Data directory: $(PB_DATA_DIR)"
+	@echo "   PocketBase will auto-create subdirectories as needed:"
+	@echo "   - storage/          File uploads"
+	@echo "   - backups/          Database backups"
+	@echo "   - .pb_temp_to_delete/  Temp files"
+	@echo ""
+	@mkdir -p $(PB_DATA_DIR) $(NATS_DATA_DIR)
+	go run . pb
+
+## gen: Generate PocketBase template and type-safe models off the Pocketbase database itself
 gen:
 	@echo "📝 Generating PocketBase template from schema..."
 	@if [ ! -d "$(PB_DATA_DIR)" ]; then \
@@ -115,24 +129,13 @@ gen:
 	pocketbase-gogen generate $(TEMPLATE) $(MODELS)/proxies.go --package models --utils --hooks
 	@echo "✅ Models: $(MODELS)/{proxies,utils,proxy_hooks}.go"
 
-## gen-testdata: Generate test data using Go reflection
+
+## gen-testdata: Generate test data using Go reflection. Not working yet...
 gen-testdata:
 	@echo "🔧 Generating test data..."
 	@go run . gen-testdata -v
 
-## run: Run PocketBase server (port 8090)
-run:
-	@echo "🚀 Starting PocketBase..."
-	@echo "Admin UI: http://localhost:8090/_/"
-	@echo ""
-	@echo "📁 Data directory: $(PB_DATA_DIR)"
-	@echo "   PocketBase will auto-create subdirectories as needed:"
-	@echo "   - storage/          File uploads"
-	@echo "   - backups/          Database backups"
-	@echo "   - .pb_temp_to_delete/  Temp files"
-	@echo ""
-	@mkdir -p $(PB_DATA_DIR) $(NATS_DATA_DIR)
-	go run . pb
+
 
 ## bin: Build PocketBase server binary into BIN
 bin:
