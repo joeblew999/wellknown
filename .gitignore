@@ -39,5 +39,12 @@ go.work.sum
 tmp/
 /server
 
+# PocketBase
+pb/cmd/pb_data/
+pb/tmp/
+pb/build-errors.log
+pb/codegen/models/*.go
+!pb/codegen/models/stub.go
+
 
 

@@ -1,208 +1,114 @@
-# Claude's Notes - wellknown Project
+# MANDATORY RULES - READ BEFORE EVERY TASK
 
-**Purpose**: Quick reference for AI agents working on this codebase
-
----
-
-## 🚨 Critical Rules
-
-1. **Module name**: `github.com/joeblew999/wellknown` (⚠️ `999` not `99`!)
-2. **File Path**: `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
-3. **Never use browser dialogs** (`alert()`, `confirm()`, `prompt()`) - use toast notifications
-4. **Never commit without being asked** - user must explicitly request commits
-- You MUST ONLY use the Makefile to run the code !!! This ensures the Makefile is the source of truth for how to run the system, and forced you to keep it valid with the code. You MUST adapt the Makefile if you need to and not just call into the code directly.
-5. MUST use the .src folder is for reference code, because its much quicker than Web Searches. Maintain the Makefile in it too.
-
+**Purpose**: Critical rules for AI agents working on this codebase
 
 ---
 
-## What This Project Does
+## ⚡ Pre-Task Checklist (VERIFY BEFORE EVERY ACTION)
 
-Universal Go library for generating deep links to Google/Apple calendar apps.
+Before doing ANYTHING, verify:
 
-**Key Principle**: Deterministic (same input → same output every time)
+- [ ] Am I using `github.com/joeblew999/wellknown` (999 not 99)?
+- [ ] Am I using Makefile (`make <target>`) instead of calling code directly?
+- [ ] If changing code structure, will I update the Makefile?
+- [ ] Did the user EXPLICITLY ask me to commit? (If no, DO NOT commit)
 
 ---
 
-## Architecture (DRY Pattern)
+## 🚨 Critical Rules (ALL ARE MANDATORY - ZERO EXCEPTIONS)
 
-### Shared Packages
+### Rule 1: Module Name
+**MUST USE:** `github.com/joeblew999/wellknown` (⚠️ THREE 9s: `999`)
+
+✅ **DO:** `github.com/joeblew999/wellknown`
+❌ **DON'T:** `github.com/joeblew99/wellknown` (only two 9s)
+
+### Rule 2: File Path
+**MUST USE:** `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
+
+✅ **DO:** Use the exact path above
+❌ **DON'T:** Use any variation or shortened path
+
+### Rule 3: Always Use Makefile
+**MUST:** Run ALL operations through Makefile
+
+✅ **DO:** `make run`, `make build`, `make gen`
+❌ **DON'T:** `go run ./cmd/...`, `go run .`, direct code execution
+
+### Rule 4: Keep Code and Makefile in Sync
+**MUST:** Update Makefile when changing code structure
+
+✅ **DO:** When moving files, update Makefile paths immediately
+❌ **DON'T:** Change code structure without updating Makefile targets
+
+### Rule 5: Never Auto-Commit
+**MUST:** Wait for explicit user request before committing
+
+✅ **DO:** Ask "Should I commit these changes?"
+❌ **DON'T:** Commit automatically or "helpfully"
+
+---
+
+## ❌ Common Violations (NEVER DO THESE)
+
+1. Running `go run ./pkg/cmd/pocketbase` instead of `make run`
+2. Using `joeblew99` (two 9s) instead of `joeblew999` (three 9s)
+3. Creating git commits without being asked
+4. Changing file locations without updating Makefile paths
+5. Calling code directly instead of using Makefile targets
+
+---
+
+## ⚙️ How to Work with This Codebase
+
+1. **Check rules:** Verify the Pre-Task Checklist above
+2. **Use Makefile:** Run `make help` to see available commands
+3. **Keep in sync:** When changing code, update Makefile
+4. **Ask before committing:** Never commit without explicit user request
+
+The Makefile is the single source of truth for how to run this system.
+
+---
+
+## 📚 Reference Code (.src folder)
+
+**ALWAYS check `.src/` BEFORE web searches** - it's faster, more reliable, and project-specific.
+
+### ⚠️ CRITICAL: Use CORRECT path with THREE 9s!
+
+**CORRECT `.src/` path (THREE 9s):**
 ```
-pkg/
-├── calendar/         # Shared field constants & interfaces
-├── testgen/          # Test generation library
-├── schema/           # File name constants (schema.json, etc.)
-├── google/calendar/  # Google Calendar (imports pkg/calendar)
-└── apple/calendar/   # Apple Calendar (imports pkg/calendar)
-
-cmd/
-└── testdata-gen/     # Thin CLI wrapper for pkg/testgen
-```
-
-### Key Pattern
-- **Single source of truth**: Field names in `pkg/calendar/fields.go`
-- **Re-exports**: Platform packages import & re-export for backwards compat
-- **Registry-based**: Easy to add new platforms
-
----
-
-## Platform Details
-
-### Google Calendar
-- **Uses web URLs**: `https://calendar.google.com/calendar/render?action=TEMPLATE&...`
-- **Why**: Native `googlecalendar://` doesn't support event parameters
-- **Mobile behavior**: Browser opens, then OS offers to open in app
-
-### Apple Calendar
-- **Uses HTTP-served .ics files**: `/apple/calendar/download?event=<base64>`
-- **Why**: Safari rejects `data:text/calendar` URIs as invalid
-- **Format**: RFC 5545 iCalendar format
-- **Supports**: Recurrence, attendees, reminders, etc.
-
----
-
-## Development Workflow
-
-### Hot Reload (Development)
-```bash
-make dev          # Starts Air with hot-reload
-# Watches .go, .html files in pkg/ and cmd/
-# Auto-rebuilds and restarts on changes
-```
-
-### Generate Test Data
-```bash
-go run ./cmd/testdata-gen
-# Or: make gen-testdata
-```
-
-### Run Tests
-```bash
-go test ./...                    # All Go tests
-bun test tests/e2e/             # Playwright tests
-```
-
----
-
-## Adding a New Platform
-
-1. **Create directory**: `pkg/{platform}/{appType}/`
-2. **Add files**:
-   - `calendar.go` - Import `pkg/calendar`, implement generator
-   - `schema.json` - JSON Schema validation
-   - `uischema.json` - Form UI definition
-   - `data-examples.json` - Test examples
-3. **Register in testgen**: Add to registry in `pkg/testgen/generator.go`
-4. **Register in server**: Add route in `pkg/server/routes.go`
-
-That's it! Test generation and Playwright tests work automatically.
-
----
-
-## UI/UX Rules
-
-### ❌ NEVER Use
-- `alert()` - Blocks UI, untestable
-- `confirm()` - Slow tests, bad UX
-- `prompt()` - Not mobile-friendly
-
-### ✅ ALWAYS Use
-- **Toast notifications** - Auto-dismiss, non-blocking
-- **Inline errors** - Show below form fields
-- **Modal dialogs** - For complex confirmations (rare)
-
----
-
-## Testing Architecture
-
-### Test Data Flow
-```
-pkg/{platform}/{appType}/data-examples.json
-    ↓
-cmd/testdata-gen (runs ACTUAL Go generators)
-    ↓
-tests/e2e/generated/{platform}-{apptype}-tests.json
-    ↓
-Playwright (platform-generic.spec.ts)
+/Users/apple/workspace/go/src/github.com/joeblew999/wellknown/.src/
 ```
 
-**Key**: Playwright validates against Go-generated expectations, not hardcoded values!
-
-### Current Tests
-- `tests/e2e/platform-generic.spec.ts` - Generic suite for ALL platforms
-- `tests/e2e/wizard-core.spec.ts` - GCP OAuth setup wizard
-- Go unit tests in each `pkg/` directory
-
----
-
-## Key Files
-
-### Must Know
-- `pkg/calendar/fields.go` - Shared field constants
-- `pkg/schema/const.go` - File name constants
-- `pkg/testgen/generator.go` - Test generation logic
-- `ARCHITECTURE.md` - Detailed architecture docs
-- `REFACTORING_COMPLETE.md` - Recent refactoring summary
-
-### Server
-- `pkg/server/server.go` - Server struct (owns all deps, zero globals)
-- `pkg/server/navigation.go` - Service registry
-- `pkg/server/calendar_generic.go` - Schema-driven handler
-- `pkg/server/templates/` - Embedded HTML templates
-
----
-
-## Common Patterns
-
-### Field Constants
-```go
-import cal "github.com/joeblew999/wellknown/pkg/calendar"
-
-data[cal.FieldTitle]       // "title"
-data[cal.FieldStart]       // "start"
-data[cal.FieldAttendees]   // "attendees"
+**WRONG paths (TWO 9s - NEVER USE):**
+```
+/Users/apple/workspace/go/src/github.com/joeblew99/wellknown/.src/  ❌ WRONG!
 ```
 
-### Generator Signature
-```go
-func GenerateURL(data map[string]interface{}) (string, error)
-func GenerateICS(data map[string]interface{}) ([]byte, error)
-```
+✅ **DO:** Check `.src/` folder FIRST for examples, templates, and reference implementations
+✅ **DO:** Use `.src/` when planning, researching, or looking for code patterns
+✅ **DO:** ALWAYS use the path with THREE 9s: `joeblew999` not `joeblew99`
+✅ **DO:** Maintain `.src/Makefile` alongside the root Makefile (keep them in sync)
+✅ **DO:** Update `.src/Makefile` when updating root Makefile with new patterns
+❌ **DON'T:** Default to web searches without checking `.src/` first
+❌ **DON'T:** Skip `.src/` when researching how to implement features
+❌ **DON'T:** EVER use `joeblew99` (two 9s) in ANY path
 
-### Schema-Driven
-- JSON Schema validates input
-- UI Schema generates forms
-- Generator functions assume valid input
+**When to use `.src/`:**
+- Planning new features → Check `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown/.src/` for similar patterns
+- Need code examples → Look in `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown/.src/` first
+- Want to understand project structure → Review `.src/` reference code (THREE 9s!)
+- Looking for Makefile patterns → Check `.src/Makefile` (reference Makefile for Claude)
+- Need implementation guidance → Review `.src/` before web searches
 
----
-
-## Git Workflow
-
-**Only commit when explicitly asked!**
-
-When creating commits:
-1. Run `git status` and `git diff` in parallel
-2. Draft commit message (focus on "why" not "what")
-3. Add files and commit with this format:
-```
-Brief description (1-2 sentences)
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
-
-**NEVER push** unless explicitly requested.
+**REMEMBER: It's `999` not `99` - THREE NINES!**
 
 ---
 
-## Resources
+## 🎯 Why These Rules Exist
 
-- **Full architecture**: See `ARCHITECTURE.md`
-- **Recent refactoring**: See `REFACTORING_COMPLETE.md`
-- **Commit history**: Use `git log` for completed work
-- **Claude Code docs**: https://docs.claude.com/en/docs/claude-code/
-
----
-
-**Last Updated**: 2025-10-28
+- **Module name typo**: Prevents Go from trying to fetch wrong remote packages
+- **Makefile enforcement**: Ensures consistency and prevents breaking changes
+- **Code/Makefile sync**: Keeps documentation and implementation aligned
+- **No auto-commits**: User controls version history, not AI
