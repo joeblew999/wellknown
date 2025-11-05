@@ -8,12 +8,15 @@ DIST_DIR := $(MAKEFILE_DIR).dist
 # Multi-service data directory structure
 # All runtime data is organized under .data/ (gitignored)
 DATA_DIR := $(MAKEFILE_DIR).data
-PB_DATA_DIR := $(DATA_DIR)/pb        # PocketBase runtime: databases, storage/, backups/
-NATS_DATA_DIR := $(DATA_DIR)/nats    # Future: NATS JetStream state for HA
+# PocketBase runtime: databases, storage/, backups/
+PB_DATA_DIR := $(DATA_DIR)/pb
+# Future: NATS JetStream state for HA
+NATS_DATA_DIR := $(DATA_DIR)/nats
 
 # PocketBase source directories (version controlled)
 PB_CMD_DIR := $(MAKEFILE_DIR)pkg/cmd/pocketbase
-MIGRATIONS_DIR := $(PB_CMD_DIR)/pb_migrations  # Database migrations (Go)
+# Database migrations (Go)
+MIGRATIONS_DIR := $(PB_CMD_DIR)/pb_migrations
 CODEGEN_DIR := $(MAKEFILE_DIR)pkg/pb/codegen
 
 # Generated files
