@@ -20,7 +20,8 @@ MIGRATIONS_DIR := $(PB_CMD_DIR)/pb_migrations
 CODEGEN_DIR := $(MAKEFILE_DIR)pkg/pb/codegen
 
 # Generated files
-TEMPLATE := $(CODEGEN_DIR)/_templates/google_tokens.go
+# Template contains ALL collections (users, google_tokens, accounts, transactions, etc.)
+TEMPLATE := $(CODEGEN_DIR)/_templates/schema.go
 MODELS := $(CODEGEN_DIR)/models
 BINARY := $(BIN_DIR)/wellknown-pb
 
