@@ -25,6 +25,46 @@ WORKDIR /app
 # Install ca-certificates for OAuth/API calls and tzdata for timezone support
 RUN apk --no-cache add ca-certificates tzdata wget
 
+# ================================================================
+# Environment Variables (injected at runtime by Fly.io)
+# ================================================================
+#
+# Required (set via fly.toml [env] section):
+#   PB_DATA_DIR=/app/.data/pb     - PocketBase data directory
+#   SERVER_HOST=0.0.0.0            - Server bind address
+#   SERVER_PORT=8090               - Server port
+#
+# Required (set via Fly.io secrets):
+#   GOOGLE_CLIENT_ID               - Google OAuth client ID
+#   GOOGLE_CLIENT_SECRET           - Google OAuth client secret
+#   GOOGLE_REDIRECT_URL            - Google OAuth callback URL
+#
+# Optional (set via Fly.io secrets if needed):
+#   PB_ADMIN_EMAIL                 - Admin email for PocketBase
+#   PB_ADMIN_PASSWORD              - Admin password for PocketBase
+#   APPLE_TEAM_ID                  - Apple Developer Team ID
+#   APPLE_CLIENT_ID                - Apple OAuth client ID
+#   APPLE_KEY_ID                   - Apple private key ID
+#   APPLE_PRIVATE_KEY              - Apple private key (inline PEM)
+#   APPLE_REDIRECT_URL             - Apple OAuth callback URL
+#   SMTP_HOST                      - SMTP server hostname
+#   SMTP_PORT                      - SMTP server port
+#   SMTP_USERNAME                  - SMTP username
+#   SMTP_PASSWORD                  - SMTP password
+#   SMTP_FROM_EMAIL                - From email address
+#   SMTP_FROM_NAME                 - From name
+#   S3_ENDPOINT                    - S3 endpoint URL
+#   S3_REGION                      - S3 region
+#   S3_BUCKET                      - S3 bucket name
+#   S3_ACCESS_KEY                  - S3 access key
+#   S3_SECRET_KEY                  - S3 secret key
+#   S3_FORCE_PATH_STYLE            - S3 path style (true/false)
+#   ANTHROPIC_API_KEY              - Anthropic Claude API key
+#   ANTHROPIC_MODEL                - Claude model name (optional, has default)
+#
+# Sync secrets: make fly-secrets
+# ================================================================
+
 # Copy binary from builder
 COPY --from=builder /build/wellknown-pb .
 
