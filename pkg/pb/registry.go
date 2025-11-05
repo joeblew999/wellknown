@@ -213,24 +213,64 @@ func NewRouteHandler(registry *RouteRegistry, domain string, event *core.ServeEv
 
 // GET registers a GET route
 func (h *RouteHandler) GET(path string, handler func(*core.RequestEvent) error, opts ...RouteOption) {
+	meta := &RouteMetadata{}
+	for _, opt := range opts {
+		opt(meta)
+	}
+
 	h.registry.RegisterRoute(h.domain, path, "GET", opts...)
-	h.event.Router.GET(path, handler)
+	route := h.event.Router.GET(path, handler)
+
+	// Apply auth middleware if required
+	if meta.AuthRequired {
+		route.BindFunc(RequireAuth())
+	}
 }
 
 // POST registers a POST route
 func (h *RouteHandler) POST(path string, handler func(*core.RequestEvent) error, opts ...RouteOption) {
+	meta := &RouteMetadata{}
+	for _, opt := range opts {
+		opt(meta)
+	}
+
 	h.registry.RegisterRoute(h.domain, path, "POST", opts...)
-	h.event.Router.POST(path, handler)
+	route := h.event.Router.POST(path, handler)
+
+	// Apply auth middleware if required
+	if meta.AuthRequired {
+		route.BindFunc(RequireAuth())
+	}
 }
 
 // PUT registers a PUT route
 func (h *RouteHandler) PUT(path string, handler func(*core.RequestEvent) error, opts ...RouteOption) {
+	meta := &RouteMetadata{}
+	for _, opt := range opts {
+		opt(meta)
+	}
+
 	h.registry.RegisterRoute(h.domain, path, "PUT", opts...)
-	h.event.Router.PUT(path, handler)
+	route := h.event.Router.PUT(path, handler)
+
+	// Apply auth middleware if required
+	if meta.AuthRequired {
+		route.BindFunc(RequireAuth())
+	}
 }
 
 // DELETE registers a DELETE route
 func (h *RouteHandler) DELETE(path string, handler func(*core.RequestEvent) error, opts ...RouteOption) {
+	meta := &RouteMetadata{}
+	for _, opt := range opts {
+		opt(meta)
+	}
+
 	h.registry.RegisterRoute(h.domain, path, "DELETE", opts...)
-	h.event.Router.DELETE(path, handler)
+	route := h.event.Router.DELETE(path, handler)
+
+	// Apply auth middleware if required
+	if meta.AuthRequired {
+		route.BindFunc(RequireAuth())
+	}
 }

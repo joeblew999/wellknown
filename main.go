@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/joeblew999/wellknown/pkg/cmd/mcp"
 	pocketbase "github.com/joeblew999/wellknown/pkg/cmd/pocketbase"
 	"github.com/joeblew999/wellknown/pkg/cmd/server"
 	testdatagen "github.com/joeblew999/wellknown/pkg/cmd/testdata-gen"
@@ -29,6 +30,9 @@ func main() {
 	case "pb":
 		log.Println("Loading PocketBase service...")
 		pocketbase.Main(serviceArgs)
+	case "mcp":
+		log.Println("Loading MCP server...")
+		mcp.Main(serviceArgs)
 	case "server":
 		log.Println("Loading Well Known server...")
 		server.Main(serviceArgs)
@@ -46,7 +50,8 @@ func printUsage() {
 	fmt.Println("Usage: wellknown <service> [args...]")
 	fmt.Println("")
 	fmt.Println("Available services:")
-	fmt.Println("  pb         - Start PocketBase server (port 8090)")
+	fmt.Println("  pb            - Start PocketBase server (port 8090)")
+	fmt.Println("  mcp           - Start MCP server for Claude Desktop integration (stdio)")
 	fmt.Println("  server        - Start HTTP server (port 8080)")
 	fmt.Println("  gen-testdata  - Generate test data")
 }

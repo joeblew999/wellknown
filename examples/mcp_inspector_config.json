@@ -1,0 +1,15 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/config.json",
+  "comment": "MCP Inspector Configuration",
+  "comment2": "Use with: npx @modelcontextprotocol/inspector --config examples/mcp_inspector_config.json",
+  "comment3": "Or use Makefile: make test-mcp-inspector",
+  "servers": {
+    "pocketbase": {
+      "command": ".bin/wellknown-pb",
+      "args": ["mcp"],
+      "env": {
+        "PB_DATA_DIR": ".data/pb"
+      }
+    }
+  }
+}

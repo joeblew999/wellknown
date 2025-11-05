@@ -1,23 +1,22 @@
 # Wellknown PocketBase Server
 
-Server-side Google Calendar access via OAuth 2.0
-
-## CLAUDE 
-
-MUST keep Makefile, .gitignore, code and air config in sync !!! 
-
-Modify air as needed.
-
-Use the Makefile to run things !! so we know it always is the truth. 
 
 ## Quick Start
 
 ```bash
-# Run server (migrations auto-apply)
-make server
 
-# Or with hot-reload
-make dev
+# 1. Create migration
+# Edit: pb/cmd/pb_migrations/TIMESTAMP_name.go
+
+# 2. run
+make run   # Migrations auto-apply
+
+# 3. will pick up new schema in PB and gen 
+make gen  # Regenerate templates from pb_data and Regenerate models from new templates
+
+# 4. run
+make run   # new golang code now used.
+
 ```
 
 **URLs:**
@@ -25,25 +24,8 @@ make dev
 - Admin UI: http://localhost:8090/_/
 - Google Login: http://localhost:8090/auth/google
 
+
 ## Development Flow (CORRECT - Discovered via Banking Example)
-
-### TL;DR Quick Commands
-
-```bash
-# 1. Create migration file
-# Edit: pb/cmd/pb_migrations/TIMESTAMP_name.go
-
-# 2. Generate models (works if templates exist!)
-make gen-models
-
-# 3. Build and run (migrations auto-apply)
-make build
-make server
-
-# 4. OPTIONAL: Only if you added NEW collections
-make gen-template  # Extract schema from pb_data
-make gen-models    # Regenerate with new collections
-```
 
 ### 1. Migrations (Schema Source of Truth)
 

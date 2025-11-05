@@ -8,6 +8,9 @@ REPO_PRESENTATOR := presentator|https://github.com/presentator/presentator.git|v
 REPO_JSONSCHEMA := jsonschema|https://github.com/santhosh-tekuri/jsonschema.git|v6.0.2|jsonschema (validation library - matches go.mod v6.0.2)
 REPO_GOPOCJSON := goPocJsonSchemaForm|https://github.com/warlockxins/goPocJsonSchemaForm.git|main|goPocJsonSchemaForm (dynamic form generation example)
 REPO_DATASTARUI := datastarui|https://github.com/coreycole/datastarui.git|main|DatastarUI (Go/templ shadcn/ui components with Datastar)
+REPO_GIC := gic|https://github.com/yarlson/gic.git|v0.5.0|gic (Git + Claude AI commit message generator with MCP server mode)
+REPO_MCP_GO_SDK := mcp-go-sdk|https://github.com/modelcontextprotocol/go-sdk.git|v1.1.0|MCP Go SDK (Model Context Protocol implementation - stable version)
+REPO_ANTHROPIC_GO_SDK := anthropic-go-sdk|https://github.com/anthropics/anthropic-sdk-go.git|v1.16.0|Anthropic Go SDK (Claude API official client - stable version)
 
 # Auto-computed variables
 # Extract directory names from all REPO_* variables

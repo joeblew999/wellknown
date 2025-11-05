@@ -7,10 +7,15 @@ primary_region = "sjc"
 [build]
 
 [env]
+  # PocketBase configuration (non-secret)
+  # Secrets (OAuth, SMTP, etc.) are set via: make fly-secrets
+  PB_DATA_DIR = "/app/.data/pb"
+  SERVER_HOST = "0.0.0.0"
+  SERVER_PORT = "8090"
+
   # Multi-service data directory structure
-  # - .data/pb/      PocketBase SQLite databases
+  # - .data/pb/      PocketBase SQLite databases + storage/ + backups/
   # - .data/nats/    Future: NATS JetStream state for HA
-  # - .data/uploads/ Future: File uploads
   # Migrations will auto-run on startup
 
 [http_service]

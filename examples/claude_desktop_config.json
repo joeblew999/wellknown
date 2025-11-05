@@ -1,0 +1,12 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/config.json",
+  "mcpServers": {
+    "pocketbase": {
+      "command": "/absolute/path/to/wellknown/.bin/wellknown-pb",
+      "args": ["mcp"],
+      "env": {
+        "PB_DATA_DIR": "/absolute/path/to/wellknown/.data/pb"
+      }
+    }
+  }
+}

@@ -40,19 +40,8 @@ func RegisterBankingRoutes(wk *Wellknown, e *core.ServeEvent, registry *RouteReg
 
 // handleListAccounts lists all accounts for the authenticated user
 func handleListAccounts(c *core.RequestEvent, service *banking.Service) error {
-	// Get authenticated user
-	authRecord := c.Get("authRecord")
-	if authRecord == nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Authentication required",
-		})
-	}
-	userRecord, ok := authRecord.(*core.Record)
-	if !ok {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Invalid authentication",
-		})
-	}
+	// Auth middleware ensures c.Auth is populated
+	userRecord := c.Auth
 
 	// Get user's accounts
 	accounts, err := service.Accounts.GetUserAccounts(userRecord.Id)
@@ -89,19 +78,8 @@ type CreateAccountRequest struct {
 
 // handleCreateAccount creates a new bank account
 func handleCreateAccount(c *core.RequestEvent, service *banking.Service) error {
-	// Get authenticated user
-	authRecord := c.Get("authRecord")
-	if authRecord == nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Authentication required",
-		})
-	}
-	userRecord, ok := authRecord.(*core.Record)
-	if !ok {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Invalid authentication",
-		})
-	}
+	// Auth middleware ensures c.Auth is populated
+	userRecord := c.Auth
 
 	// Parse request
 	var req CreateAccountRequest
@@ -146,19 +124,8 @@ func handleCreateAccount(c *core.RequestEvent, service *banking.Service) error {
 
 // handleGetAccount gets account details by ID
 func handleGetAccount(c *core.RequestEvent, service *banking.Service) error {
-	// Get authenticated user
-	authRecord := c.Get("authRecord")
-	if authRecord == nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Authentication required",
-		})
-	}
-	userRecord, ok := authRecord.(*core.Record)
-	if !ok {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Invalid authentication",
-		})
-	}
+	// Auth middleware ensures c.Auth is populated
+	userRecord := c.Auth
 
 	accountID := c.Request.PathValue("id")
 	if accountID == "" {
@@ -187,19 +154,8 @@ func handleGetAccount(c *core.RequestEvent, service *banking.Service) error {
 
 // handleListTransactions lists transactions for an account
 func handleListTransactions(c *core.RequestEvent, service *banking.Service) error {
-	// Get authenticated user
-	authRecord := c.Get("authRecord")
-	if authRecord == nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Authentication required",
-		})
-	}
-	userRecord, ok := authRecord.(*core.Record)
-	if !ok {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Invalid authentication",
-		})
-	}
+	// Auth middleware ensures c.Auth is populated
+	userRecord := c.Auth
 
 	accountID := c.Request.PathValue("id")
 	if accountID == "" {
@@ -255,19 +211,8 @@ type CreateTransactionRequest struct {
 
 // handleCreateTransaction creates a new transaction
 func handleCreateTransaction(c *core.RequestEvent, service *banking.Service) error {
-	// Get authenticated user
-	authRecord := c.Get("authRecord")
-	if authRecord == nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Authentication required",
-		})
-	}
-	userRecord, ok := authRecord.(*core.Record)
-	if !ok {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Invalid authentication",
-		})
-	}
+	// Auth middleware ensures c.Auth is populated
+	userRecord := c.Auth
 
 	// Parse request
 	var req CreateTransactionRequest

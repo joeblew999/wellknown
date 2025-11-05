@@ -6,67 +6,55 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/joeblew999/wellknown/pkg/pb/codegen/models"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/types"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
-
-var googleOAuthConfig *oauth2.Config
 
 // RegisterOAuthRoutes sets up server-based Google OAuth routes
 func RegisterOAuthRoutes(wk *Wellknown, e *core.ServeEvent, registry *RouteRegistry) {
-	// Initialize Google OAuth config from environment
-	googleOAuthConfig = &oauth2.Config{
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
-			"https://www.googleapis.com/auth/calendar",
-		},
-		Endpoint: google.Endpoint,
+	// Check if OAuth is enabled
+	if wk.oauthService == nil || wk.oauthService.GoogleConfig == nil {
+		log.Println("⚠️  Google OAuth not configured - skipping OAuth routes")
+		return
 	}
 
-	// Register routes with registry
-	registry.Register("OAuth", "/auth/google", "GET", "Initiate Google OAuth login", false)
-	registry.Register("OAuth", "/auth/google/callback", "GET", "Google OAuth callback", false)
-	registry.Register("OAuth", "/auth/logout", "GET", "Logout and clear session", false)
-	registry.Register("OAuth", "/auth/status", "GET", "Check authentication status", false)
+	// Create route handler for OAuth domain
+	handler := NewRouteHandler(registry, "OAuth", e)
 
-	// Server-based OAuth routes (no JS SDK)
-	e.Router.GET("/auth/google", handleGoogleLogin)
-	e.Router.GET("/auth/google/callback", handleGoogleCallback(wk))
-	e.Router.GET("/auth/logout", handleLogout(wk))
-	e.Router.GET("/auth/status", handleAuthStatus(wk))
+	// Server-based OAuth routes (no authentication required)
+	handler.GET("/auth/google", handleGoogleLogin(wk), WithDescription("Initiate Google OAuth login"))
+	handler.GET("/auth/google/callback", handleGoogleCallback(wk), WithDescription("Google OAuth callback"))
+	handler.GET("/auth/logout", handleLogout(wk), WithDescription("Logout and clear session"))
+	handler.GET("/auth/status", handleAuthStatus(wk), WithDescription("Check authentication status"))
 
 	log.Println("✅ Google OAuth routes registered (server-based)")
 }
 
 // handleGoogleLogin initiates the OAuth flow
-func handleGoogleLogin(e *core.RequestEvent) error {
-	// Generate state token for CSRF protection
-	state := generateStateToken()
+func handleGoogleLogin(wk *Wellknown) func(e *core.RequestEvent) error {
+	return func(e *core.RequestEvent) error {
+		// Generate state token for CSRF protection
+		state := generateStateToken()
 
-	// Store state in session cookie
-	http.SetCookie(e.Response, &http.Cookie{
-		Name:     "oauth_state",
-		Value:    state,
-		Path:     "/",
-		MaxAge:   600, // 10 minutes
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
+		// Store state in session cookie
+		http.SetCookie(e.Response, &http.Cookie{
+			Name:     "oauth_state",
+			Value:    state,
+			Path:     "/",
+			MaxAge:   600, // 10 minutes
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
 
-	// Redirect to Google OAuth consent page
-	url := googleOAuthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
-	return e.Redirect(http.StatusTemporaryRedirect, url)
+		// Redirect to Google OAuth consent page
+		url := wk.oauthService.GoogleConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
+		return e.Redirect(http.StatusTemporaryRedirect, url)
+	}
 }
 
 // handleGoogleCallback processes the OAuth callback
@@ -85,14 +73,14 @@ func handleGoogleCallback(wk *Wellknown) func(e *core.RequestEvent) error {
 
 		// Exchange code for token
 		code := e.Request.URL.Query().Get("code")
-		token, err := googleOAuthConfig.Exchange(context.Background(), code)
+		token, err := wk.oauthService.GoogleConfig.Exchange(context.Background(), code)
 		if err != nil {
 			log.Printf("Failed to exchange code: %v", err)
 			return e.String(http.StatusInternalServerError, "Failed to exchange code")
 		}
 
 		// Get user info
-		client := googleOAuthConfig.Client(context.Background(), token)
+		client := wk.oauthService.GoogleConfig.Client(context.Background(), token)
 		resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 		if err != nil {
 			log.Printf("Failed to get user info: %v", err)

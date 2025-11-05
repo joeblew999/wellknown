@@ -19,39 +19,23 @@ import (
 // NOTE: Calendar URL/ICS generation is handled by the main server (pkg/server), not here!
 // RegisterCalendarRoutes handles Calendar API calls (list/create events using stored tokens)
 func RegisterCalendarRoutes(wk *Wellknown, e *core.ServeEvent, registry *RouteRegistry) {
-	// Register routes with registry
-	registry.Register("Calendar", "/api/calendar/events", "GET", "List calendar events", true)
-	registry.Register("Calendar", "/api/calendar/events", "POST", "Create calendar event", true)
+	// Create route handler for Calendar domain
+	handler := NewRouteHandler(registry, "Calendar", e)
 
 	// Protected routes - require authentication
-	e.Router.GET("/api/calendar/events", handleListEvents(wk)).BindFunc(requireAuthMiddleware(wk))
-	e.Router.POST("/api/calendar/events", handleCreateEvent(wk)).BindFunc(requireAuthMiddleware(wk))
+	handler.GET("/api/calendar/events", handleListEvents(wk),
+		WithAuth(), WithDescription("List calendar events"))
+	handler.POST("/api/calendar/events", handleCreateEvent(wk),
+		WithAuth(), WithDescription("Create calendar event"))
 
 	log.Println("✅ Calendar API routes registered (OAuth + Calendar API only)")
-}
-
-// requireAuthMiddleware checks for valid auth token
-func requireAuthMiddleware(wk *Wellknown) func(e *core.RequestEvent) error {
-	return func(e *core.RequestEvent) error {
-		authCookie, err := e.Request.Cookie("pb_auth")
-		if err != nil || authCookie.Value == "" {
-			return e.JSON(http.StatusUnauthorized, map[string]string{
-				"error": "Authentication required",
-			})
-		}
-
-		// Store user ID in context (simplified - should verify token properly)
-		// For now, pass through
-		return e.Next()
-	}
 }
 
 // handleListEvents lists user's calendar events
 func handleListEvents(wk *Wellknown) func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
-		// Get user from auth cookie (simplified - should extract from JWT)
-		authCookie, _ := e.Request.Cookie("pb_auth")
-		userID := authCookie.Value // TODO: Extract real user ID from JWT
+		// Auth middleware ensures e.Auth is populated
+		userID := e.Auth.Id
 
 		// Get Google token for user
 		token, err := getGoogleToken(wk, userID)
@@ -62,7 +46,7 @@ func handleListEvents(wk *Wellknown) func(e *core.RequestEvent) error {
 		}
 
 		// Create Calendar API client
-		client := googleOAuthConfig.Client(context.Background(), token)
+		client := wk.oauthService.GoogleConfig.Client(context.Background(), token)
 		srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
 		if err != nil {
 			return e.JSON(http.StatusInternalServerError, map[string]string{
@@ -93,9 +77,8 @@ func handleListEvents(wk *Wellknown) func(e *core.RequestEvent) error {
 // handleCreateEvent creates a new calendar event
 func handleCreateEvent(wk *Wellknown) func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
-		// Get user from auth cookie (simplified)
-		authCookie, _ := e.Request.Cookie("pb_auth")
-		userID := authCookie.Value // TODO: Extract real user ID from JWT
+		// Auth middleware ensures e.Auth is populated
+		userID := e.Auth.Id
 
 		// Parse request body
 		var eventData struct {
@@ -121,7 +104,7 @@ func handleCreateEvent(wk *Wellknown) func(e *core.RequestEvent) error {
 		}
 
 		// Create Calendar API client
-		client := googleOAuthConfig.Client(context.Background(), token)
+		client := wk.oauthService.GoogleConfig.Client(context.Background(), token)
 		srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
 		if err != nil {
 			return e.JSON(http.StatusInternalServerError, map[string]string{
@@ -187,7 +170,7 @@ func getGoogleToken(wk *Wellknown, userID string) (*oauth2.Token, error) {
 	// Check if token needs refresh
 	if time.Now().After(token.Expiry) {
 		// Token expired, refresh it
-		newToken, err := googleOAuthConfig.TokenSource(context.Background(), token).Token()
+		newToken, err := wk.oauthService.GoogleConfig.TokenSource(context.Background(), token).Token()
 		if err != nil {
 			return nil, fmt.Errorf("failed to refresh token: %w", err)
 		}

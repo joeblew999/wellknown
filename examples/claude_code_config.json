@@ -1,0 +1,16 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/config.json",
+  "comment": "Claude Code (VSCode Extension) Configuration",
+  "comment2": "Add this to: ~/Library/Application Support/Claude/claude_desktop_config.json",
+  "comment3": "After updating, reload VSCode window: Cmd+Shift+P → 'Reload Window'",
+  "mcpServers": {
+    "pocketbase": {
+      "command": "/absolute/path/to/wellknown/.bin/wellknown-pb",
+      "args": ["mcp"],
+      "env": {
+        "PB_DATA_DIR": "/absolute/path/to/wellknown/.data/pb",
+        "LOG_LEVEL": "info"
+      }
+    }
+  }
+}

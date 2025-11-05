@@ -31,6 +31,10 @@ go.work.sum
 # .idea/
 # .vscode/
 
+# MCP Configuration (personalized per developer)
+# Keep .vscode/mcp.json.example (template) but ignore personalized configs
+.vscode/mcp.json
+
 # mcp claude
 .playwright-mcp
 
@@ -53,14 +57,6 @@ tmp/
 # - .pb_temp_to_delete/ Temporary files (auto-cleaned by PocketBase)
 # - .autocert_cache/   Let's Encrypt SSL certificates
 # These are already ignored via .data/ pattern above
-
-# Legacy PocketBase directories (can remove after migration)
-pb_data/
-pb/cmd/pb_data/
-pb/tmp/
-pb/build-errors.log
-pb/codegen/models/*.go
-!pb/codegen/models/stub.go
 
 # Fly.io (keep fly.toml for deployment config)
 .fly/

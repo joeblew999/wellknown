@@ -94,6 +94,10 @@ go-dep:
 	@echo "  - gh (GitHub CLI)"
 	@echo "  - flyctl (Fly.io CLI)"
 
+## go-mod-tidy: Tidy Go module dependencies
+go-mod-tidy:
+	go mod tidy
+
 ## go-mod-upgrade: Upgrade Go module dependencies
 go-mod-upgrade:
 	go install github.com/oligot/go-mod-upgrade@latest
@@ -110,8 +114,45 @@ run:
 	@echo "   - backups/          Database backups"
 	@echo "   - .pb_temp_to_delete/  Temp files"
 	@echo ""
+	@echo "⚙️  Configuration (PocketBase best practice):"
+	@echo "   1. .env file (dev only - auto-loaded when using 'go run')"
+	@echo "   2. Environment variables (production - set in shell/docker/systemd)"
+	@echo "   3. Command-line flags (for testing specific values)"
+	@echo ""
+	@echo "💡 Examples:"
+	@echo "   # Use .env file (development)"
+	@echo "   make run"
+	@echo ""
+	@echo "   # Use env vars (production)"
+	@echo "   GOOGLE_CLIENT_ID=xxx GOOGLE_CLIENT_SECRET=yyy make run"
+	@echo ""
+	@echo "   # Use flags"
+	@echo "   make run ARGS='serve --http=0.0.0.0:8080'"
+	@echo ""
 	@mkdir -p $(PB_DATA_DIR) $(NATS_DATA_DIR)
-	go run . pb
+	go run . pb $(ARGS)
+
+## mcp: Run MCP server for Claude Desktop integration (stdio)
+mcp:
+	@echo "🤖 Starting MCP server..."
+	@echo "📡 MCP server will communicate via stdio"
+	@echo "💡 Configure in Claude Desktop: ~/Library/Application Support/Claude/claude_desktop_config.json"
+	@echo ""
+	@echo "📋 Add this to your Claude Desktop config:"
+	@echo '  {'
+	@echo '    "mcpServers": {'
+	@echo '      "pocketbase": {'
+	@echo '        "command": "$(shell pwd)/$(BINARY)",'
+	@echo '        "args": ["mcp"],'
+	@echo '        "env": {'
+	@echo '          "PB_DATA": "$(PB_DATA_DIR)"'
+	@echo '        }'
+	@echo '      }'
+	@echo '    }'
+	@echo '  }'
+	@echo ""
+	@mkdir -p $(PB_DATA_DIR) $(NATS_DATA_DIR)
+	go run . mcp
 
 ## gen: Generate PocketBase template and type-safe models off the Pocketbase database itself
 gen:
@@ -144,8 +185,23 @@ bin:
 	go build -o $(BINARY) .
 	@echo "✅ Binary: $(BINARY)"
 
-## test: Build and test PocketBase API endpoints
-test: bin
+## test: Run all tests (unit + integration)
+test:
+	@echo "🧪 Running all tests..."
+	go test -v ./...
+
+## test-unit: Run unit tests only
+test-unit:
+	@echo "🧪 Running unit tests..."
+	go test -v -short ./...
+
+## test-mcp: Run MCP server tests only
+test-mcp:
+	@echo "🧪 Running MCP tests..."
+	go test -v ./pkg/pbmcp/...
+
+## test-e2e: Build and test PocketBase API endpoints
+test-e2e: bin
 	@echo "🧪 Testing PocketBase API endpoints..."
 	@lsof -ti:8090 | xargs kill -9 2>/dev/null || true
 	@sleep 1
@@ -165,6 +221,78 @@ test: bin
 	curl -s "http://localhost:8090/api/banking/accounts?user_id=test123" -w "\nHTTP Status: %{http_code}\n" && \
 	echo "" && \
 	kill $$SERVER_PID 2>/dev/null || true
+
+## test-mcp-inspector: Launch MCP Inspector for interactive testing
+test-mcp-inspector: bin
+	@echo "🔍 Starting MCP Inspector..."
+	@echo ""
+	@echo "📡 MCP Inspector will launch in your browser"
+	@echo "   URL: http://localhost:6274"
+	@echo ""
+	@echo "💡 You can now:"
+	@echo "   - View all registered tools and resources"
+	@echo "   - Test tool calls interactively"
+	@echo "   - Inspect request/response data"
+	@echo ""
+	@echo "📋 Starting: npx @modelcontextprotocol/inspector $(BINARY) mcp"
+	@echo ""
+	npx @modelcontextprotocol/inspector $(BINARY) mcp
+
+## test-mcp-config: Generate Claude Desktop/Code config for MCP testing
+test-mcp-config:
+	@echo "📋 Claude Desktop/Code Configuration"
+	@echo ""
+	@echo "Add this to: ~/Library/Application Support/Claude/claude_desktop_config.json"
+	@echo ""
+	@echo "{"
+	@echo "  \"mcpServers\": {"
+	@echo "    \"pocketbase\": {"
+	@echo "      \"command\": \"$(shell pwd)/$(BINARY)\","
+	@echo "      \"args\": [\"mcp\"],"
+	@echo "      \"env\": {"
+	@echo "        \"PB_DATA_DIR\": \"$(PB_DATA_DIR)\""
+	@echo "      }"
+	@echo "    }"
+	@echo "  }"
+	@echo "}"
+	@echo ""
+	@echo "💡 After updating the config:"
+	@echo "   1. Build the binary: make bin"
+	@echo "   2. Restart Claude Desktop/Code"
+	@echo "   3. Test by asking Claude: 'What collections exist?'"
+
+## vscode-mcp-setup: Setup VSCode/Claude Code MCP configuration
+vscode-mcp-setup: bin
+	@echo "🔧 Setting up VSCode MCP configuration..."
+	@echo ""
+	@if [ ! -f .vscode/mcp.json.example ]; then \
+		echo "❌ Template not found: .vscode/mcp.json.example"; \
+		exit 1; \
+	fi
+	@if [ -f .vscode/mcp.json ]; then \
+		echo "⚠️  .vscode/mcp.json already exists"; \
+		read -p "Overwrite? [y/N]: " CONFIRM; \
+		if [ "$$CONFIRM" != "y" ] && [ "$$CONFIRM" != "Y" ]; then \
+			echo "❌ Cancelled"; \
+			exit 1; \
+		fi; \
+	fi
+	@mkdir -p .vscode
+	@sed "s|/ABSOLUTE/PATH/TO/WELLKNOWN|$(MAKEFILE_DIR)|g" .vscode/mcp.json.example > .vscode/mcp.json
+	@echo "✅ Created .vscode/mcp.json"
+	@echo ""
+	@echo "📋 Configuration:"
+	@cat .vscode/mcp.json
+	@echo ""
+	@echo "🔄 Next steps:"
+	@echo "   1. Restart VSCode or run 'Cmd+Shift+P → Developer: Reload Window'"
+	@echo "   2. Verify MCP server: 'Cmd+Shift+P → MCP: List Servers'"
+	@echo "   3. Test with Claude: Ask 'What PocketBase collections exist?'"
+	@echo ""
+	@echo "💡 Troubleshooting:"
+	@echo "   - View logs: 'Cmd+Shift+P → MCP: Show Output'"
+	@echo "   - Manual test: make mcp"
+	@echo "   - Interactive test: make test-mcp-inspector"
 
 ## health: Check PocketBase health endpoint (assumes server is running)
 health:
@@ -324,19 +452,63 @@ fly-secrets:
 		echo "   Copy .env.example to .env and configure"; \
 		exit 1; \
 	fi
-	@echo "Reading from .env file..."
-	@. ./.env && $(FLY) secrets set \
-		GOOGLE_CLIENT_ID="$$GOOGLE_CLIENT_ID" \
-		GOOGLE_CLIENT_SECRET="$$GOOGLE_CLIENT_SECRET" \
-		GOOGLE_REDIRECT_URL="$$GOOGLE_REDIRECT_URL" \
-		APPLE_TEAM_ID="$$APPLE_TEAM_ID" \
-		APPLE_CLIENT_ID="$$APPLE_CLIENT_ID" \
-		APPLE_KEY_ID="$$APPLE_KEY_ID" \
-		APPLE_PRIVATE_KEY_PATH="$$APPLE_PRIVATE_KEY_PATH" \
-		APPLE_REDIRECT_URL="$$APPLE_REDIRECT_URL" \
-		PB_ADMIN_EMAIL="$$PB_ADMIN_EMAIL" \
-		PB_ADMIN_PASSWORD="$$PB_ADMIN_PASSWORD"
-	@echo "✅ Secrets set!"
+	@echo ""
+	@echo "📋 Validating required secrets..."
+	@. ./.env && \
+	MISSING=0; \
+	if [ -z "$$GOOGLE_CLIENT_ID" ]; then echo "   ❌ GOOGLE_CLIENT_ID not set"; MISSING=1; fi; \
+	if [ -z "$$GOOGLE_CLIENT_SECRET" ]; then echo "   ❌ GOOGLE_CLIENT_SECRET not set"; MISSING=1; fi; \
+	if [ -z "$$GOOGLE_REDIRECT_URL" ]; then echo "   ❌ GOOGLE_REDIRECT_URL not set"; MISSING=1; fi; \
+	if [ $$MISSING -eq 1 ]; then \
+		echo ""; \
+		echo "💡 Google OAuth is required. Set these in .env file."; \
+		exit 1; \
+	fi; \
+	echo "   ✅ Required secrets validated"
+	@echo ""
+	@echo "📤 Syncing secrets to Fly.io..."
+	@. ./.env && \
+	SECRETS="GOOGLE_CLIENT_ID=\"$$GOOGLE_CLIENT_ID\" GOOGLE_CLIENT_SECRET=\"$$GOOGLE_CLIENT_SECRET\" GOOGLE_REDIRECT_URL=\"$$GOOGLE_REDIRECT_URL\""; \
+	if [ -n "$$PB_ADMIN_EMAIL" ]; then \
+		SECRETS="$$SECRETS PB_ADMIN_EMAIL=\"$$PB_ADMIN_EMAIL\""; \
+	fi; \
+	if [ -n "$$PB_ADMIN_PASSWORD" ]; then \
+		SECRETS="$$SECRETS PB_ADMIN_PASSWORD=\"$$PB_ADMIN_PASSWORD\""; \
+	fi; \
+	if [ -n "$$APPLE_TEAM_ID" ] && [ -n "$$APPLE_CLIENT_ID" ] && [ -n "$$APPLE_KEY_ID" ]; then \
+		echo "   📱 Apple OAuth credentials found - including in secrets"; \
+		SECRETS="$$SECRETS APPLE_TEAM_ID=\"$$APPLE_TEAM_ID\" APPLE_CLIENT_ID=\"$$APPLE_CLIENT_ID\" APPLE_KEY_ID=\"$$APPLE_KEY_ID\""; \
+		if [ -n "$$APPLE_PRIVATE_KEY" ]; then \
+			echo "   🔑 Using APPLE_PRIVATE_KEY (inline content)"; \
+			SECRETS="$$SECRETS APPLE_PRIVATE_KEY=\"$$APPLE_PRIVATE_KEY\""; \
+		elif [ -n "$$APPLE_PRIVATE_KEY_PATH" ] && [ -f "$$APPLE_PRIVATE_KEY_PATH" ]; then \
+			echo "   🔑 Reading Apple private key from: $$APPLE_PRIVATE_KEY_PATH"; \
+			KEY_CONTENT=$$(cat "$$APPLE_PRIVATE_KEY_PATH"); \
+			SECRETS="$$SECRETS APPLE_PRIVATE_KEY=\"$$KEY_CONTENT\""; \
+		else \
+			echo "   ⚠️  Apple private key not found - Apple OAuth will not work"; \
+		fi; \
+		if [ -n "$$APPLE_REDIRECT_URL" ]; then \
+			SECRETS="$$SECRETS APPLE_REDIRECT_URL=\"$$APPLE_REDIRECT_URL\""; \
+		fi; \
+	fi; \
+	if [ -n "$$SMTP_HOST" ] && [ -n "$$SMTP_USERNAME" ] && [ -n "$$SMTP_PASSWORD" ]; then \
+		echo "   📧 SMTP credentials found - including in secrets"; \
+		SECRETS="$$SECRETS SMTP_HOST=\"$$SMTP_HOST\" SMTP_PORT=\"$$SMTP_PORT\" SMTP_USERNAME=\"$$SMTP_USERNAME\" SMTP_PASSWORD=\"$$SMTP_PASSWORD\""; \
+		if [ -n "$$SMTP_FROM_EMAIL" ]; then SECRETS="$$SECRETS SMTP_FROM_EMAIL=\"$$SMTP_FROM_EMAIL\""; fi; \
+		if [ -n "$$SMTP_FROM_NAME" ]; then SECRETS="$$SECRETS SMTP_FROM_NAME=\"$$SMTP_FROM_NAME\""; fi; \
+	fi; \
+	if [ -n "$$S3_BUCKET" ] && [ -n "$$S3_ACCESS_KEY" ] && [ -n "$$S3_SECRET_KEY" ]; then \
+		echo "   ☁️  S3 credentials found - including in secrets"; \
+		SECRETS="$$SECRETS S3_ENDPOINT=\"$$S3_ENDPOINT\" S3_REGION=\"$$S3_REGION\" S3_BUCKET=\"$$S3_BUCKET\" S3_ACCESS_KEY=\"$$S3_ACCESS_KEY\" S3_SECRET_KEY=\"$$S3_SECRET_KEY\""; \
+		if [ -n "$$S3_FORCE_PATH_STYLE" ]; then SECRETS="$$SECRETS S3_FORCE_PATH_STYLE=\"$$S3_FORCE_PATH_STYLE\""; fi; \
+	fi; \
+	echo ""; \
+	eval "$(FLY) secrets set $$SECRETS"
+	@echo ""
+	@echo "✅ Secrets synced successfully!"
+	@echo ""
+	@echo "💡 Tip: Non-secret config (SERVER_HOST, SERVER_PORT, PB_DATA_DIR) is in fly.toml [env] section"
 
 ## fly-deploy: Deploy to fly.io
 fly-deploy:

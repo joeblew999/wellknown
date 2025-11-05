@@ -5,35 +5,106 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"golang.org/x/oauth2"
 )
 
 // Wellknown wraps a Pocketbase instance with wellknown-specific functionality
 type Wellknown struct {
 	*pocketbase.PocketBase
+	config       *Config
+	registry     *RouteRegistry
+	oauthService *OAuthService
 }
 
-// New creates a standalone Wellknown app with embedded Pocketbase
-// Uses .data/pb as the default data directory for multi-service architecture
-func New() *Wellknown {
-	return NewWithConfig(pocketbase.Config{
-		DefaultDataDir: ".data/pb",
+// ServerInfo contains information about the running server
+type ServerInfo struct {
+	Address string
+	Port    int
+	BaseURL string
+	Routes  map[string][]RouteMetadata
+}
+
+// OAuthService holds OAuth-related configuration and state
+type OAuthService struct {
+	GoogleConfig *oauth2.Config
+	db           *pocketbase.PocketBase
+}
+
+// New creates a standalone Wellknown app with default configuration
+func New() (*Wellknown, error) {
+	cfg, err := LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+	return NewWithConfig(cfg)
+}
+
+// NewWithConfig creates a Wellknown app with custom configuration
+func NewWithConfig(cfg *Config) (*Wellknown, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	app := pocketbase.NewWithConfig(pocketbase.Config{
+		DefaultDataDir: cfg.Database.DataDir,
 	})
-}
 
-// NewWithConfig creates a Wellknown app with custom PocketBase configuration
-func NewWithConfig(config pocketbase.Config) *Wellknown {
-	app := pocketbase.NewWithConfig(config)
-	wk := &Wellknown{app}
+	// Initialize OAuth service
+	var oauthService *OAuthService
+	if cfg.OAuth.Google.Enabled {
+		oauthService = &OAuthService{
+			GoogleConfig: cfg.OAuth.Google.ToOAuth2Config(),
+			db:           app,
+		}
+	}
+
+	wk := &Wellknown{
+		PocketBase:   app,
+		config:       cfg,
+		registry:     nil, // Will be set in bindAppHooks
+		oauthService: oauthService,
+	}
+
 	bindAppHooks(wk)
-	return wk
+	return wk, nil
 }
 
 // NewWithApp attaches wellknown functionality to an existing PocketBase app
-// This allows other projects to import our Google Calendar OAuth integration
+// Deprecated: Use NewWithConfig instead
 func NewWithApp(app *pocketbase.PocketBase) *Wellknown {
-	wk := &Wellknown{app}
+	cfg, _ := LoadConfig()
+
+	var oauthService *OAuthService
+	if cfg.OAuth.Google.Enabled {
+		oauthService = &OAuthService{
+			GoogleConfig: cfg.OAuth.Google.ToOAuth2Config(),
+			db:           app,
+		}
+	}
+
+	wk := &Wellknown{
+		PocketBase:   app,
+		config:       cfg,
+		registry:     nil,
+		oauthService: oauthService,
+	}
 	bindAppHooks(wk)
 	return wk
+}
+
+// GetRegistry returns the route registry
+func (wk *Wellknown) GetRegistry() *RouteRegistry {
+	return wk.registry
+}
+
+// GetOAuthService returns the OAuth service
+func (wk *Wellknown) GetOAuthService() *OAuthService {
+	return wk.oauthService
+}
+
+// GetConfig returns the configuration
+func (wk *Wellknown) GetConfig() *Config {
+	return wk.config
 }
 
 // bindAppHooks registers all lifecycle hooks and routes
@@ -47,6 +118,7 @@ func bindAppHooks(wk *Wellknown) {
 
 		// Create route registry for auto-documentation
 		registry := NewRouteRegistry()
+		wk.registry = registry // Store for later access
 
 		// Register core system routes
 		registry.Register("System", "/_/", "GET", "PocketBase Admin UI", false)
@@ -71,5 +143,19 @@ func bindAppHooks(wk *Wellknown) {
 		log.Println("✅ All routes registered successfully")
 		return e.Next()
 	})
+}
+
+// GetServerInfo returns information about the running server
+func (wk *Wellknown) GetServerInfo() *ServerInfo {
+	if wk.registry == nil {
+		return nil
+	}
+
+	return &ServerInfo{
+		Address: wk.config.Server.ServerAddress(),
+		Port:    wk.config.Server.Port,
+		BaseURL: wk.config.Server.ServerURL(),
+		Routes:  wk.registry.GetRoutes(),
+	}
 }
 

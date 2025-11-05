@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "pocketbase": {
+      "command": "/Users/apple/workspace/go/src/github.com/joeblew999/wellknown/.bin/wellknown-pb",
+      "args": ["mcp"],
+      "env": {
+        "PB_DATA": "/Users/apple/workspace/go/src/github.com/joeblew999/wellknown/.data/pb"
+      }
+    }
+  }
+}
