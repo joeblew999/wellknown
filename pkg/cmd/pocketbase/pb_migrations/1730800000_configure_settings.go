@@ -65,7 +65,6 @@ func init() {
 			{Label: "*:auth", MaxRequests: 10, Duration: 60},      // 10 auth requests per minute
 			{Label: "*:create", MaxRequests: 50, Duration: 60},    // 50 creates per minute
 			{Label: "*:update", MaxRequests: 100, Duration: 60},   // 100 updates per minute
-			{Label: "/api/*", MaxRequests: 200, Duration: 60},     // 200 general API calls per minute
 		}
 
 		// Configure batch request handling

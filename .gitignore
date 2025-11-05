@@ -39,12 +39,28 @@ go.work.sum
 tmp/
 /server
 
-# PocketBase
+# Multi-service data directory
+# All runtime data (databases, uploads, backups, cache, logs)
+.data/
+!.data/.gitkeep
+
+# Optional: Track TypeScript definitions for development (uncomment if needed)
+# !.data/pb/types.d.ts
+
+# PocketBase runtime subdirectories (inside .data/pb/) - explicitly listed for clarity:
+# - storage/           File uploads organized by collection
+# - backups/           Automated database backups (*.zip)
+# - .pb_temp_to_delete/ Temporary files (auto-cleaned by PocketBase)
+# - .autocert_cache/   Let's Encrypt SSL certificates
+# These are already ignored via .data/ pattern above
+
+# Legacy PocketBase directories (can remove after migration)
+pb_data/
 pb/cmd/pb_data/
 pb/tmp/
 pb/build-errors.log
 pb/codegen/models/*.go
 !pb/codegen/models/stub.go
 
-
-
+# Fly.io (keep fly.toml for deployment config)
+.fly/

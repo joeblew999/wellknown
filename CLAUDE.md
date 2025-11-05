@@ -4,111 +4,97 @@
 
 ---
 
-## ⚡ Pre-Task Checklist (VERIFY BEFORE EVERY ACTION)
+## 🔴 CRITICAL: THREE 9s NOT TWO!
+
+**MOST COMMON ERROR:** Using `joeblew99` (TWO 9s) instead of `joeblew999` (THREE 9s)
+
+✅ CORRECT: `github.com/joeblew999/wellknown`
+❌ WRONG: `github.com/joeblew99/wellknown`
+
+**If you see TWO 9s anywhere, STOP and fix it immediately!**
+
+---
+
+## ⚡ Pre-Task Checklist
 
 Before doing ANYTHING, verify:
 
-- [ ] Am I using `github.com/joeblew999/wellknown` (999 not 99)?
-- [ ] Am I using Makefile (`make <target>`) instead of calling code directly?
-- [ ] If changing code structure, will I update the Makefile?
-- [ ] Did the user EXPLICITLY ask me to commit? (If no, DO NOT commit)
+- [ ] Using `joeblew999` (THREE 9s)?
+- [ ] Using `make <target>` (not direct code execution)?
+- [ ] Will update Makefile if changing code structure?
+- [ ] Will update `.gitignore` if adding generated/build files?
+- [ ] User EXPLICITLY asked to commit?
 
 ---
 
-## 🚨 Critical Rules (ALL ARE MANDATORY - ZERO EXCEPTIONS)
+## 🚨 Critical Rules (ZERO EXCEPTIONS)
 
-### Rule 1: Module Name
-**MUST USE:** `github.com/joeblew999/wellknown` (⚠️ THREE 9s: `999`)
+### 1. Module Name & Path
+- **Module:** `github.com/joeblew999/wellknown`
+- **File Path:** `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
+- **Always THREE 9s:** `999` not `99`
 
-✅ **DO:** `github.com/joeblew999/wellknown`
-❌ **DON'T:** `github.com/joeblew99/wellknown` (only two 9s)
+### 2. Always Use Makefile
+- ✅ DO: `make run`, `make build`, `make gen`
+- ❌ DON'T: `go run ./pkg/cmd/pocketbase`, direct code execution
+- The Makefile is the single source of truth
 
-### Rule 2: File Path
-**MUST USE:** `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown`
+### 3. Keep Code and Makefile in Sync
+- When moving files → Update Makefile paths immediately
+- When adding features → Add/update Makefile targets
 
-✅ **DO:** Use the exact path above
-❌ **DON'T:** Use any variation or shortened path
+### 4. Never Auto-Commit
+- ✅ DO: Ask "Should I commit these changes?"
+- ❌ DON'T: Commit automatically or "helpfully"
+- User controls version history, not AI
 
-### Rule 3: Always Use Makefile
-**MUST:** Run ALL operations through Makefile
-
-✅ **DO:** `make run`, `make build`, `make gen`
-❌ **DON'T:** `go run ./cmd/...`, `go run .`, direct code execution
-
-### Rule 4: Keep Code and Makefile in Sync
-**MUST:** Update Makefile when changing code structure
-
-✅ **DO:** When moving files, update Makefile paths immediately
-❌ **DON'T:** Change code structure without updating Makefile targets
-
-### Rule 5: Never Auto-Commit
-**MUST:** Wait for explicit user request before committing
-
-✅ **DO:** Ask "Should I commit these changes?"
-❌ **DON'T:** Commit automatically or "helpfully"
-
----
-
-## ❌ Common Violations (NEVER DO THESE)
-
-1. Running `go run ./pkg/cmd/pocketbase` instead of `make run`
-2. Using `joeblew99` (two 9s) instead of `joeblew999` (three 9s)
-3. Creating git commits without being asked
-4. Changing file locations without updating Makefile paths
-5. Calling code directly instead of using Makefile targets
-
----
-
-## ⚙️ How to Work with This Codebase
-
-1. **Check rules:** Verify the Pre-Task Checklist above
-2. **Use Makefile:** Run `make help` to see available commands
-3. **Keep in sync:** When changing code, update Makefile
-4. **Ask before committing:** Never commit without explicit user request
-
-The Makefile is the single source of truth for how to run this system.
+### 5. Manage .gitignore Proactively
+- ✅ DO: Update `.gitignore` when adding new build artifacts, generated files, or directories
+- ✅ DO: Add patterns for: compiled binaries, generated code, temp files, IDE files, logs, databases
+- ✅ DO: Keep `.gitignore` organized with comments explaining sections
+- ❌ DON'T: Let generated files or build artifacts get committed
+- **Common patterns to ignore:**
+  - Build outputs: `dist/`, `*.exe`, `*.so`, `*.dylib`
+  - Generated code: `pb_migrations/`, `*_gen.go`
+  - PocketBase data: `pb_data/` (except types)
+  - Dependencies: `vendor/`, `node_modules/`
+  - IDE files: `.vscode/`, `.idea/`, `*.swp`
+  - Temp files: `*.tmp`, `*.log`, `.DS_Store`
 
 ---
 
 ## 📚 Reference Code (.src folder)
 
-**ALWAYS check `.src/` BEFORE web searches** - it's faster, more reliable, and project-specific.
+**ALWAYS check `.src/` BEFORE web searches!**
 
-### ⚠️ CRITICAL: Use CORRECT path with THREE 9s!
+**Path:** `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown/.src/`
 
-**CORRECT `.src/` path (THREE 9s):**
-```
-/Users/apple/workspace/go/src/github.com/joeblew999/wellknown/.src/
-```
+**When to use:**
+- Planning features → Check `.src/` for patterns first
+- Need examples → Look in `.src/` before searching
+- Makefile patterns → Check `.src/Makefile`
+- Implementation guidance → Review `.src/` reference code
 
-**WRONG paths (TWO 9s - NEVER USE):**
-```
-/Users/apple/workspace/go/src/github.com/joeblew99/wellknown/.src/  ❌ WRONG!
-```
+**Keep `.src/Makefile` in sync with root Makefile**
 
-✅ **DO:** Check `.src/` folder FIRST for examples, templates, and reference implementations
-✅ **DO:** Use `.src/` when planning, researching, or looking for code patterns
-✅ **DO:** ALWAYS use the path with THREE 9s: `joeblew999` not `joeblew99`
-✅ **DO:** Maintain `.src/Makefile` alongside the root Makefile (keep them in sync)
-✅ **DO:** Update `.src/Makefile` when updating root Makefile with new patterns
-❌ **DON'T:** Default to web searches without checking `.src/` first
-❌ **DON'T:** Skip `.src/` when researching how to implement features
-❌ **DON'T:** EVER use `joeblew99` (two 9s) in ANY path
+---
 
-**When to use `.src/`:**
-- Planning new features → Check `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown/.src/` for similar patterns
-- Need code examples → Look in `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown/.src/` first
-- Want to understand project structure → Review `.src/` reference code (THREE 9s!)
-- Looking for Makefile patterns → Check `.src/Makefile` (reference Makefile for Claude)
-- Need implementation guidance → Review `.src/` before web searches
+## ❌ Common Violations
 
-**REMEMBER: It's `999` not `99` - THREE NINES!**
+1. Using `joeblew99` (TWO 9s) instead of `joeblew999` (THREE 9s)
+2. Running code directly instead of `make <target>`
+3. Changing code structure without updating Makefile
+4. Creating git commits without being asked
+5. Web searches before checking `.src/`
+6. Adding generated files without updating `.gitignore`
 
 ---
 
 ## 🎯 Why These Rules Exist
 
-- **Module name typo**: Prevents Go from trying to fetch wrong remote packages
-- **Makefile enforcement**: Ensures consistency and prevents breaking changes
+- **THREE 9s rule**: Prevents Go from fetching wrong remote packages
+- **Makefile enforcement**: Ensures consistency, prevents breaking changes
 - **Code/Makefile sync**: Keeps documentation and implementation aligned
-- **No auto-commits**: User controls version history, not AI
+- **No auto-commits**: User controls version history
+- **.src/ first**: Faster, more reliable, project-specific examples
+- **`.gitignore` management**: Prevents accidental commits of generated/temp files, keeps repo clean

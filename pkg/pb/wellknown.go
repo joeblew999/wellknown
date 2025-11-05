@@ -15,8 +15,19 @@ type Wellknown struct {
 }
 
 // New creates a standalone Wellknown app with embedded Pocketbase
+// Uses .data/pb as the default data directory for multi-service architecture
 func New() *Wellknown {
-	return NewWithApp(pocketbase.New())
+	return NewWithConfig(pocketbase.Config{
+		DefaultDataDir: ".data/pb",
+	})
+}
+
+// NewWithConfig creates a Wellknown app with custom PocketBase configuration
+func NewWithConfig(config pocketbase.Config) *Wellknown {
+	app := pocketbase.NewWithConfig(config)
+	wk := &Wellknown{app}
+	bindAppHooks(wk)
+	return wk
 }
 
 // NewWithApp attaches wellknown functionality to an existing PocketBase app

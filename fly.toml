@@ -1,0 +1,37 @@
+# fly.toml app configuration file
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+
+app = "wellknown-pb"
+primary_region = "sjc"
+
+[build]
+
+[env]
+  # Multi-service data directory structure
+  # - .data/pb/      PocketBase SQLite databases
+  # - .data/nats/    Future: NATS JetStream state for HA
+  # - .data/uploads/ Future: File uploads
+  # Migrations will auto-run on startup
+
+[http_service]
+  internal_port = 8090
+  force_https = true
+  auto_stop_machines = "off"  # Keep running - PocketBase needs to be always available
+  auto_start_machines = true
+  min_machines_running = 1
+  max_machines_running = 1  # SQLite = single machine only
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/api/health"
+
+[mounts]
+  source = "pb_data"          # Volume name (kept for existing deployments)
+  destination = "/app/.data"  # Mount entire .data directory (multi-service)
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
