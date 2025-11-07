@@ -8,6 +8,10 @@
 *.so
 *.dylib
 
+# Project binaries (use GitHub Releases for distribution)
+/wellknown
+/wellknown-pb
+
 # Binary update backups (created during update process)
 *.old
 
