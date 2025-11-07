@@ -576,12 +576,6 @@ func cmdAgeEncrypt() {
 		os.Exit(1)
 	}
 
-	// Check if .env.local exists
-	if _, err := os.Stat(".env.local"); os.IsNotExist(err) {
-		fmt.Fprintln(os.Stderr, "❌ .env.local not found. Run: go run . setup")
-		os.Exit(1)
-	}
-
 	// Read identity file
 	identityFile, err := os.ReadFile(keyPath)
 	if err != nil {
@@ -598,75 +592,112 @@ func cmdAgeEncrypt() {
 	// Get recipient (public key) from identity
 	recipient := identities[0].(*age.X25519Identity).Recipient()
 
-	// Read .env.local
-	plaintext, err := os.ReadFile(".env.local")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "❌ Failed to read .env.local: %v\n", err)
+	// Encrypt both .env.local and .env.production (if they exist)
+	files := []string{".env.local", ".env.production"}
+	encrypted := 0
+
+	for _, file := range files {
+		if _, err := os.Stat(file); os.IsNotExist(err) {
+			continue // Skip if file doesn't exist
+		}
+
+		// Read plaintext
+		plaintext, err := os.ReadFile(file)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "⚠️  Failed to read %s: %v\n", file, err)
+			continue
+		}
+
+		// Encrypt
+		var buf bytes.Buffer
+		w, err := age.Encrypt(&buf, recipient)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "⚠️  Failed to encrypt %s: %v\n", file, err)
+			continue
+		}
+
+		if _, err := w.Write(plaintext); err != nil {
+			fmt.Fprintf(os.Stderr, "⚠️  Failed to write encrypted %s: %v\n", file, err)
+			continue
+		}
+
+		if err := w.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "⚠️  Failed to finalize %s: %v\n", file, err)
+			continue
+		}
+
+		// Write encrypted file
+		outputFile := file + ".age"
+		if err := os.WriteFile(outputFile, buf.Bytes(), 0600); err != nil {
+			fmt.Fprintf(os.Stderr, "⚠️  Failed to write %s: %v\n", outputFile, err)
+			continue
+		}
+
+		fmt.Printf("✅ Encrypted %s → %s\n", file, outputFile)
+		encrypted++
+	}
+
+	if encrypted == 0 {
+		fmt.Fprintln(os.Stderr, "❌ No environment files found to encrypt")
+		fmt.Fprintln(os.Stderr, "   Run: go run . setup  (for .env.local)")
+		fmt.Fprintln(os.Stderr, "   Run: go run . generate-prod  (for .env.production)")
 		os.Exit(1)
 	}
 
-	// Encrypt
-	var buf bytes.Buffer
-	w, err := age.Encrypt(&buf, recipient)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "❌ Failed to create encryptor: %v\n", err)
-		os.Exit(1)
-	}
-
-	if _, err := w.Write(plaintext); err != nil {
-		fmt.Fprintf(os.Stderr, "❌ Failed to encrypt: %v\n", err)
-		os.Exit(1)
-	}
-
-	if err := w.Close(); err != nil {
-		fmt.Fprintf(os.Stderr, "❌ Failed to finalize encryption: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Write encrypted file
-	if err := os.WriteFile(".env.local.age", buf.Bytes(), 0600); err != nil {
-		fmt.Fprintf(os.Stderr, "❌ Failed to write .env.local.age: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Println("✅ Encrypted .env.local → .env.local.age")
+	fmt.Printf("\n✅ Encrypted %d file(s)\n", encrypted)
 	fmt.Println("\n💡 Next steps:")
-	fmt.Println("  git add .env.local.age")
-	fmt.Println("  git commit -m \"Add encrypted secrets\"")
+	fmt.Println("  git add .env.local.age .env.production.age")
+	fmt.Println("  git commit -m \"Update encrypted secrets\"")
 	fmt.Println("\n🔒 Your secrets are now safe to commit!")
 }
 
 func cmdAgeDecrypt() {
-	// Check if .env.local.age exists
-	if _, err := os.Stat(".env.local.age"); os.IsNotExist(err) {
-		fmt.Fprintln(os.Stderr, "❌ .env.local.age not found")
-		os.Exit(1)
-	}
-
-	// Read encrypted file
-	encrypted, err := os.ReadFile(".env.local.age")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "❌ Failed to read .env.local.age: %v\n", err)
-		os.Exit(1)
-	}
-
 	// Set AGE_IDENTITY to local key path for decryption
 	os.Setenv("AGE_IDENTITY", ".age/key.txt")
 
-	// Use env package's DecryptAgeFile (handles key discovery automatically)
-	decrypted, err := env.DecryptAgeFile(encrypted)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "❌ %v\n", err)
+	// Decrypt both .env.local.age and .env.production.age (if they exist)
+	files := map[string]string{
+		".env.local.age":      ".env.local",
+		".env.production.age": ".env.production",
+	}
+	decrypted := 0
+
+	for encryptedFile, plaintextFile := range files {
+		if _, err := os.Stat(encryptedFile); os.IsNotExist(err) {
+			continue // Skip if file doesn't exist
+		}
+
+		// Read encrypted file
+		encrypted, err := os.ReadFile(encryptedFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "⚠️  Failed to read %s: %v\n", encryptedFile, err)
+			continue
+		}
+
+		// Use env package's DecryptAgeFile (handles key discovery automatically)
+		decryptedData, err := env.DecryptAgeFile(encrypted)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "⚠️  Failed to decrypt %s: %v\n", encryptedFile, err)
+			continue
+		}
+
+		// Write decrypted file
+		if err := os.WriteFile(plaintextFile, decryptedData, 0600); err != nil {
+			fmt.Fprintf(os.Stderr, "⚠️  Failed to write %s: %v\n", plaintextFile, err)
+			continue
+		}
+
+		fmt.Printf("✅ Decrypted %s → %s\n", encryptedFile, plaintextFile)
+		decrypted++
+	}
+
+	if decrypted == 0 {
+		fmt.Fprintln(os.Stderr, "❌ No encrypted files found to decrypt")
+		fmt.Fprintln(os.Stderr, "   Looking for: .env.local.age or .env.production.age")
 		os.Exit(1)
 	}
 
-	// Write decrypted file
-	if err := os.WriteFile(".env.local", decrypted, 0600); err != nil {
-		fmt.Fprintf(os.Stderr, "❌ Failed to write .env.local: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Println("✅ Decrypted .env.local.age → .env.local")
+	fmt.Printf("\n✅ Decrypted %d file(s)\n", decrypted)
 	fmt.Println("💡 You can now run: go run . validate")
 }
 
@@ -772,14 +803,39 @@ func cmdFlySecretsImport() {
 		os.Exit(1)
 	}
 
+	// Prefer .env.production, fallback to .env.local
+	envFile := ".env.production"
+	if _, err := os.Stat(envFile); os.IsNotExist(err) {
+		envFile = ".env.local"
+		if _, err := os.Stat(envFile); os.IsNotExist(err) {
+			fmt.Fprintln(os.Stderr, "❌ No environment file found")
+			fmt.Fprintln(os.Stderr, "\n💡 Create one with:")
+			fmt.Fprintln(os.Stderr, "   go run . generate-prod  (for production)")
+			fmt.Fprintln(os.Stderr, "   go run . setup          (for local/dev)")
+			os.Exit(1)
+		}
+	}
+
 	fmt.Printf("🔐 Importing secrets to app: %s\n", appName)
-	fmt.Println("   Source: .env.local (or .env.local.age)")
+	fmt.Printf("   Source: %s (or %s.age)\n", envFile, envFile)
 	fmt.Println("   Registry: Only variables marked as Secret=true")
+
+	// Load the chosen env file
+	if err := loadEnvFile(envFile); err != nil {
+		// Try encrypted version
+		encryptedFile := envFile + ".age"
+		if encData, err := os.ReadFile(encryptedFile); err == nil {
+			os.Setenv("AGE_IDENTITY", ".age/key.txt")
+			if decData, err := env.DecryptAgeFile(encData); err == nil {
+				_ = loadEnvFile(string(decData))
+			}
+		}
+	}
 
 	if err := FlySecretsImport(appName); err != nil {
 		fmt.Fprintf(os.Stderr, "❌ Failed to import secrets: %v\n", err)
 		fmt.Fprintln(os.Stderr, "\n💡 Make sure:")
-		fmt.Fprintln(os.Stderr, "   - .env.local exists with secret values")
+		fmt.Fprintf(os.Stderr, "   - %s exists with secret values\n", envFile)
 		fmt.Fprintln(os.Stderr, "   - You're logged in: go run . fly-auth")
 		os.Exit(1)
 	}
