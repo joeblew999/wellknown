@@ -1,6 +1,7 @@
 package wellknown
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -10,6 +11,18 @@ import (
 
 // RegisterBankingRoutes registers all banking-related routes
 func RegisterBankingRoutes(wk *Wellknown, e *core.ServeEvent, registry *RouteRegistry) {
+	// Pre-flight check: Validate required collections exist
+	requiredCollections := []string{"accounts", "transactions"}
+	for _, collectionName := range requiredCollections {
+		if _, err := wk.FindCollectionByNameOrId(collectionName); err != nil {
+			log.Printf("⚠️  Banking routes NOT registered: collection '%s' not found (migrations may not have run)", collectionName)
+			log.Printf("   Run 'go run . migrate up' to create required collections")
+			return // Skip banking routes registration
+		}
+	}
+
+	log.Println("✅ Banking routes: Pre-flight checks passed")
+
 	// Create banking service
 	service := banking.NewService(wk.PocketBase)
 

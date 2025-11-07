@@ -8,7 +8,7 @@
 <p style="color: #666; margin-bottom: 20px;">📝 This form is dynamically generated from <strong>JSON Schema</strong> only</p>
 {{end}}
 
-<form method="POST" action="/{{.Platform}}/{{.AppType}}">
+<form method="POST" action="{{.URLPrefix}}/{{.Platform}}/{{.AppType}}">
     {{/* Dynamically generated form fields from schema */}}
     {{.SchemaFormHTML}}
 

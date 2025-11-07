@@ -19,6 +19,15 @@ import (
 // NOTE: Calendar URL/ICS generation is handled by the main server (pkg/server), not here!
 // RegisterCalendarRoutes handles Calendar API calls (list/create events using stored tokens)
 func RegisterCalendarRoutes(wk *Wellknown, e *core.ServeEvent, registry *RouteRegistry) {
+	// Pre-flight check: Validate required collections exist
+	if _, err := wk.FindCollectionByNameOrId("google_tokens"); err != nil {
+		log.Printf("⚠️  Calendar routes NOT registered: collection 'google_tokens' not found (migrations may not have run)")
+		log.Printf("   Run 'go run . migrate up' to create required collections")
+		return // Skip calendar routes registration
+	}
+
+	log.Println("✅ Calendar routes: Pre-flight checks passed")
+
 	// Create route handler for Calendar domain
 	handler := NewRouteHandler(registry, "Calendar", e)
 

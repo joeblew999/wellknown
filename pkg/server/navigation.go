@@ -40,13 +40,20 @@ func (r *ServiceRegistry) Clear() {
 
 // GetNavigation returns navigation for the current request path
 func (r *ServiceRegistry) GetNavigation(currentPath string) []NavSection {
+	return r.GetNavigationWithPrefix(currentPath, "")
+}
+
+// GetNavigationWithPrefix returns navigation with an optional URL prefix
+// This is useful when the standalone server is embedded in another server
+// (e.g., PocketBase serving under /demo/* prefix)
+func (r *ServiceRegistry) GetNavigationWithPrefix(currentPath string, urlPrefix string) []NavSection {
 	var sections []NavSection
 
 	for _, service := range r.services {
 		var links []NavLink
 
 		if service.HasCustom {
-			customURL := fmt.Sprintf("/%s/%s", service.Platform, service.AppType)
+			customURL := fmt.Sprintf("%s/%s/%s", urlPrefix, service.Platform, service.AppType)
 			links = append(links, NavLink{
 				Label:    "Custom",
 				URL:      customURL,
@@ -55,7 +62,7 @@ func (r *ServiceRegistry) GetNavigation(currentPath string) []NavSection {
 		}
 
 		if service.HasExamples {
-			examplesURL := fmt.Sprintf("/%s/%s/examples", service.Platform, service.AppType)
+			examplesURL := fmt.Sprintf("%s/%s/%s/examples", urlPrefix, service.Platform, service.AppType)
 			links = append(links, NavLink{
 				Label:    "Examples",
 				URL:      examplesURL,
@@ -77,8 +84,8 @@ func (r *ServiceRegistry) GetNavigation(currentPath string) []NavSection {
 		Links: []NavLink{
 			{
 				Label:    "GCP OAuth Setup",
-				URL:      "/tools/gcp-setup",
-				IsActive: currentPath == "/tools/gcp-setup",
+				URL:      fmt.Sprintf("%s/tools/gcp-setup", urlPrefix),
+				IsActive: currentPath == fmt.Sprintf("%s/tools/gcp-setup", urlPrefix),
 			},
 		},
 	})

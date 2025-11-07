@@ -1,4 +1,4 @@
-.PHONY: help print go-dep go-mod-upgrade gen gen-testdata run bin test health clean kill version release update fly-auth fly-launch fly-volume fly-secrets fly-deploy fly-status fly-logs fly-ssh fly-destroy
+.PHONY: help print go-dep go-mod-upgrade gen gen-testdata run bin test health clean kill version env-list env-validate env-example env-generate-example env-sync env-sync-dockerfile env-sync-flytoml env-generate-local env-generate-production env-sync-secrets env-sync-secrets-production release update fly-auth fly-launch fly-volume fly-secrets fly-deploy fly-status fly-logs fly-ssh fly-destroy certs-install certs-init certs-generate certs-clean certs-status
 
 # Paths
 MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -12,11 +12,12 @@ DATA_DIR := $(MAKEFILE_DIR).data
 PB_DATA_DIR := $(DATA_DIR)/pb
 # Future: NATS JetStream state for HA
 NATS_DATA_DIR := $(DATA_DIR)/nats
+# Development HTTPS certificates (mkcert-generated)
+CERTS_DIR := $(DATA_DIR)/certs
 
 # PocketBase source directories (version controlled)
-PB_CMD_DIR := $(MAKEFILE_DIR)pkg/cmd/pocketbase
-# Database migrations (Go)
-MIGRATIONS_DIR := $(PB_CMD_DIR)/pb_migrations
+# Database migrations (Go) - Note: pb_hooks and *.go files moved to main.go
+MIGRATIONS_DIR := $(MAKEFILE_DIR)pkg/cmd/pocketbase/pb_migrations
 CODEGEN_DIR := $(MAKEFILE_DIR)pkg/pb/codegen
 
 # Generated files
@@ -47,7 +48,7 @@ help:
 	@echo "════════════════════════════════════════════════════════════════"
 	@echo "💡 Quick Start:"
 	@echo "   make go-dep        Install development tools"
-	@echo "   make run           Start PocketBase (port 8090)"
+	@echo "   make run           Start unified server (API + Demo UI on port 8090)"
 	@echo "   make gen           Generate template and models"
 	@echo "════════════════════════════════════════════════════════════════"
 
@@ -63,7 +64,6 @@ print:
 	@echo "  DATA_DIR        = $(DATA_DIR)"
 	@echo "  PB_DATA_DIR     = $(PB_DATA_DIR)"
 	@echo "  NATS_DATA_DIR   = $(NATS_DATA_DIR)"
-	@echo "  PB_CMD_DIR      = $(PB_CMD_DIR)"
 	@echo "  MIGRATIONS_DIR  = $(MIGRATIONS_DIR)"
 	@echo "  CODEGEN_DIR     = $(CODEGEN_DIR)"
 	@echo ""
@@ -81,18 +81,25 @@ print:
 	@echo "  FLY_REGION      = $(FLY_REGION)"
 	@echo "  FLY             = $(FLY)"
 
-## go-dep: Install development tools (pocketbase-gogen, gh, flyctl)
+## go-dep: Install development tools (pocketbase-gogen, gh, flyctl, mkcert)
 go-dep:
 	@echo "📦 Installing development tools..."
 	go install github.com/snonky/pocketbase-gogen@v0.7.0
 	go install github.com/cli/cli/v2/cmd/gh@latest
 	go install github.com/superfly/flyctl@latest
+	go install filippo.io/mkcert@latest
 	@echo "✅ Tools installed"
 	@echo ""
 	@echo "Installed:"
 	@echo "  - pocketbase-gogen (PocketBase code generation)"
 	@echo "  - gh (GitHub CLI)"
 	@echo "  - flyctl (Fly.io CLI)"
+	@echo "  - mkcert (Local HTTPS certificates for development)"
+	@echo ""
+	@echo "💡 Next steps for HTTPS:"
+	@echo "   make certs-init       Initialize local CA (one-time)"
+	@echo "   make certs-generate   Generate certificates"
+	@echo "   make run-https        Start server with HTTPS"
 
 ## go-mod-tidy: Tidy Go module dependencies
 go-mod-tidy:
@@ -103,34 +110,24 @@ go-mod-upgrade:
 	go install github.com/oligot/go-mod-upgrade@latest
 	go-mod-upgrade
 
-## run: Run PocketBase server (port 8090)
-run:
-	@echo "🚀 Starting PocketBase..."
-	@echo "Admin UI: http://localhost:8090/_/"
-	@echo ""
-	@echo "📁 Data directory: $(PB_DATA_DIR)"
-	@echo "   PocketBase will auto-create subdirectories as needed:"
-	@echo "   - storage/          File uploads"
-	@echo "   - backups/          Database backups"
-	@echo "   - .pb_temp_to_delete/  Temp files"
-	@echo ""
-	@echo "⚙️  Configuration (PocketBase best practice):"
-	@echo "   1. .env file (dev only - auto-loaded when using 'go run')"
-	@echo "   2. Environment variables (production - set in shell/docker/systemd)"
-	@echo "   3. Command-line flags (for testing specific values)"
-	@echo ""
-	@echo "💡 Examples:"
-	@echo "   # Use .env file (development)"
-	@echo "   make run"
-	@echo ""
-	@echo "   # Use env vars (production)"
-	@echo "   GOOGLE_CLIENT_ID=xxx GOOGLE_CLIENT_SECRET=yyy make run"
-	@echo ""
-	@echo "   # Use flags"
-	@echo "   make run ARGS='serve --http=0.0.0.0:8080'"
-	@echo ""
+## run: Run PocketBase server with HTTPS (uses .env.local)
+run: gen
+	@if [ ! -f ".env.local" ]; then \
+		echo "❌ .env.local not found!"; \
+		echo "   Copy .env.local and configure with your localhost OAuth credentials"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(CERTS_DIR)/cert.pem" ] || [ ! -f "$(CERTS_DIR)/key.pem" ]; then \
+		echo "❌ Certificates not found! Run: make certs-generate"; \
+		exit 1; \
+	fi
 	@mkdir -p $(PB_DATA_DIR) $(NATS_DATA_DIR)
-	go run . pb $(ARGS)
+	@echo "📋 Loading .env.local..."
+	@set -a && . ./.env.local && set +a && \
+		HTTPS_ENABLED=true \
+		CERT_FILE=$(CERTS_DIR)/cert.pem \
+		KEY_FILE=$(CERTS_DIR)/key.pem \
+		go run . serve --https=0.0.0.0:8443 $(ARGS)
 
 ## mcp: Run MCP server for Claude Desktop integration (stdio)
 mcp:
@@ -178,12 +175,14 @@ gen-testdata:
 
 
 
-## bin: Build PocketBase server binary into BIN
-bin:
-	@echo "🏗️  Building PocketBase server..."
+## bin: Build standalone PocketBase server binary
+bin: gen
+	@echo "🏗️  Building standalone PocketBase server..."
 	@mkdir -p $(BIN_DIR)
 	go build -o $(BINARY) .
 	@echo "✅ Binary: $(BINARY)"
+	@echo "💡 This is a standalone PocketBase binary with all commands available"
+	@echo "   Try: $(BINARY) --help"
 
 ## test: Run all tests (unit + integration)
 test:
@@ -313,11 +312,12 @@ clean:
 	@echo "💡 Note: .data/ directory is NOT cleaned (persistent data)"
 	@echo "   To remove data: rm -rf $(DATA_DIR)"
 
-## kill: Kill process on port 8090
+## kill: Kill processes on ports 8090 and 8443
 kill:
-	@echo "🔫 Killing processes on port 8090..."
-	@lsof -ti:8090 | xargs kill -9 2>/dev/null || echo "   No processes found"
-	@echo "✅ Port 8090 freed"
+	@echo "🔫 Killing processes on ports 8090 and 8443..."
+	@lsof -ti:8090 | xargs kill -9 2>/dev/null || echo "   No processes on 8090"
+	@lsof -ti:8443 | xargs kill -9 2>/dev/null || echo "   No processes on 8443"
+	@echo "✅ Ports freed"
 
 ## version: Show current PocketBase binary version
 version:
@@ -328,6 +328,152 @@ version:
 		exit 1; \
 	fi
 	@strings $(BINARY) | grep "github.com/pocketbase/pocketbase/core.Version=" | head -1 | sed 's/.*Version=/   /' | tr -d '"'
+
+## env-list: List all environment variables and their status
+env-list:
+	@. ./.env 2>/dev/null || true && go run . env list
+
+## env-validate: Validate required environment variables are set
+env-validate:
+	@. ./.env 2>/dev/null || true && go run . env validate
+
+## env-example: Generate .env.example from Go registry
+env-example:
+	@echo "📝 Generating .env.example from Go registry..."
+	@go run . env generate-example > .env.example
+	@echo "✅ .env.example generated!"
+
+## env-sync: Sync all environment configuration to all files
+env-sync: env-sync-dockerfile env-sync-flytoml
+	@echo "✅ All environment configuration synced!"
+
+## env-sync-dockerfile: Update Dockerfile env documentation
+env-sync-dockerfile:
+	@echo "📝 Syncing Dockerfile env docs..."
+	@go run . env sync-dockerfile
+	@echo "✅ Dockerfile updated"
+
+## env-sync-flytoml: Update fly.toml [env] section
+env-sync-flytoml:
+	@echo "📝 Syncing fly.toml [env] section..."
+	@go run . env sync-flytoml
+	@echo "✅ fly.toml updated"
+
+## env-generate-local: Generate .env.local template for development
+env-generate-local:
+	@echo "📝 Generating .env.local template..."
+	@go run . env generate-local
+	@echo "✅ .env.local generated"
+	@echo "💡 Configure your OAuth credentials before running the server"
+
+## env-generate-production: Generate .env.production template for Fly.io
+env-generate-production:
+	@echo "📝 Generating .env.production template..."
+	@go run . env generate-production
+	@echo "✅ .env.production generated"
+	@echo "💡 Configure your production OAuth credentials before deploying"
+
+## env-generate-example: Generate .env.example template (safe to commit)
+env-generate-example:
+	@echo "📝 Generating .env.example template..."
+	@go run . env generate-example
+	@echo "✅ .env.example generated"
+	@echo "💡 This file is safe to commit to version control"
+
+## env-sync-secrets: Merge .env.secrets into .env.local (local development)
+env-sync-secrets:
+	@echo "🔐 Syncing secrets to .env.local..."
+	@test -f .env.secrets || (echo "❌ .env.secrets not found. Copy .env.secrets.example and configure with real credentials" && exit 1)
+	@go run . env sync-secrets
+	@echo "✅ .env.local generated from .env.secrets"
+	@echo "💡 Ready for local development: make run"
+
+## env-sync-secrets-production: Merge .env.secrets into .env.production (Fly.io deployment)
+env-sync-secrets-production:
+	@echo "🔐 Syncing secrets to .env.production..."
+	@test -f .env.secrets || (echo "❌ .env.secrets not found. Copy .env.secrets.example and configure with real credentials" && exit 1)
+	@go run . env sync-secrets-production
+	@echo "✅ .env.production generated from .env.secrets"
+	@echo "💡 Ready to deploy: make fly-secrets"
+
+
+# ════════════════════════════════════════════════════════════════
+# HTTPS Development Certificates (mkcert)
+# ════════════════════════════════════════════════════════════════
+
+## certs-init: Initialize local CA (run once per machine)
+certs-init:
+	@echo "🔐 Initializing local Certificate Authority..."
+	@if ! command -v mkcert >/dev/null 2>&1; then \
+		echo "❌ mkcert not found!"; \
+		echo "   Run: make go-dep"; \
+		exit 1; \
+	fi
+	mkcert -install
+	@echo "✅ Local CA installed and trusted!"
+	@echo ""
+	@echo "📍 CA Root: $$(mkcert -CAROOT)"
+	@echo ""
+	@echo "💡 Next step:"
+	@echo "   make certs-generate"
+
+## certs-generate: Generate HTTPS certificates for localhost + LAN IP
+certs-generate:
+	@echo "🔑 Generating HTTPS certificates..."
+	@if ! command -v mkcert >/dev/null 2>&1; then \
+		echo "❌ mkcert not found!"; \
+		echo "   Run: make go-dep"; \
+		exit 1; \
+	fi
+	@mkdir -p $(CERTS_DIR)
+	@LOCAL_IP=$$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "localhost"); \
+	echo "   Generating certificates for:"; \
+	echo "   • localhost"; \
+	echo "   • 127.0.0.1"; \
+	echo "   • $$LOCAL_IP"; \
+	mkcert -key-file $(CERTS_DIR)/key.pem \
+	       -cert-file $(CERTS_DIR)/cert.pem \
+	       localhost 127.0.0.1 $$LOCAL_IP
+	@echo "✅ Certificates generated:"
+	@echo "   • Cert: $(CERTS_DIR)/cert.pem"
+	@echo "   • Key:  $(CERTS_DIR)/key.pem"
+	@ls -lh $(CERTS_DIR)/
+	@echo ""
+	@echo "💡 Next step:"
+	@echo "   make run-https"
+
+## certs-clean: Remove generated certificates
+certs-clean:
+	@echo "🧹 Removing certificates..."
+	@rm -f $(CERTS_DIR)/cert.pem $(CERTS_DIR)/key.pem
+	@echo "✅ Certificates removed"
+	@echo ""
+	@echo "💡 Note: Local CA still installed."
+	@echo "   To remove CA: mkcert -uninstall"
+
+## certs-status: Show certificate and CA status
+certs-status:
+	@echo "📋 HTTPS Certificate Status"
+	@echo ""
+	@echo "Local CA:"
+	@if command -v mkcert >/dev/null 2>&1; then \
+		mkcert -CAROOT | xargs ls -la 2>/dev/null || echo "   Not initialized yet"; \
+	else \
+		echo "   mkcert not installed (run: make go-dep)"; \
+	fi
+	@echo ""
+	@echo "Generated Certificates:"
+	@if [ -d "$(CERTS_DIR)" ] && [ -f "$(CERTS_DIR)/cert.pem" ]; then \
+		ls -lh $(CERTS_DIR)/; \
+		echo ""; \
+		echo "✅ Ready for HTTPS (run: make run-https)"; \
+	else \
+		echo "   No certificates generated yet"; \
+		echo ""; \
+		echo "💡 Commands:"; \
+		echo "   make certs-init       Initialize local CA"; \
+		echo "   make certs-generate   Generate certificates"; \
+	fi
 
 
 ## release: Build & create GitHub release (multi-platform)
@@ -359,7 +505,6 @@ release:
 	echo "📦 Building for multiple platforms with version $$VERSION..."; \
 	mkdir -p $(DIST_DIR); \
 	LDFLAGS="-X github.com/pocketbase/pocketbase/core.Version=$$VERSION"; \
-	cd $(PB_CMD_DIR) && \
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$$LDFLAGS" -o $(DIST_DIR)/wellknown-pb-darwin-arm64 . & \
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "$$LDFLAGS" -o $(DIST_DIR)/wellknown-pb-darwin-amd64 . & \
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$$LDFLAGS" -o $(DIST_DIR)/wellknown-pb-linux-amd64 . & \
@@ -383,16 +528,45 @@ release:
 	echo "✅ Release $$VERSION created!"
 
 
-## update: Update PocketBase binary from GitHub releases
+## update: Update PocketBase binary from GitHub releases (production)
 update:
 	@echo "⬇️  Updating from GitHub releases..."
 	@if [ ! -f $(BINARY) ]; then \
 		echo "❌ Binary not found: $(BINARY)"; \
-		echo "   Run: make build"; \
+		echo "   Run: make bin"; \
 		exit 1; \
 	fi
 	$(BINARY) update
 	@echo "✅ Update complete!"
+
+## test-update-local: Test local update mechanism (from .dist folder)
+test-update-local: bin release
+	@echo "🧪 Testing local update mechanism..."
+	@echo ""
+	@echo "📦 Built binary: $(BINARY)"
+	@echo "📂 Update source: $(DIST_DIR)"
+	@echo ""
+	UPDATE_SOURCE=local UPDATE_LOCAL_DIR=$(DIST_DIR) $(BINARY) update
+	@echo ""
+	@echo "✅ Local update test complete!"
+	@echo "💡 To test manually: UPDATE_SOURCE=local $(BINARY) update"
+
+## test-update-github: Test GitHub update mechanism (requires network)
+test-update-github: bin
+	@echo "🧪 Testing GitHub update mechanism..."
+	@echo ""
+	@echo "⚠️  This will check for real GitHub releases"
+	@echo "📦 Binary: $(BINARY)"
+	@echo "🐙 Source: https://github.com/$(GH_OWNER)/$(GH_REPO)/releases"
+	@echo ""
+	@read -p "Continue? [y/N]: " CONFIRM; \
+	if [ "$$CONFIRM" = "y" ] || [ "$$CONFIRM" = "Y" ]; then \
+		UPDATE_SOURCE=github $(BINARY) update; \
+		echo ""; \
+		echo "✅ GitHub update test complete!"; \
+	else \
+		echo "❌ Cancelled"; \
+	fi
 
 
 # ════════════════════════════════════════════════════════════════
@@ -444,71 +618,12 @@ fly-volume:
 	$(FLY) volumes create pb_data --size 1 --region $(FLY_REGION) --app $(FLY_APP_NAME) --yes
 	@echo "✅ Volume created!"
 
-## fly-secrets: Set environment variables as fly.io secrets
-fly-secrets:
-	@echo "🔐 Setting fly.io secrets..."
-	@if [ ! -f .env ]; then \
-		echo "❌ .env file not found"; \
-		echo "   Copy .env.example to .env and configure"; \
-		exit 1; \
-	fi
-	@echo ""
-	@echo "📋 Validating required secrets..."
-	@. ./.env && \
-	MISSING=0; \
-	if [ -z "$$GOOGLE_CLIENT_ID" ]; then echo "   ❌ GOOGLE_CLIENT_ID not set"; MISSING=1; fi; \
-	if [ -z "$$GOOGLE_CLIENT_SECRET" ]; then echo "   ❌ GOOGLE_CLIENT_SECRET not set"; MISSING=1; fi; \
-	if [ -z "$$GOOGLE_REDIRECT_URL" ]; then echo "   ❌ GOOGLE_REDIRECT_URL not set"; MISSING=1; fi; \
-	if [ $$MISSING -eq 1 ]; then \
-		echo ""; \
-		echo "💡 Google OAuth is required. Set these in .env file."; \
-		exit 1; \
-	fi; \
-	echo "   ✅ Required secrets validated"
-	@echo ""
-	@echo "📤 Syncing secrets to Fly.io..."
-	@. ./.env && \
-	SECRETS="GOOGLE_CLIENT_ID=\"$$GOOGLE_CLIENT_ID\" GOOGLE_CLIENT_SECRET=\"$$GOOGLE_CLIENT_SECRET\" GOOGLE_REDIRECT_URL=\"$$GOOGLE_REDIRECT_URL\""; \
-	if [ -n "$$PB_ADMIN_EMAIL" ]; then \
-		SECRETS="$$SECRETS PB_ADMIN_EMAIL=\"$$PB_ADMIN_EMAIL\""; \
-	fi; \
-	if [ -n "$$PB_ADMIN_PASSWORD" ]; then \
-		SECRETS="$$SECRETS PB_ADMIN_PASSWORD=\"$$PB_ADMIN_PASSWORD\""; \
-	fi; \
-	if [ -n "$$APPLE_TEAM_ID" ] && [ -n "$$APPLE_CLIENT_ID" ] && [ -n "$$APPLE_KEY_ID" ]; then \
-		echo "   📱 Apple OAuth credentials found - including in secrets"; \
-		SECRETS="$$SECRETS APPLE_TEAM_ID=\"$$APPLE_TEAM_ID\" APPLE_CLIENT_ID=\"$$APPLE_CLIENT_ID\" APPLE_KEY_ID=\"$$APPLE_KEY_ID\""; \
-		if [ -n "$$APPLE_PRIVATE_KEY" ]; then \
-			echo "   🔑 Using APPLE_PRIVATE_KEY (inline content)"; \
-			SECRETS="$$SECRETS APPLE_PRIVATE_KEY=\"$$APPLE_PRIVATE_KEY\""; \
-		elif [ -n "$$APPLE_PRIVATE_KEY_PATH" ] && [ -f "$$APPLE_PRIVATE_KEY_PATH" ]; then \
-			echo "   🔑 Reading Apple private key from: $$APPLE_PRIVATE_KEY_PATH"; \
-			KEY_CONTENT=$$(cat "$$APPLE_PRIVATE_KEY_PATH"); \
-			SECRETS="$$SECRETS APPLE_PRIVATE_KEY=\"$$KEY_CONTENT\""; \
-		else \
-			echo "   ⚠️  Apple private key not found - Apple OAuth will not work"; \
-		fi; \
-		if [ -n "$$APPLE_REDIRECT_URL" ]; then \
-			SECRETS="$$SECRETS APPLE_REDIRECT_URL=\"$$APPLE_REDIRECT_URL\""; \
-		fi; \
-	fi; \
-	if [ -n "$$SMTP_HOST" ] && [ -n "$$SMTP_USERNAME" ] && [ -n "$$SMTP_PASSWORD" ]; then \
-		echo "   📧 SMTP credentials found - including in secrets"; \
-		SECRETS="$$SECRETS SMTP_HOST=\"$$SMTP_HOST\" SMTP_PORT=\"$$SMTP_PORT\" SMTP_USERNAME=\"$$SMTP_USERNAME\" SMTP_PASSWORD=\"$$SMTP_PASSWORD\""; \
-		if [ -n "$$SMTP_FROM_EMAIL" ]; then SECRETS="$$SECRETS SMTP_FROM_EMAIL=\"$$SMTP_FROM_EMAIL\""; fi; \
-		if [ -n "$$SMTP_FROM_NAME" ]; then SECRETS="$$SECRETS SMTP_FROM_NAME=\"$$SMTP_FROM_NAME\""; fi; \
-	fi; \
-	if [ -n "$$S3_BUCKET" ] && [ -n "$$S3_ACCESS_KEY" ] && [ -n "$$S3_SECRET_KEY" ]; then \
-		echo "   ☁️  S3 credentials found - including in secrets"; \
-		SECRETS="$$SECRETS S3_ENDPOINT=\"$$S3_ENDPOINT\" S3_REGION=\"$$S3_REGION\" S3_BUCKET=\"$$S3_BUCKET\" S3_ACCESS_KEY=\"$$S3_ACCESS_KEY\" S3_SECRET_KEY=\"$$S3_SECRET_KEY\""; \
-		if [ -n "$$S3_FORCE_PATH_STYLE" ]; then SECRETS="$$SECRETS S3_FORCE_PATH_STYLE=\"$$S3_FORCE_PATH_STYLE\""; fi; \
-	fi; \
-	echo ""; \
-	eval "$(FLY) secrets set $$SECRETS"
-	@echo ""
-	@echo "✅ Secrets synced successfully!"
-	@echo ""
-	@echo "💡 Tip: Non-secret config (SERVER_HOST, SERVER_PORT, PB_DATA_DIR) is in fly.toml [env] section"
+## fly-secrets: Set environment variables as fly.io secrets (uses .env.production)
+fly-secrets: env-sync-secrets-production
+	@echo "🔐 Syncing secrets to Fly.io (from .env.production)..."
+	@. ./.env.production && go run . pb env export-secrets | $(FLY) secrets import
+	@echo "✅ Secrets synced!"
+	@echo "💡 Non-secret config is defined in fly.toml [env] section"
 
 ## fly-deploy: Deploy to fly.io
 fly-deploy:

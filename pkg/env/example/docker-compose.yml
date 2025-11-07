@@ -1,0 +1,123 @@
+# Docker Compose configuration for env-demo example
+# Start with: make docker-up
+# Stop with: make docker-down
+# View logs: make docker-logs
+
+services:
+  # ================================================================
+  # Application
+  # ================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: env-demo:latest
+    container_name: env-demo-app
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.local  # Load environment from .env.local
+    # === START AUTO-GENERATED environment ===
+    environment:
+      # AUTO-GENERATED - DO NOT EDIT MANUALLY
+      # Update with: go run . compose-sync
+      SERVER_HOST: "0.0.0.0"
+      SERVER_PORT: "8080"
+      SERVER_TIMEOUT: "30"
+      LOG_LEVEL: "info"
+      DATABASE_MAX_CONNECTIONS: "25"
+      DATABASE_SSL_MODE: "require"
+      FEATURE_NEW_UI: "false"
+      FEATURE_BETA_API: "false"
+      FEATURE_ANALYTICS: "true"
+      CACHE_TTL: "3600"
+    # === END AUTO-GENERATED environment ===
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/app/server", "health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ================================================================
+  # PostgreSQL Database
+  # ================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: env-demo-postgres
+    environment:
+      POSTGRES_DB: demo_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ================================================================
+  # Redis Cache
+  # ================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: env-demo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ================================================================
+  # Adminer (Database UI)
+  # ================================================================
+  adminer:
+    image: adminer:latest
+    container_name: env-demo-adminer
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    networks:
+      - app-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+# ================================================================
+# Volumes
+# ================================================================
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# ================================================================
+# Networks
+# ================================================================
+networks:
+  app-network:
+    driver: bridge

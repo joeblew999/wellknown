@@ -14,7 +14,7 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build with CGO disabled (pure Go SQLite via modernc.org/sqlite)
+# Build standalone PocketBase server with CGO disabled (pure Go SQLite via modernc.org/sqlite)
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o wellknown-pb .
 
 # Stage 2: Runtime
@@ -27,43 +27,80 @@ RUN apk --no-cache add ca-certificates tzdata wget
 
 # ================================================================
 # Environment Variables (injected at runtime by Fly.io)
+# AUTO-GENERATED from pkg/pb/env.go - DO NOT EDIT MANUALLY
+# To update: make env-sync-dockerfile
 # ================================================================
 #
 # Required (set via fly.toml [env] section):
-#   PB_DATA_DIR=/app/.data/pb     - PocketBase data directory
-#   SERVER_HOST=0.0.0.0            - Server bind address
-#   SERVER_PORT=8090               - Server port
+#   (none)
 #
 # Required (set via Fly.io secrets):
-#   GOOGLE_CLIENT_ID               - Google OAuth client ID
-#   GOOGLE_CLIENT_SECRET           - Google OAuth client secret
-#   GOOGLE_REDIRECT_URL            - Google OAuth callback URL
+#   GOOGLE_CLIENT_ID
+#     Google OAuth client ID
+#   GOOGLE_CLIENT_SECRET
+#     Google OAuth client secret
+#   GOOGLE_REDIRECT_URL
+#     Google OAuth callback URL
 #
 # Optional (set via Fly.io secrets if needed):
-#   PB_ADMIN_EMAIL                 - Admin email for PocketBase
-#   PB_ADMIN_PASSWORD              - Admin password for PocketBase
-#   APPLE_TEAM_ID                  - Apple Developer Team ID
-#   APPLE_CLIENT_ID                - Apple OAuth client ID
-#   APPLE_KEY_ID                   - Apple private key ID
-#   APPLE_PRIVATE_KEY              - Apple private key (inline PEM)
-#   APPLE_REDIRECT_URL             - Apple OAuth callback URL
-#   SMTP_HOST                      - SMTP server hostname
-#   SMTP_PORT                      - SMTP server port
-#   SMTP_USERNAME                  - SMTP username
-#   SMTP_PASSWORD                  - SMTP password
-#   SMTP_FROM_EMAIL                - From email address
-#   SMTP_FROM_NAME                 - From name
-#   S3_ENDPOINT                    - S3 endpoint URL
-#   S3_REGION                      - S3 region
-#   S3_BUCKET                      - S3 bucket name
-#   S3_ACCESS_KEY                  - S3 access key
-#   S3_SECRET_KEY                  - S3 secret key
-#   S3_FORCE_PATH_STYLE            - S3 path style (true/false)
-#   ANTHROPIC_API_KEY              - Anthropic Claude API key
-#   ANTHROPIC_MODEL                - Claude model name (optional, has default)
+#   # AI
+#   ANTHROPIC_API_KEY
+#     Anthropic Claude API key (get from https://console.anthropic.com/)
+#   ANTHROPIC_MODEL
+#     Claude model name
+#   AI_USE_OAUTH
+#     Use Anthropic OAuth (NOT IMPLEMENTED YET, keep false)
+#   # Apple OAuth
+#   APPLE_TEAM_ID
+#     Apple Developer Team ID
+#   APPLE_CLIENT_ID
+#     Apple OAuth client ID (Service ID)
+#   APPLE_KEY_ID
+#     Apple private key ID
+#   APPLE_PRIVATE_KEY
+#     Apple private key (inline PEM content)
+#   APPLE_PRIVATE_KEY_PATH
+#     Path to Apple private key file (alternative to inline)
+#   APPLE_REDIRECT_URL
+#     Apple OAuth callback URL
+#   # PocketBase Admin
+#   PB_ADMIN_EMAIL
+#     PocketBase admin email
+#   PB_ADMIN_PASSWORD
+#     PocketBase admin password
+#   # S3
+#   S3_ENDPOINT
+#     S3 endpoint URL
+#   S3_REGION
+#     S3 region
+#   S3_BUCKET
+#     S3 bucket name
+#   S3_ACCESS_KEY
+#     S3 access key
+#   S3_SECRET_KEY
+#     S3 secret key
+#   S3_FORCE_PATH_STYLE
+#     S3 path style (true/false)
+#   S3_BACKUP_BUCKET
+#     S3 bucket for PocketBase backups
+#   # SMTP
+#   SMTP_HOST
+#     SMTP server hostname
+#   SMTP_PORT
+#     SMTP server port
+#   SMTP_USERNAME
+#     SMTP username
+#   SMTP_PASSWORD
+#     SMTP password
+#   SMTP_FROM_EMAIL
+#     From email address
+#   SMTP_FROM_NAME
+#     From name
 #
 # Sync secrets: make fly-secrets
 # ================================================================
+
+
 
 # Copy binary from builder
 COPY --from=builder /build/wellknown-pb .
@@ -86,7 +123,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8090/api/health || exit 1
 
 # Run PocketBase service with custom data directory
-# The "pb" command starts the PocketBase server
-# --dir specifies the data directory (overridden by Go code default)
-# Use serve command with --http flag to bind to 0.0.0.0
-CMD ["./wellknown-pb", "pb", "serve", "--http=0.0.0.0:8090"]
+# The serve command starts the PocketBase server
+# --http flag binds to 0.0.0.0:8090 for container networking
+CMD ["./wellknown-pb", "serve", "--http=0.0.0.0:8090"]

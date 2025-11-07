@@ -34,7 +34,7 @@
     </div>
 
     {{/* Generate URL using form action - properly encode arrays and objects */}}
-    <form method="POST" action="/{{$.Platform}}/{{$.AppType}}" target="_blank" style="margin-top: 10px;">
+    <form method="POST" action="{{$.URLPrefix}}/{{$.Platform}}/{{$.AppType}}" target="_blank" style="margin-top: 10px;">
         {{range $key, $value := $case.Data}}
             {{if eq (printf "%T" $value) "[]interface {}"}}
                 {{/* Array: encode each item */}}

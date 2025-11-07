@@ -8,6 +8,9 @@
 *.so
 *.dylib
 
+# Binary update backups (created during update process)
+*.old
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -24,8 +27,20 @@ profile.cov
 go.work
 go.work.sum
 
-# env file
+# env files (environment-specific secrets)
 .env
+.env.local
+.env.production
+.env.secrets
+
+# Keep encrypted Age files in git (safe to commit)
+# .env.local.age and .env.secrets.age are tracked (encrypted with Age)
+# Plaintext .age files would be ignored below if needed:
+# *.age
+
+# Age encryption keys (local only, never commit)
+.age/
+*/.age/
 
 # Editor/IDE
 # .idea/
@@ -56,7 +71,14 @@ tmp/
 # - backups/           Automated database backups (*.zip)
 # - .pb_temp_to_delete/ Temporary files (auto-cleaned by PocketBase)
 # - .autocert_cache/   Let's Encrypt SSL certificates
+#
+# Development HTTPS certificates (inside .data/certs/) - mkcert-generated:
+# - cert.pem           Local development SSL certificate
+# - key.pem            Local development SSL private key
+#
 # These are already ignored via .data/ pattern above
 
 # Fly.io (keep fly.toml for deployment config)
 .fly/
+
+

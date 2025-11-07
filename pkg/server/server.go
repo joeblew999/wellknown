@@ -19,6 +19,7 @@ type Server struct {
 	Port      string
 	LocalURL  string
 	MobileURL string
+	URLPrefix string // URL prefix when embedded (e.g., "/demo" in PocketBase)
 
 	// Dependencies (no more globals!)
 	templates *template.Template
@@ -120,7 +121,14 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, data PageData) {
 	// Auto-populate common fields
 	data.LocalURL = s.LocalURL
 	data.MobileURL = s.MobileURL
-	data.Navigation = s.registry.GetNavigation(r.URL.Path)
+	data.URLPrefix = s.URLPrefix
+
+	// Use prefix-aware navigation if URLPrefix is set
+	if s.URLPrefix != "" {
+		data.Navigation = s.registry.GetNavigationWithPrefix(r.URL.Path, s.URLPrefix)
+	} else {
+		data.Navigation = s.registry.GetNavigation(r.URL.Path)
+	}
 
 	// Render template
 	err := s.templates.ExecuteTemplate(w, "base", data)

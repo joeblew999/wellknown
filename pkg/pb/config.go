@@ -2,8 +2,6 @@ package wellknown
 
 import (
 	"fmt"
-	"os"
-	"strconv"
 
 	"github.com/joho/godotenv"
 	"github.com/pocketbase/pocketbase/tools/osutils"
@@ -65,7 +63,7 @@ type AnthropicConfig struct {
 	Model string
 }
 
-// LoadConfig loads configuration from environment variables
+// LoadConfig loads configuration from environment variables using the env registry
 // In development (go run), it will try to load .env file first
 func LoadConfig() (*Config, error) {
 	// PocketBase best practice: Only load .env in development
@@ -75,26 +73,27 @@ func LoadConfig() (*Config, error) {
 		_ = godotenv.Load()
 	}
 
+	// Load from env registry (single source of truth)
 	cfg := &Config{
 		Server: ServerConfig{
-			Host: getEnvOrDefault("SERVER_HOST", "127.0.0.1"),
-			Port: getEnvIntOrDefault("SERVER_PORT", 8090),
+			Host: EnvRegistry.ByName("SERVER_HOST").GetString(),
+			Port: EnvRegistry.ByName("SERVER_PORT").GetInt(),
 		},
 		OAuth: OAuthConfig{
 			Google: GoogleOAuthConfig{
-				ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-				ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-				RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
+				ClientID:     EnvRegistry.ByName("GOOGLE_CLIENT_ID").GetString(),
+				ClientSecret: EnvRegistry.ByName("GOOGLE_CLIENT_SECRET").GetString(),
+				RedirectURL:  EnvRegistry.ByName("GOOGLE_REDIRECT_URL").GetString(),
 			},
 		},
 		Database: DatabaseConfig{
-			DataDir: getEnvOrDefault("PB_DATA_DIR", ".data/pb"),
+			DataDir: EnvRegistry.ByName("PB_DATA_DIR").GetString(),
 		},
 		AI: AIConfig{
 			Anthropic: AnthropicConfig{
-				UseOAuth: getBoolEnvOrDefault("AI_USE_OAUTH", false), // Default to API key mode (simpler)
-				APIKey:   os.Getenv("ANTHROPIC_API_KEY"),
-				Model:    getEnvOrDefault("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929"),
+				UseOAuth: EnvRegistry.ByName("AI_USE_OAUTH").GetBool(),
+				APIKey:   EnvRegistry.ByName("ANTHROPIC_API_KEY").GetString(),
+				Model:    EnvRegistry.ByName("ANTHROPIC_MODEL").GetString(),
 			},
 		},
 	}
@@ -147,29 +146,4 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
-}
-
-// Helper functions
-
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func getEnvIntOrDefault(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
-
-func getBoolEnvOrDefault(key string, defaultValue bool) bool {
-	if value := os.Getenv(key); value != "" {
-		return value == "true" || value == "1"
-	}
-	return defaultValue
 }

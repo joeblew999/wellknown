@@ -218,10 +218,11 @@ func (h *RouteHandler) GET(path string, handler func(*core.RequestEvent) error, 
 		opt(meta)
 	}
 
-	h.registry.RegisterRoute(h.domain, path, "GET", opts...)
-	route := h.event.Router.GET(path, handler)
+	// Register route metadata (using pre-computed meta values instead of re-applying opts)
+	h.registry.Register(h.domain, path, "GET", meta.Description, meta.AuthRequired)
 
-	// Apply auth middleware if required
+	// Register actual HTTP route with auth middleware if required
+	route := h.event.Router.GET(path, handler)
 	if meta.AuthRequired {
 		route.BindFunc(RequireAuth())
 	}
@@ -234,10 +235,11 @@ func (h *RouteHandler) POST(path string, handler func(*core.RequestEvent) error,
 		opt(meta)
 	}
 
-	h.registry.RegisterRoute(h.domain, path, "POST", opts...)
-	route := h.event.Router.POST(path, handler)
+	// Register route metadata (using pre-computed meta values instead of re-applying opts)
+	h.registry.Register(h.domain, path, "POST", meta.Description, meta.AuthRequired)
 
-	// Apply auth middleware if required
+	// Register actual HTTP route with auth middleware if required
+	route := h.event.Router.POST(path, handler)
 	if meta.AuthRequired {
 		route.BindFunc(RequireAuth())
 	}
@@ -250,10 +252,11 @@ func (h *RouteHandler) PUT(path string, handler func(*core.RequestEvent) error, 
 		opt(meta)
 	}
 
-	h.registry.RegisterRoute(h.domain, path, "PUT", opts...)
-	route := h.event.Router.PUT(path, handler)
+	// Register route metadata (using pre-computed meta values instead of re-applying opts)
+	h.registry.Register(h.domain, path, "PUT", meta.Description, meta.AuthRequired)
 
-	// Apply auth middleware if required
+	// Register actual HTTP route with auth middleware if required
+	route := h.event.Router.PUT(path, handler)
 	if meta.AuthRequired {
 		route.BindFunc(RequireAuth())
 	}
@@ -266,10 +269,11 @@ func (h *RouteHandler) DELETE(path string, handler func(*core.RequestEvent) erro
 		opt(meta)
 	}
 
-	h.registry.RegisterRoute(h.domain, path, "DELETE", opts...)
-	route := h.event.Router.DELETE(path, handler)
+	// Register route metadata (using pre-computed meta values instead of re-applying opts)
+	h.registry.Register(h.domain, path, "DELETE", meta.Description, meta.AuthRequired)
 
-	// Apply auth middleware if required
+	// Register actual HTTP route with auth middleware if required
+	route := h.event.Router.DELETE(path, handler)
 	if meta.AuthRequired {
 		route.BindFunc(RequireAuth())
 	}

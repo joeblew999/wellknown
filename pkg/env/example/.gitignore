@@ -1,0 +1,22 @@
+# Local development environment (contains secrets)
+.env.local
+
+# Generated env files (if you create them for testing)
+.env
+.env.production
+.env.local.template
+.env.production.template
+
+# Fly.io secrets export
+fly-secrets.txt
+
+# Build artifacts
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Don't ignore the example secrets file (safe to commit)
+# .env.secrets is committed for demonstration purposes
+.bin/

@@ -1,7 +1,9 @@
 package wellknown
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -40,57 +42,52 @@ func New() (*Wellknown, error) {
 }
 
 // NewWithConfig creates a Wellknown app with custom configuration
+// This function performs fail-fast validation to catch errors early
 func NewWithConfig(cfg *Config) (*Wellknown, error) {
+	// Fail-fast: Validate configuration
 	if err := cfg.Validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("configuration validation failed: %w", err)
 	}
 
+	// Fail-fast: Check data directory is writable
+	if err := validateDataDir(cfg.Database.DataDir); err != nil {
+		return nil, fmt.Errorf("data directory validation failed: %w", err)
+	}
+
+	// Create PocketBase app with configuration
 	app := pocketbase.NewWithConfig(pocketbase.Config{
-		DefaultDataDir: cfg.Database.DataDir,
+		DefaultDataDir:  cfg.Database.DataDir,
+		HideStartBanner: true, // We show custom banner in main.go
 	})
 
-	// Initialize OAuth service
+	// Initialize OAuth service (if Google OAuth is enabled)
 	var oauthService *OAuthService
 	if cfg.OAuth.Google.Enabled {
+		// Fail-fast: Validate OAuth configuration
+		if cfg.OAuth.Google.ClientID == "" || cfg.OAuth.Google.ClientSecret == "" {
+			return nil, fmt.Errorf("OAuth Google enabled but ClientID or ClientSecret is empty")
+		}
 		oauthService = &OAuthService{
 			GoogleConfig: cfg.OAuth.Google.ToOAuth2Config(),
 			db:           app,
 		}
+		log.Println("✅ Google OAuth service initialized")
 	}
 
 	wk := &Wellknown{
 		PocketBase:   app,
 		config:       cfg,
-		registry:     nil, // Will be set in bindAppHooks
+		registry:     nil, // Set immediately in bindAppHooks
 		oauthService: oauthService,
 	}
 
+	// Register all lifecycle hooks and initialize route registry
 	bindAppHooks(wk)
+
+	log.Printf("✅ Wellknown initialized (data dir: %s)", cfg.Database.DataDir)
 	return wk, nil
 }
 
-// NewWithApp attaches wellknown functionality to an existing PocketBase app
-// Deprecated: Use NewWithConfig instead
-func NewWithApp(app *pocketbase.PocketBase) *Wellknown {
-	cfg, _ := LoadConfig()
-
-	var oauthService *OAuthService
-	if cfg.OAuth.Google.Enabled {
-		oauthService = &OAuthService{
-			GoogleConfig: cfg.OAuth.Google.ToOAuth2Config(),
-			db:           app,
-		}
-	}
-
-	wk := &Wellknown{
-		PocketBase:   app,
-		config:       cfg,
-		registry:     nil,
-		oauthService: oauthService,
-	}
-	bindAppHooks(wk)
-	return wk
-}
 
 // GetRegistry returns the route registry
 func (wk *Wellknown) GetRegistry() *RouteRegistry {
@@ -108,39 +105,48 @@ func (wk *Wellknown) GetConfig() *Config {
 }
 
 // bindAppHooks registers all lifecycle hooks and routes
+// NOTE: Route registration MUST happen inside OnServe() because PocketBase
+// creates the router during the serve event. This is a PocketBase constraint.
 func bindAppHooks(wk *Wellknown) {
-	// Setup collections and routes on server start
+	// Initialize route registry immediately (not waiting for server start)
+	// This allows early inspection of available routes
+	wk.registry = NewRouteRegistry()
+
+	// Register system routes in the registry (metadata only, actual routing happens in OnServe)
+	wk.registry.Register("System", "/_/", "GET", "PocketBase Admin UI", false)
+	wk.registry.Register("System", "/api/health", "GET", "Health check endpoint", false)
+	wk.registry.Register("System", "/api/collections", "GET", "List all collections", false)
+
+	// Initialize templates
+	if err := initTemplates(); err != nil {
+		log.Printf("⚠️  Template loading failed: %v", err)
+		log.Println("   Template-based routes may not work")
+	}
+
+	// Setup routes on server start (when router is available)
 	wk.OnServe().BindFunc(func(e *core.ServeEvent) error {
-		log.Println("🔗 Wellknown: Initializing routes...")
+		log.Println("🔗 Wellknown: Registering HTTP routes...")
 
 		// NOTE: Collections are now managed via migrations in cmd/pb_migrations/
 		// No runtime collection creation needed
 
-		// Create route registry for auto-documentation
-		registry := NewRouteRegistry()
-		wk.registry = registry // Store for later access
-
-		// Register core system routes
-		registry.Register("System", "/_/", "GET", "PocketBase Admin UI", false)
-		registry.Register("System", "/api/health", "GET", "Health check endpoint", false)
-		registry.Register("System", "/api/collections", "GET", "List all collections", false)
-
-		// Register domain routes
-		RegisterOAuthRoutes(wk, e, registry)
-		RegisterCalendarRoutes(wk, e, registry)
-		RegisterBankingRoutes(wk, e, registry)
+		// Register domain routes (both registry metadata + actual HTTP handlers)
+		RegisterOAuthRoutes(wk, e, wk.registry)
+		RegisterCalendarRoutes(wk, e, wk.registry)
+		RegisterBankingRoutes(wk, e, wk.registry)
+		RegisterDemoRoutes(wk, e, wk.registry)
 
 		// Register root HTML route (shows all endpoints)
 		e.Router.GET("/", func(e *core.RequestEvent) error {
-			return e.HTML(200, registry.GenerateHTML())
+			return e.HTML(200, wk.registry.GenerateHTML())
 		})
 
 		// Register API index route (JSON) - Returns proper JSON
 		e.Router.GET("/api/", func(e *core.RequestEvent) error {
-			return e.JSON(200, registry.GenerateJSON())
+			return e.JSON(200, wk.registry.GenerateJSON())
 		})
 
-		log.Println("✅ All routes registered successfully")
+		log.Println("✅ All HTTP routes registered successfully")
 		return e.Next()
 	})
 }
@@ -157,5 +163,22 @@ func (wk *Wellknown) GetServerInfo() *ServerInfo {
 		BaseURL: wk.config.Server.ServerURL(),
 		Routes:  wk.registry.GetRoutes(),
 	}
+}
+
+// validateDataDir checks if the data directory exists and is writable
+func validateDataDir(dir string) error {
+	// Check if directory exists, create if not
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("cannot create data directory: %w", err)
+	}
+
+	// Check if directory is writable
+	testFile := dir + "/.write_test"
+	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+		return fmt.Errorf("data directory is not writable: %w", err)
+	}
+	os.Remove(testFile)
+
+	return nil
 }
 

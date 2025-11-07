@@ -11,6 +11,8 @@ REPO_DATASTARUI := datastarui|https://github.com/coreycole/datastarui.git|main|D
 REPO_GIC := gic|https://github.com/yarlson/gic.git|v0.5.0|gic (Git + Claude AI commit message generator with MCP server mode)
 REPO_MCP_GO_SDK := mcp-go-sdk|https://github.com/modelcontextprotocol/go-sdk.git|v1.1.0|MCP Go SDK (Model Context Protocol implementation - stable version)
 REPO_ANTHROPIC_GO_SDK := anthropic-go-sdk|https://github.com/anthropics/anthropic-sdk-go.git|v1.16.0|Anthropic Go SDK (Claude API official client - stable version)
+REPO_PEANATS := peanats|https://github.com/mikluko/peanats.git|v0.20.2|peanats (NATS integration for PocketBase)
+REPO_TERRAFORM_PROVIDER_NSC := terraform-provider-nsc|https://github.com/mikluko/terraform-provider-nsc.git|v0.13.2|terraform-provider-nsc (Terraform provider for NATS Security CLI)
 
 # Auto-computed variables
 # Extract directory names from all REPO_* variables

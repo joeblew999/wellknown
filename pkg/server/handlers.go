@@ -37,4 +37,5 @@ type PageData struct {
 	ValidationErrors schema.ValidationErrors // Field-level validation errors
 	Navigation       []NavSection      // Server-generated navigation
 	GCPStatus        GCPSetupStatus    // GCP setup status (for tools/gcp-setup page)
+	URLPrefix        string            // URL prefix when embedded (e.g., "/demo" in PocketBase)
 }

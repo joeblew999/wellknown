@@ -32,22 +32,70 @@ The library also provides safe fallbacks to open the **web equivalents** when na
 
 ## 🚀 Getting Started
 
-See the [Makefile](Makefile) for all available commands:
+### Quick Start
 
+```bash
+make go-dep    # Install development tools
+make run       # Start unified server (API + Demo UI)
+```
+
+The server will start on **port 8090** with:
+
+- **Admin UI**: [http://localhost:8090/_/](http://localhost:8090/_/)
+- **Demo UI**: [http://localhost:8090/demo/](http://localhost:8090/demo/)
+- **API Docs**: [http://localhost:8090/api/](http://localhost:8090/api/)
+
+### Architecture
+
+**Unified Server (Port 8090)**
+- PocketBase backend with SQLite
+- RESTful API endpoints (`/api/*`)
+- Demo & testing UI (`/demo/*`)
+- Admin interface (`/_/*`)
+
+### Available Commands
+
+See all commands:
 ```bash
 make help
 ```
 
-For development setup, dependencies, running servers, and building:
+Common tasks:
+```bash
+make go-dep         # Install development tools
+make run            # Start unified server
+make gen            # Generate type-safe models from database
+make bin            # Build production binary
+make test           # Run all tests
+make fly-deploy     # Deploy to Fly.io
+```
+
+---
+
+## 📋 Migration Notice
+
+**Note**: The standalone server (`wellknown server`) has been merged into the unified server.
+
+All demo features are now available at `/demo/*` routes:
 
 ```bash
-make go-dep    # Install development tools
-make run       # Run PocketBase server
-make gen       # Generate type-safe models
+# Old (deprecated)
+wellknown server                    # Port 8080
+http://localhost:8080/google/calendar
+
+# New (current)
+wellknown pb serve                  # Port 8090
+http://localhost:8090/demo/google/calendar
 ```
+
+See [MIGRATION.md](MIGRATION.md) for full migration guide.
 
 ---
 
 ## 📚 Documentation
 
 All usage instructions are kept up-to-date in the Makefile. Run `make help` to see available commands and their descriptions.
+
+Additional documentation:
+- [MIGRATION.md](MIGRATION.md) - Migration from separate servers
+- [CLAUDE.md](CLAUDE.md) - Development rules and guidelines

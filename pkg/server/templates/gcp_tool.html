@@ -602,7 +602,7 @@ make pb-server
     async function resetSetup() {
         // Removed confirm dialog for faster testing - instant reset
 
-        const resp = await fetch('/api/gcp-setup/reset', { method: 'POST' });
+        const resp = await fetch('{{.URLPrefix}}/api/gcp-setup/reset', { method: 'POST' });
         const data = await resp.json();
 
         if (resp.ok) {
@@ -631,7 +631,7 @@ make pb-server
         document.getElementById('projectsListContent').innerHTML = 'Loading...';
 
         try {
-            const resp = await fetch('/api/gcp-setup/list-projects');
+            const resp = await fetch('{{.URLPrefix}}/api/gcp-setup/list-projects');
             const data = await resp.json();
 
             if (!resp.ok) {
@@ -806,7 +806,7 @@ make pb-server
             return;
         }
 
-        const resp = await fetch('/api/gcp-setup/save-project', {
+        const resp = await fetch('{{.URLPrefix}}/api/gcp-setup/save-project', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({project_id: projectId, project_name: projectName})
@@ -829,7 +829,7 @@ make pb-server
             return;
         }
 
-        const resp = await fetch('/api/gcp-setup/save-creds', {
+        const resp = await fetch('{{.URLPrefix}}/api/gcp-setup/save-creds', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({client_id: clientId, client_secret: clientSecret})
@@ -904,7 +904,7 @@ make pb-server
 
     async function markProjectDone() {
         status.project_done = true;
-        await fetch('/api/gcp-setup/save-project', {
+        await fetch('{{.URLPrefix}}/api/gcp-setup/save-project', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({project_id: status.project_id})
