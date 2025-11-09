@@ -356,3 +356,70 @@ func (r *Registry) GenerateTOMLEnv(sectionName string, comments []string) string
 
 	return sb.String()
 }
+
+// GenerateTOMLSecretsList generates a TOML comment list of secret variables
+// for deployment config files like fly.toml. Includes auto-sync markers.
+//
+// Parameters:
+//   - importCommand: Command to import secrets (e.g., "go run . fly-secrets-import")
+//
+// Returns:
+//
+//	Auto-sync section with commented list of secret variable names
+//
+// Example:
+//
+//	# === START AUTO-GENERATED SECRETS LIST ===
+//	# Secrets (set via: go run . fly-secrets-import)
+//	# - DATABASE_URL
+//	# - API_KEY
+//	# === END AUTO-GENERATED SECRETS LIST ===
+func (r *Registry) GenerateTOMLSecretsList(importCommand string) string {
+	var sb strings.Builder
+
+	sb.WriteString("# === START AUTO-GENERATED SECRETS LIST ===\n")
+	sb.WriteString(fmt.Sprintf("# Secrets (set via: %s)\n", importCommand))
+
+	for _, v := range r.All() {
+		if v.Secret {
+			sb.WriteString(fmt.Sprintf("# - %s\n", v.Name))
+		}
+	}
+
+	sb.WriteString("# === END AUTO-GENERATED SECRETS LIST ===")
+
+	return sb.String()
+}
+
+// GenerateDockerComposeEnv generates a docker-compose.yml environment section
+// with non-secret variables that have defaults.
+//
+// Parameters:
+//   - comments: Comment lines to include (e.g., update instructions)
+//
+// Returns:
+//
+//	Docker Compose YAML environment section with proper indentation
+//
+// Example:
+//
+//	environment:
+//	  # AUTO-GENERATED - DO NOT EDIT MANUALLY
+//	  SERVER_PORT: "8080"
+//	  LOG_LEVEL: "info"
+func (r *Registry) GenerateDockerComposeEnv(comments []string) string {
+	var sb strings.Builder
+
+	sb.WriteString("    environment:\n")
+	for _, comment := range comments {
+		sb.WriteString(fmt.Sprintf("      # %s\n", comment))
+	}
+
+	for _, v := range r.All() {
+		if !v.Secret && v.Default != "" {
+			sb.WriteString(fmt.Sprintf("      %s: \"%s\"\n", v.Name, v.Default))
+		}
+	}
+
+	return sb.String()
+}

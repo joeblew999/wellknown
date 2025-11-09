@@ -1,37 +1,42 @@
 # Docker Compose configuration for env-demo example
-# Start with: make docker-up
-# Stop with: make docker-down
-# View logs: make docker-logs
+#
+# USAGE:
+#   # Build with Dockerfile (traditional)
+#   docker-compose up --build
+#
+#   # Use ko-built image (fast, 12MB)
+#   go run . ko-build
+#   IMAGE=ko.local/example-...:latest docker-compose up
+#
+# Stop: docker-compose down
+# Logs: docker-compose logs -f
 
 services:
   # ================================================================
   # Application
   # ================================================================
   app:
+    # Image can be overridden with IMAGE environment variable
+    # Default: env-demo:latest (built from Dockerfile)
+    # Ko build: IMAGE=ko.local/example-...:latest docker-compose up
+    image: ${IMAGE:-env-demo:latest}
     build:
       context: .
       dockerfile: Dockerfile
-    image: env-demo:latest
     container_name: env-demo-app
+    command: ["serve"]  # Run the serve command (required for ko images)
     ports:
       - "8080:8080"
     env_file:
       - .env.local  # Load environment from .env.local
-    # === START AUTO-GENERATED environment ===
+    # === AUTO-GENERATED ENVIRONMENT (do not edit between markers) ===
     environment:
       # AUTO-GENERATED - DO NOT EDIT MANUALLY
-      # Update with: go run . compose-sync
-      SERVER_HOST: "0.0.0.0"
+      # Update with: go run . sync-registry
       SERVER_PORT: "8080"
-      SERVER_TIMEOUT: "30"
       LOG_LEVEL: "info"
-      DATABASE_MAX_CONNECTIONS: "25"
-      DATABASE_SSL_MODE: "require"
-      FEATURE_NEW_UI: "false"
-      FEATURE_BETA_API: "false"
-      FEATURE_ANALYTICS: "true"
-      CACHE_TTL: "3600"
-    # === END AUTO-GENERATED environment ===
+      FEATURE_BETA: "false"
+    # === END AUTO-GENERATED ===
     depends_on:
       postgres:
         condition: service_healthy

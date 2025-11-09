@@ -565,3 +565,174 @@ func TestRegistry_GenerateTemplate_HeaderFooterNewlines(t *testing.T) {
 		t.Error("Expected newlines to be added when not provided")
 	}
 }
+
+// ================================================================
+// GenerateTOMLSecretsList Tests
+// ================================================================
+
+func TestRegistry_GenerateTOMLSecretsList(t *testing.T) {
+	tests := []struct {
+		name          string
+		vars          []EnvVar
+		importCommand string
+		want          []string
+		notWant       []string
+	}{
+		{
+			name: "basic secrets list",
+			vars: []EnvVar{
+				{Name: "DATABASE_URL", Secret: true, Required: true},
+				{Name: "API_KEY", Secret: true},
+				{Name: "SERVER_PORT", Default: "8080"}, // not secret
+			},
+			importCommand: "go run . fly-secrets-import",
+			want: []string{
+				"# === START AUTO-GENERATED SECRETS LIST ===",
+				"# Secrets (set via: go run . fly-secrets-import)",
+				"# - DATABASE_URL",
+				"# - API_KEY",
+				"# === END AUTO-GENERATED SECRETS LIST ===",
+			},
+			notWant: []string{
+				"SERVER_PORT",
+			},
+		},
+		{
+			name:          "no secrets",
+			vars:          []EnvVar{{Name: "VAR1", Default: "val"}},
+			importCommand: "fly secrets import",
+			want: []string{
+				"# === START AUTO-GENERATED SECRETS LIST ===",
+				"# Secrets (set via: fly secrets import)",
+				"# === END AUTO-GENERATED SECRETS LIST ===",
+			},
+			notWant: []string{
+				"VAR1",
+			},
+		},
+		{
+			name: "multiple secrets different groups",
+			vars: []EnvVar{
+				{Name: "DB_PASSWORD", Secret: true, Group: "Database"},
+				{Name: "STRIPE_KEY", Secret: true, Group: "APIs"},
+				{Name: "JWT_SECRET", Secret: true, Group: "Auth"},
+			},
+			importCommand: "make secrets-import",
+			want: []string{
+				"# - DB_PASSWORD",
+				"# - STRIPE_KEY",
+				"# - JWT_SECRET",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reg := NewRegistry(tt.vars)
+			result := reg.GenerateTOMLSecretsList(tt.importCommand)
+
+			for _, want := range tt.want {
+				if !strings.Contains(result, want) {
+					t.Errorf("GenerateTOMLSecretsList() missing expected content:\n  want: %q\n  got: %s", want, result)
+				}
+			}
+
+			for _, notWant := range tt.notWant {
+				if strings.Contains(result, notWant) {
+					t.Errorf("GenerateTOMLSecretsList() contains unexpected content:\n  don't want: %q\n  got: %s", notWant, result)
+				}
+			}
+		})
+	}
+}
+
+// ================================================================
+// GenerateDockerComposeEnv Tests
+// ================================================================
+
+func TestRegistry_GenerateDockerComposeEnv(t *testing.T) {
+	tests := []struct {
+		name     string
+		vars     []EnvVar
+		comments []string
+		want     []string
+		notWant  []string
+	}{
+		{
+			name: "basic docker-compose env",
+			vars: []EnvVar{
+				{Name: "SERVER_PORT", Default: "8080"},
+				{Name: "LOG_LEVEL", Default: "info"},
+				{Name: "DATABASE_URL", Secret: true, Required: true}, // secret - excluded
+			},
+			comments: []string{
+				"AUTO-GENERATED - DO NOT EDIT",
+				"Update with: make sync",
+			},
+			want: []string{
+				"    environment:",
+				"      # AUTO-GENERATED - DO NOT EDIT",
+				"      # Update with: make sync",
+				`      SERVER_PORT: "8080"`,
+				`      LOG_LEVEL: "info"`,
+			},
+			notWant: []string{
+				"DATABASE_URL",
+			},
+		},
+		{
+			name: "no defaults",
+			vars: []EnvVar{
+				{Name: "VAR1"}, // no default
+				{Name: "VAR2", Secret: true},
+			},
+			comments: []string{"Generated"},
+			want: []string{
+				"    environment:",
+				"      # Generated",
+			},
+			notWant: []string{
+				"VAR1",
+				"VAR2",
+			},
+		},
+		{
+			name: "mixed vars with defaults",
+			vars: []EnvVar{
+				{Name: "PUBLIC_VAR", Default: "public"},
+				{Name: "NO_DEFAULT"},
+				{Name: "SECRET_VAR", Default: "secret", Secret: true},
+				{Name: "ANOTHER_PUBLIC", Default: "value"},
+			},
+			comments: []string{},
+			want: []string{
+				"    environment:",
+				`      PUBLIC_VAR: "public"`,
+				`      ANOTHER_PUBLIC: "value"`,
+			},
+			notWant: []string{
+				"NO_DEFAULT",
+				"SECRET_VAR",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reg := NewRegistry(tt.vars)
+			result := reg.GenerateDockerComposeEnv(tt.comments)
+
+			for _, want := range tt.want {
+				if !strings.Contains(result, want) {
+					t.Errorf("GenerateDockerComposeEnv() missing expected content:\n  want: %q\n  got: %s", want, result)
+				}
+			}
+
+			for _, notWant := range tt.notWant {
+				if strings.Contains(result, notWant) {
+					t.Errorf("GenerateDockerComposeEnv() contains unexpected content:\n  don't want: %q\n  got: %s", notWant, result)
+				}
+			}
+		})
+	}
+}

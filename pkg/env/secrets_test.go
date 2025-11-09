@@ -95,7 +95,7 @@ func TestLoadSecrets_Plaintext(t *testing.T) {
 
 	secrets, err := LoadSecrets(SecretsSource{
 		FilePath:     secretsPath,
-		TryEncrypted: false,
+		PreferEncrypted: false,
 	})
 
 	if err != nil {
@@ -117,7 +117,7 @@ func TestLoadSecrets_FileNotFound(t *testing.T) {
 
 	_, err := LoadSecrets(SecretsSource{
 		FilePath:     secretsPath,
-		TryEncrypted: false,
+		PreferEncrypted: false,
 	})
 
 	if err == nil {
@@ -129,7 +129,7 @@ func TestLoadSecrets_FileNotFound(t *testing.T) {
 	}
 }
 
-// Test LoadSecrets prefers .age version when TryEncrypted is true
+// Test LoadSecrets prefers .age version when PreferEncrypted is true
 func TestLoadSecrets_PreferEncrypted(t *testing.T) {
 	tmpDir := t.TempDir()
 	basePath := filepath.Join(tmpDir, ".env.secrets")
@@ -148,7 +148,7 @@ func TestLoadSecrets_PreferEncrypted(t *testing.T) {
 	// But we can verify it attempted to use the .age file
 	_, err := LoadSecrets(SecretsSource{
 		FilePath:     basePath,
-		TryEncrypted: true,
+		PreferEncrypted: true,
 	})
 
 	// We expect an error because our fake .age file isn't actually encrypted
@@ -163,7 +163,7 @@ func TestLoadSecrets_PreferEncrypted(t *testing.T) {
 
 	secrets, err := LoadSecrets(SecretsSource{
 		FilePath:     basePath,
-		TryEncrypted: true,
+		PreferEncrypted: true,
 	})
 
 	if err != nil {
@@ -185,7 +185,7 @@ func TestLoadSecrets_EmptyFile(t *testing.T) {
 
 	secrets, err := LoadSecrets(SecretsSource{
 		FilePath:     secretsPath,
-		TryEncrypted: false,
+		PreferEncrypted: false,
 	})
 
 	if err != nil {
@@ -437,7 +437,7 @@ func TestLoadSecrets_ReadError(t *testing.T) {
 
 	_, err := LoadSecrets(SecretsSource{
 		FilePath:     secretsPath,
-		TryEncrypted: false,
+		PreferEncrypted: false,
 	})
 
 	if err == nil {

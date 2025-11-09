@@ -233,8 +233,8 @@ func GenerateEnvProduction() string {
 func MergeSecretsIntoEnv(secretsPath, templateType, outputPath string) error {
 	// 1. Load secrets (with automatic .age detection and decryption)
 	secrets, err := env.LoadSecrets(env.SecretsSource{
-		FilePath:     secretsPath,
-		TryEncrypted: true,
+		FilePath:        secretsPath,
+		PreferEncrypted: true,
 	})
 	if err != nil {
 		return err

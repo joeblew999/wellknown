@@ -7,6 +7,14 @@
 .env.local.template
 .env.production.template
 
+# Secrets files (plaintext - NEVER commit!)
+.env.secrets
+.env.secrets.local
+.env.secrets.production
+
+# Encrypted secrets files are SAFE to commit (*.age files)
+# These are tracked by git
+
 # Fly.io secrets export
 fly-secrets.txt
 
@@ -20,3 +28,5 @@ bin/
 # Don't ignore the example secrets file (safe to commit)
 # .env.secrets is committed for demonstration purposes
 .bin/
+example
+

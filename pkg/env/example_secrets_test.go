@@ -43,7 +43,7 @@ func ExampleLoadSecrets() {
 	// Load secrets
 	secrets, err := env.LoadSecrets(env.SecretsSource{
 		FilePath:     secretsFile,
-		TryEncrypted: false,
+		PreferEncrypted: false,
 	})
 
 	if err != nil {
@@ -69,10 +69,10 @@ func ExampleLoadSecrets_encrypted() {
 	os.WriteFile(secretsFile, []byte(content), 0600)
 	defer os.Remove(secretsFile)
 
-	// TryEncrypted will look for .age version first
+	// PreferEncrypted will look for .age version first
 	secrets, err := env.LoadSecrets(env.SecretsSource{
 		FilePath:     secretsFile,
-		TryEncrypted: true,
+		PreferEncrypted: true,
 	})
 
 	if err != nil {
@@ -195,14 +195,14 @@ func ExampleSecretsSource() {
 	// Example of configuring secrets source
 	source := env.SecretsSource{
 		FilePath:     ".env.secrets",
-		TryEncrypted: true,
+		PreferEncrypted: true,
 	}
 
 	fmt.Printf("File path: %s\n", source.FilePath)
-	fmt.Printf("Try encrypted: %v\n", source.TryEncrypted)
+	fmt.Printf("Try encrypted: %v\n", source.PreferEncrypted)
 
 	// This will:
-	// 1. First try .env.secrets.age (if TryEncrypted is true)
+	// 1. First try .env.secrets.age (if PreferEncrypted is true)
 	// 2. Fall back to .env.secrets if .age doesn't exist
 	// 3. Decrypt automatically if Age keys are available
 

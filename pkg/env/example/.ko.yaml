@@ -1,0 +1,17 @@
+# ko configuration for env-demo
+# Build with: ko build --local .
+# Or: make ko-build
+
+# Use minimal base image
+defaultBaseImage: cgr.dev/chainguard/static:latest
+
+# Build settings
+builds:
+  - id: env-demo
+    main: .
+    env:
+      - CGO_ENABLED=0
+      - GOWORK=off
+    ldflags:
+      - -s -w
+      - -extldflags "-static"
