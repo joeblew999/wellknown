@@ -10,20 +10,30 @@ REPO_GOPOCJSON := goPocJsonSchemaForm|https://github.com/warlockxins/goPocJsonSc
 REPO_DATASTARUI := datastarui|https://github.com/coreycole/datastarui.git|main|DatastarUI (Go/templ shadcn/ui components with Datastar)
 REPO_GIC := gic|https://github.com/yarlson/gic.git|v0.5.0|gic (Git + Claude AI commit message generator with MCP server mode)
 REPO_MCP_GO_SDK := mcp-go-sdk|https://github.com/modelcontextprotocol/go-sdk.git|v1.1.0|MCP Go SDK (Model Context Protocol implementation - stable version)
-REPO_ANTHROPIC_GO_SDK := anthropic-go-sdk|https://github.com/anthropics/anthropic-sdk-go.git|v1.16.0|Anthropic Go SDK (Claude API official client - stable version)
+REPO_ANTHROPIC_GO_SDK := anthropic-go-sdk|https://github.com/anthropics/anthropic-sdk-go.git|v1.17.0|Anthropic Go SDK (Claude API official client - stable version)
 REPO_PEANATS := peanats|https://github.com/mikluko/peanats.git|v0.20.2|peanats (NATS integration for PocketBase)
 REPO_TERRAFORM_PROVIDER_NSC := terraform-provider-nsc|https://github.com/mikluko/terraform-provider-nsc.git|v0.13.2|terraform-provider-nsc (Terraform provider for NATS Security CLI)
+REPO_DATASTAR_GO := datastar-go|https://github.com/starfederation/datastar-go.git|v1.0.3|Datastar Go SDK (v1.0.3 release)
+REPO_NORTHSTAR := northstar|https://github.com/zangster300/northstar.git|main|northstar (reference Datastar + Templ example)
 
 # Auto-computed variables
+REPO_VARS := $(filter REPO_%,$(.VARIABLES))
 # Extract directory names from all REPO_* variables
-ALL_REPOS := $(foreach var,$(filter REPO_%,$(.VARIABLES)),$(word 1,$(subst |, ,$($(var)))))
+ALL_REPOS := $(foreach var,$(REPO_VARS),$(word 1,$(subst |, ,$($(var)))))
 
 # Extract target names from REPO_* variable names (used for pattern rule invocation)
 # Example: REPO_POCKETBASE -> pocketbase, REPO_POCKETBASE_HA -> pocketbase-ha
-REPO_NAMES := $(foreach var,$(filter REPO_%,$(.VARIABLES)),$(shell echo $(var) | sed 's/^REPO_//' | tr '[:upper:]' '[:lower:]' | tr '_' '-'))
+REPO_NAMES := $(foreach var,$(REPO_VARS),$(shell echo $(var) | sed 's/^REPO_//' | tr '[:upper:]' '[:lower:]' | tr '_' '-'))
+SORTED_REPO_NAMES := $(sort $(REPO_NAMES))
+
+# Control whether `make status` fetches remote tags before reporting (1=yes, 0=no)
+STATUS_FETCH_TAGS ?= 1
+
+# Refs treated as branches/commits (never auto-bumped to newest tag)
+TAG_BRANCH_IGNORE := main master develop development dev head trunk default
 
 # Auto-generate .PHONY declaration (pattern rules don't need explicit .PHONY)
-.PHONY: help sync-all list print clean status
+.PHONY: help sync list print clean status update-tags
 
 # ============================================================================
 # Parameterized Functions
@@ -51,71 +61,79 @@ define sync-repo-template
 	@REF=$(call get-ref,$(1)); \
 	DIR=$(call get-dir,$(1)); \
 	URL=$(call get-url,$(1)); \
+	printf "  🔄 %-25s syncing...\n" "$$DIR"; \
 	if [ ! -d "$$DIR" ]; then \
 		if [ -n "$$REF" ]; then \
-			echo "📦 Cloning $$DIR @ $$REF..."; \
-			if git clone --branch $$REF --depth 1 $$URL $$DIR 2>/dev/null; then \
-				echo "✅ $$DIR synced to $$REF"; \
-			else \
-				git clone $$URL $$DIR && cd $$DIR && git checkout $$REF && cd ..; \
-				echo "✅ $$DIR synced to $$REF"; \
-			fi; \
+			if git clone --quiet --branch $$REF --depth 1 $$URL $$DIR 2>/dev/null; then true; else git clone --quiet $$URL $$DIR 2>/dev/null && (cd $$DIR && git checkout --quiet $$REF 2>/dev/null); fi; \
 		else \
-			echo "📦 Cloning $$DIR..."; \
-			git clone $$URL $$DIR; \
-			echo "✅ $$DIR cloned"; \
+			git clone --quiet $$URL $$DIR 2>/dev/null; \
+		fi; \
+	fi; \
+	if [ -n "$$REF" ]; then \
+		if ! (cd $$DIR && git fetch --all --tags --prune --quiet 2>/dev/null && git checkout --quiet $$REF 2>/dev/null && git pull --quiet origin $$REF 2>/dev/null); then \
+			printf "  ⚠️  %-25s failed to sync, recloning...\n" "$$DIR"; \
+			rm -rf "$$DIR"; \
+			git clone --quiet $$URL $$DIR 2>/dev/null; \
+			(cd $$DIR && git checkout --quiet $$REF 2>/dev/null); \
 		fi; \
 	else \
-		if [ -n "$$REF" ]; then \
-			echo "🔄 Syncing $$DIR to $$REF..."; \
-			cd $$DIR && git fetch --all --tags 2>/dev/null && git checkout $$REF && git pull origin $$REF 2>/dev/null || true; \
-			CURRENT=$$(git describe --tags --always 2>/dev/null); \
-			echo "✅ $$DIR synced to $$CURRENT"; \
-		else \
-			echo "🔄 Updating $$DIR..."; \
-			cd $$DIR && git pull; \
-			echo "✅ $$DIR updated"; \
+		if ! (cd $$DIR && git pull --quiet 2>/dev/null); then \
+			printf "  ⚠️  %-25s pull failed, recloning...\n" "$$DIR"; \
+			rm -rf "$$DIR"; \
+			git clone --quiet $$URL $$DIR 2>/dev/null; \
 		fi; \
-	fi
+	fi; \
+	CURRENT_BRANCH=$$(cd $$DIR && git branch --show-current 2>/dev/null); \
+	CURRENT_COMMIT=$$(cd $$DIR && git rev-parse --short HEAD 2>/dev/null); \
+	CURRENT_TAG=$$(cd $$DIR && git describe --tags --exact-match 2>/dev/null); \
+	if [ -n "$$CURRENT_TAG" ]; then \
+		DISPLAY="$$CURRENT_TAG"; \
+		if [ -n "$$REF" ] && [ "$$REF" != "$$CURRENT_TAG" ]; then ICON="⚠️ "; EXTRA=" (expected $$REF)"; else ICON="✅"; EXTRA=""; fi; \
+	elif [ -n "$$CURRENT_BRANCH" ]; then \
+		DISPLAY="$$CURRENT_BRANCH ($$CURRENT_COMMIT)"; \
+		if [ -n "$$REF" ] && [ "$$REF" != "$$CURRENT_BRANCH" ]; then ICON="⚠️ "; EXTRA=" (expected $$REF)"; else ICON="✅"; EXTRA=""; fi; \
+	else \
+		DISPLAY="detached@$$CURRENT_COMMIT"; \
+		if [ -n "$$REF" ] && [ "$$REF" != "$$CURRENT_COMMIT" ]; then ICON="⚠️ "; EXTRA=" (expected $$REF)"; else ICON="✅"; EXTRA=""; fi; \
+	fi; \
+	printf "  %s %-25s %s%s\n" "$$ICON" "$$DIR" "$$DISPLAY" "$$EXTRA"
 endef
 
 # ============================================================================
 # Main Targets
 # ============================================================================
 
-.DEFAULT_GOAL := sync-all
+.DEFAULT_GOAL := sync
 
 ## help: Show available make targets
 help:
-	@echo "════════════════════════════════════════════════════════════════"
-	@echo "  Reference Code Management"
-	@echo "════════════════════════════════════════════════════════════════"
-	@echo ""
-	@grep -E '^##' $(MAKEFILE_LIST) | sed 's/^## /  make /' | column -t -s ':'
-	@echo ""
-	@echo "════════════════════════════════════════════════════════════════"
-	@echo "💡 Common Commands:"
-	@echo "   make              Sync all repositories (default)"
-	@echo "   make list         Show repository status and versions"
-	@echo "   make help         Show this help"
-	@echo ""
-	@echo "Advanced: make sync-<name>, make clean, make status, make print"
-	@echo "════════════════════════════════════════════════════════════════"
+	@grep -E '^##' $(MAKEFILE_LIST) | sed 's/^## /make /' | awk -F': ' '{printf "%-18s %s\n", $$1, $$2}'
 
 # print: Show all Makefile variables (for debugging) - Hidden from help
 print:
-	@echo "=== Repository Definitions (dir|url|ref|description) ==="
-	@$(foreach var,$(sort $(filter-out REPO_NAMES,$(filter REPO_%,$(.VARIABLES)))),\
-		printf "%-18s = %s\n" "$(var)" "$($(var))";)
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo "  🧱 Make Variables"
+	@echo "════════════════════════════════════════════════════════════════"
 	@echo ""
-	@echo "=== Computed Variables ==="
-	@echo "ALL_REPOS          = $(ALL_REPOS)"
-	@echo "REPO_NAMES         = $(REPO_NAMES)"
+	@echo "  Repository definitions (dir|url|ref|description):"
+	@$(foreach var,$(sort $(REPO_VARS)),\
+		printf "    • %-20s %s\n" "$(var)" "$($(var))";)
+	@echo ""
+	@echo "  Computed variables:"
+	@printf "    • %-20s %s\n" "ALL_REPOS" "$(ALL_REPOS)"
+	@printf "    • %-20s %s\n" "REPO_NAMES" "$(REPO_NAMES)"
+	@printf "    • %-20s %s\n" "SORTED_REPO_NAMES" "$(SORTED_REPO_NAMES)"
+	@printf "    • %-20s %s\n" "STATUS_FETCH_TAGS" "$(STATUS_FETCH_TAGS)"
 
-## sync-all: Sync all repositories to specified refs (in parallel)
-sync-all:
-	@echo "🔄 Syncing all repositories in parallel..."
-	@$(MAKE) -j $(words $(REPO_NAMES)) $(foreach repo,$(REPO_NAMES),sync-$(repo))
+## sync: Sync all repositories (parallel)
+sync:
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo "  🔄 Sync Repositories"
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "  Mode: parallel"
+	@$(MAKE) -j $(words $(SORTED_REPO_NAMES)) $(foreach repo,$(SORTED_REPO_NAMES),sync-$(repo))
+	@echo ""
 	@echo "✅ All repositories synced!"
 
 # sync-REPO: Sync specific repository (use make list to see available repos) - Hidden pattern rule
@@ -130,7 +148,7 @@ list:
 	@echo "  📦 Reference Repositories"
 	@echo "════════════════════════════════════════════════════════════════"
 	@echo ""
-	@$(foreach var,$(sort $(filter-out REPO_NAMES,$(filter REPO_%,$(.VARIABLES)))),\
+	@$(foreach var,$(sort $(REPO_VARS)),\
 		DIR=$(call get-dir,$(var)); \
 		REF=$(call get-ref,$(var)); \
 		if [ -d "$$DIR" ]; then \
@@ -157,10 +175,14 @@ list:
 		fi;)
 	@echo ""
 	@echo "Usage: make sync-<name>  Example: make sync-pocketbase"
-	@echo "       make              Sync all repositories"
+	@echo "       make / make sync  Sync all repositories"
 
 # clean: Remove all cloned repositories (WARNING: destructive!) - Hidden from help
 clean:
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo "  🧹 Clean Repositories"
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo ""
 	@echo "⚠️  This will delete all cloned reference repositories"
 	@read -p "Are you sure? [y/N]: " confirm; \
 	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
@@ -170,14 +192,148 @@ clean:
 		echo "❌ Cancelled"; \
 	fi
 
-# status: Show git status and latest commit for all cloned repositories - Hidden from help
+## status: Show git status, last commit, and latest tags for all repos
 status:
-	@echo "📊 Repository Status:"
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo "  📊 Repository Status"
+	@echo "════════════════════════════════════════════════════════════════"
 	@echo ""
-	@for dir in $(ALL_REPOS); do \
-		if [ -d "$$dir" ]; then \
-			echo "=== $$dir ==="; \
-			cd $$dir && git status --short && git log --oneline -1 && cd ..; \
-			echo ""; \
+	@if [ "$(STATUS_FETCH_TAGS)" != "0" ]; then \
+		echo "  ⏳ Refreshing tags in parallel..."; \
+		for dir in $(sort $(ALL_REPOS)); do \
+			if [ -d "$$dir" ]; then \
+				( cd $$dir && git fetch --tags --prune --quiet >/dev/null 2>&1 ) & \
+			fi; \
+		done; \
+		wait; \
+		echo ""; \
+	fi
+	@$(foreach var,$(sort $(REPO_VARS)),\
+		DIR=$(call get-dir,$(var)); \
+		if [ -d "$$DIR" ]; then \
+			BRANCH=$$(cd $$DIR && git branch --show-current 2>/dev/null); \
+			COMMIT=$$(cd $$DIR && git rev-parse --short HEAD 2>/dev/null); \
+			TAG=$$(cd $$DIR && git describe --tags --exact-match 2>/dev/null); \
+			STATE=$$(cd $$DIR && git status --short); \
+			LAST=$$(cd $$DIR && git log --oneline -1 2>/dev/null); \
+			LATEST_TAG=$$(cd $$DIR && git tag --sort=-creatordate 2>/dev/null | head -1); \
+			if [ -z "$$LATEST_TAG" ]; then \
+				LATEST_TAG=$$(cd $$DIR && git describe --tags --abbrev=0 2>/dev/null); \
+			fi; \
+			if [ -n "$$TAG" ]; then \
+				DISPLAY="$$TAG"; \
+			elif [ -n "$$BRANCH" ]; then \
+				DISPLAY="$$BRANCH ($$COMMIT)"; \
+			else \
+				DISPLAY="detached@$$COMMIT"; \
+			fi; \
+			if [ -z "$$STATE" ]; then \
+				printf "  ✅ %-25s %s\n" "$$DIR" "$$DISPLAY"; \
+				printf "       • Last commit: %s\n" "$$LAST"; \
+				printf "       • Changes: clean\n"; \
+			else \
+				printf "  ⚠️  %-25s %s (dirty)\n" "$$DIR" "$$DISPLAY"; \
+				printf "       • Last commit: %s\n" "$$LAST"; \
+				printf "       • Changes:\n"; \
+				echo "$$STATE" | sed 's/^/         - /'; \
+			fi; \
+			if [ -n "$$LATEST_TAG" ]; then \
+				if [ -n "$$TAG" ] && [ "$$TAG" = "$$LATEST_TAG" ]; then \
+					printf "       • Latest tag: %s (current)\n" "$$LATEST_TAG"; \
+				else \
+					printf "       • ⚠️ Latest tag: %s (update available)\n" "$$LATEST_TAG"; \
+				fi; \
+			else \
+				printf "       • Latest tag: none\n"; \
+			fi; \
+		else \
+			printf "  ❌ %-25s %s\n" "$$DIR" "not cloned"; \
 		fi; \
-	done
+	)
+
+## update-tags: Update repo refs to latest tags (Makefile-only)
+update-tags: sync
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo "  🔁 Update Repository Tags"
+	@echo "════════════════════════════════════════════════════════════════"
+	@echo ""
+	@cp Makefile Makefile.tags.bak
+	@tmp=$$(mktemp); \
+	TMPFILE="$$tmp" TAG_BRANCH_IGNORE="$(TAG_BRANCH_IGNORE)" awk '\
+	function trim(s){gsub(/^[ \t]+|[ \t]+$$/, "", s); return s} \
+	function is_hex_commit(ref,   i,c){ \
+		if (length(ref) < 7 || length(ref) > 40) return 0; \
+		for (i=1; i<=length(ref); i++){ \
+			c=tolower(substr(ref,i,1)); \
+			if (index("0123456789abcdef", c)==0) return 0; \
+		} \
+		return 1; \
+	} \
+	function is_branch(ref,   low){ \
+		ref=trim(ref); \
+		if (ref=="") return 1; \
+		low=tolower(ref); \
+		if (low in branch_map) return 1; \
+		if (index(ref,"/")>0) return 1; \
+		if (is_hex_commit(ref)) return 1; \
+		return 0; \
+	} \
+	function dir_exists(dir){ \
+		cmd="[ -d \"" dir "\" ]"; \
+		return system(cmd " >/dev/null 2>&1")==0; \
+	} \
+	function fetch_tags(dir){ \
+		system("cd \"" dir "\" && git fetch --tags --prune --quiet >/dev/null 2>&1"); \
+	} \
+	function latest_tag(dir, fallback,    cmd, line, tag){ \
+		tag=""; \
+		cmd="cd \"" dir "\" && git tag --sort=-creatordate"; \
+		while ((cmd | getline line) > 0){ \
+			if (line ~ /^[ \t]*$$/) continue; \
+			if (line ~ /(rc|beta)/) continue; \
+			tag=line; \
+			break; \
+		} \
+		close(cmd); \
+		if (tag=="") tag=fallback; \
+		return tag; \
+	} \
+	BEGIN{ \
+		tmp=ENVIRON["TMPFILE"]; \
+		split(ENVIRON["TAG_BRANCH_IGNORE"], arr, /[ \t]+/); \
+		for (i in arr){ if (arr[i]!="") branch_map[tolower(arr[i])]=1; } \
+	} \
+	{ \
+		line=$0; \
+		if (match(line, /^(REPO_[A-Z0-9_]+)\s*:=\s*([^|]+)\|([^|]+)\|([^|]*)\|(.*)$$/, m)){ \
+			name=m[1]; dir=trim(m[2]); url=trim(m[3]); ref=trim(m[4]); desc=m[5]; \
+			newref=ref; \
+			if (!dir_exists(dir)){ \
+				printf("  ⚠️  %s: directory missing (run make sync)\n", dir) > "/dev/stderr"; \
+			}else if (is_branch(ref)){ \
+				printf("  ↩︎ %s: ref \"%s\" treated as branch/commit\n", dir, ref==""?"default":ref) > "/dev/stderr"; \
+			}else{ \
+				fetch_tags(dir); \
+				candidate=latest_tag(dir, ref); \
+				if (candidate!="" && candidate!=ref){ \
+					newref=candidate; \
+					printf("  🔼 %s: %s -> %s\n", dir, ref, newref) > "/dev/stderr"; \
+				}else{ \
+					printf("  ✅ %s: %s\n", dir, ref) > "/dev/stderr"; \
+				} \
+			} \
+			printf("%s := %s|%s|%s|%s\n", name, dir, url, newref, desc) >> tmp; \
+			next; \
+		} \
+		print line >> tmp; \
+	} \
+	END{close(tmp)}' Makefile; \
+	if cmp -s $$tmp Makefile; then \
+		rm $$tmp; \
+		echo ""; \
+		echo "No tag updates detected."; \
+	else \
+		mv $$tmp Makefile; \
+		echo ""; \
+		echo "Makefile updated with latest tags."; \
+	fi
