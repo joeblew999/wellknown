@@ -1,29 +1,10 @@
-# Repository metadata lives in repos.csv (name,dir,url,ref,description)
-REPOS_FILE := repos.csv
-REPOS_MK := .repos.mk
+# Repository metadata lives in repos.list (pipe-delimited: name|dir|url|ref|description)
+REPOS_FILE := repos.list
 $(if $(wildcard $(REPOS_FILE)),,$(error Missing $(REPOS_FILE). Please create it.))
 
-$(REPOS_MK): $(REPOS_FILE)
-	@awk -F',' 'NR==1 {next} \
-	{ name=$$1; dir=$$2; url=$$3; ref=$$4; desc=$$5; var=name; gsub(/[^A-Za-z0-9]/,"_",var); var=toupper(var); \
-	  printf "REPO_%s := %s|%s|%s|%s\n", var, dir, url, ref, desc; \
-	  rv = (rv ? rv " REPO_" var : "REPO_" var); \
-	  rn = (rn ? rn " " name : name); \
-	  ar = (ar ? ar " " dir : dir); \
-	} \
-	END { \
-	  printf "REPO_VARS := %s\n", rv; \
-	  printf "REPO_NAMES := %s\n", rn; \
-	  printf "ALL_REPOS := %s\n", ar; \
-	}' $(REPOS_FILE) > $(REPOS_MK)
-
-include $(REPOS_MK)
-
-# Auto-computed variables
-# Ensure derived values exist even if repos file was empty
-REPO_VARS ?=
-REPO_NAMES ?=
-ALL_REPOS ?=
+# Basic projections reused throughout the Makefile
+REPO_NAMES := $(shell awk -F'|' 'NR>1 {print $$1}' $(REPOS_FILE))
+ALL_REPOS := $(shell awk -F'|' 'NR>1 {print $$2}' $(REPOS_FILE))
 SORTED_REPO_NAMES := $(sort $(REPO_NAMES))
 
 # Control whether `make status` fetches remote tags before reporting (1=yes, 0=no)
@@ -39,20 +20,14 @@ TAG_BRANCH_IGNORE := main master develop development dev head trunk default
 # Parameterized Functions
 # ============================================================================
 
-# Helper to extract field from REPO_* variable
-# Usage: $(call get-field,VARIABLE,FIELD_NUMBER)
-# Fields: 1=dir, 2=url, 3=ref, 4=description
-get-field = $(word $(2),$(subst |, ,$($(1))))
+# Helper to extract fields from repos.list on demand
+# Usage: $(call repo-field,repo_name,field_index)
+repo-field = $(shell awk -F'|' -v target="$(1)" -v idx=$(2) 'NR>1 && $$1==target {print $$idx; exit}' $(REPOS_FILE))
 
-# Extract specific fields from repo variables
-get-dir = $(call get-field,$(1),1)
-get-url = $(call get-field,$(1),2)
-get-ref = $(call get-field,$(1),3)
-get-desc = $(call get-field,$(1),4)
-
-# Convert target suffix to REPO_* variable name
-# Examples: pocketbase -> REPO_POCKETBASE, pocketbase-ha -> REPO_POCKETBASE_HA
-target-to-var = REPO_$(shell echo $(1) | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+get-dir = $(call repo-field,$(1),2)
+get-url = $(call repo-field,$(1),3)
+get-ref = $(call repo-field,$(1),4)
+get-desc = $(call repo-field,$(1),5)
 
 # Template for syncing a repository to specified ref (idempotent clone/update)
 # Parameters: $(1) = REPO_* variable name (e.g., REPO_POCKETBASE)
@@ -117,8 +92,8 @@ print:
 	@echo "════════════════════════════════════════════════════════════════"
 	@echo ""
 	@echo "  Repository definitions (dir|url|ref|description):"
-	@$(foreach var,$(sort $(REPO_VARS)),\
-		printf "    • %-20s %s\n" "$(var)" "$($(var))";)
+	@$(foreach repo,$(sort $(REPO_NAMES)),\
+		printf "    • %-20s %s|%s|%s|%s\n" "$(repo)" "$(call get-dir,$(repo))" "$(call get-url,$(repo))" "$(call get-ref,$(repo))" "$(call get-desc,$(repo))";)
 	@echo ""
 	@echo "  Computed variables:"
 	@printf "    • %-20s %s\n" "ALL_REPOS" "$(ALL_REPOS)"
@@ -139,9 +114,10 @@ sync:
 
 # sync-REPO: Sync specific repository (use make list to see available repos) - Hidden pattern rule
 sync-%:
-	@$(eval REPO_VAR := $(call target-to-var,$*))
-	@$(if $($(REPO_VAR)),,$(error ❌ Unknown repo: $*. Run 'make list-repos' to see available repositories))
-	$(call sync-repo-template,$(REPO_VAR))
+	@if [ -z "$(filter $*,$(REPO_NAMES))" ]; then \
+		echo "❌ Unknown repo: $*"; exit 1; \
+	fi
+	$(call sync-repo-template,$*)
 
 ## list: Show repository status, versions, and available repos
 list:
@@ -149,9 +125,9 @@ list:
 	@echo "  📦 Reference Repositories"
 	@echo "════════════════════════════════════════════════════════════════"
 	@echo ""
-	@$(foreach var,$(sort $(REPO_VARS)),\
-		DIR=$(call get-dir,$(var)); \
-		REF=$(call get-ref,$(var)); \
+	@$(foreach repo,$(sort $(REPO_NAMES)),\
+		DIR=$(call get-dir,$(repo)); \
+		REF=$(call get-ref,$(repo)); \
 		if [ -d "$$DIR" ]; then \
 			CURRENT_BRANCH=$$(cd $$DIR && git branch --show-current 2>/dev/null); \
 			CURRENT_COMMIT=$$(cd $$DIR && git rev-parse --short HEAD 2>/dev/null); \
@@ -209,9 +185,9 @@ status:
 		wait; \
 		echo ""; \
 	fi
-	@$(foreach var,$(sort $(REPO_VARS)),\
-		DIR=$(call get-dir,$(var)); \
-		REF=$(call get-ref,$(var)); \
+	@$(foreach repo,$(sort $(REPO_NAMES)),\
+		DIR=$(call get-dir,$(repo)); \
+		REF=$(call get-ref,$(repo)); \
 		if [ -d "$$DIR" ]; then \
 			BRANCH=$$(cd $$DIR && git branch --show-current 2>/dev/null); \
 			COMMIT=$$(cd $$DIR && git rev-parse --short HEAD 2>/dev/null); \
@@ -258,14 +234,14 @@ status:
 	)
 
 ## update: Update repo refs to latest tags (updates repos.csv)
-update: sync
+update:
 	@echo "════════════════════════════════════════════════════════════════"
 	@echo "  🔁 Update Repository Tags"
 	@echo "════════════════════════════════════════════════════════════════"
 	@echo ""
 	@cp $(REPOS_FILE) $(REPOS_FILE).bak
 	@tmp=$$(mktemp); \
-	TMPFILE="$$tmp" TAG_BRANCH_IGNORE="$(TAG_BRANCH_IGNORE)" awk -F',' '\
+	TMPFILE="$$tmp" TAG_BRANCH_IGNORE="$(TAG_BRANCH_IGNORE)" awk -F'|' '\
 	function trim(s){gsub(/^[ \t]+|[ \t]+$$/, "", s); return s} \
 	function is_hex_commit(ref,   i,c){ \
 		if (length(ref) < 7 || length(ref) > 40) return 0; \
@@ -314,8 +290,10 @@ update: sync
 		name=trim($$1); dir=trim($$2); url=trim($$3); ref=trim($$4); desc=$$5; \
 		newref=ref; \
 		if (!dir_exists(dir)){ \
-			printf("  ⚠️  %s: directory missing (run make sync)\n", dir) > "/dev/stderr"; \
-		}else if (is_branch(ref)){ \
+			printf("  ⚠️  %s: cloning...\n", dir) > "/dev/stderr"; \
+			system("git clone --quiet \"" url "\" \"" dir "\" >/dev/null 2>&1 || git clone \"" url "\" \"" dir "\""); \
+		} \
+		if (is_branch(ref)){ \
 			printf("  ↩︎ %s: ref \"%s\" treated as branch/commit\n", dir, ref==""?"default":ref) > "/dev/stderr"; \
 		}else{ \
 			fetch_tags(dir); \
@@ -327,7 +305,7 @@ update: sync
 				printf("  ✅ %s: %s\n", dir, ref) > "/dev/stderr"; \
 			} \
 		} \
-		printf("%s,%s,%s,%s,%s\n", name, dir, url, newref, desc) >> tmp; \
+		printf("%s|%s|%s|%s|%s\n", name, dir, url, newref, desc) >> tmp; \
 	} \
 	END{close(tmp)}' $(REPOS_FILE); \
 	if cmp -s $$tmp $(REPOS_FILE); then \
@@ -337,6 +315,7 @@ update: sync
 	else \
 		mv $$tmp $(REPOS_FILE); \
 		echo ""; \
-		echo "$(REPOS_FILE) updated with latest tags."; \
+		echo "$(REPOS_FILE) updated with latest tags. Running sync..."; \
 		$(MAKE) $(REPOS_MK) >/dev/null; \
+		$(MAKE) sync; \
 	fi
