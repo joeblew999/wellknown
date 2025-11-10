@@ -1,0 +1,21 @@
+{{define "download_forms"}}
+<!-- Forms selection fragment - this gets swapped in via Datastar -->
+<form id="download-form" data-on-submit="@post('/gui/download', {contentType: 'form'})">
+    <p>
+        <label for="form_code">Available Forms ({{.Count}} total):</label><br>
+        <select id="form_code" name="form_code" required size="10" style="width: 100%; max-width: 600px;">
+            {{if .Forms}}
+                {{range .Forms}}
+                <option value="{{.FormCode}}">{{.FormCode}} - {{.FormName}} ({{.State}})</option>
+                {{end}}
+            {{else}}
+                <option value="">No forms available</option>
+            {{end}}
+        </select>
+    </p>
+
+    <p>
+        <button type="submit">📥 Download Selected Form</button>
+    </p>
+</form>
+{{end}}

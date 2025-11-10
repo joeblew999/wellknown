@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+{{template "header" .}}
+<body>
+    {{template "nav"}}
+
+    <h1>4️⃣ FILL FORM</h1>
+    <p><a href="/">&larr; Back to Home</a> | <a href="/3-inspect">← Previous: Inspect Fields</a></p>
+
+    <h2>Fill PDF Form with Data</h2>
+
+    <!-- Fill form with Datastar v1.0 -->
+    <div id="fill-container" data-signals='{"dataPath":"cases/","flatten":false,"filling":false,"status":"","error":"","outputPath":""}'>
+        <form id="fill-form">
+            <p>
+                <label for="data_path">Data Path (JSON file with field values):</label><br>
+                <input
+                    type="text"
+                    id="data_path"
+                    name="data_path"
+                    data-bind:dataPath
+                    placeholder="cases/john_smith_F3520_20251110_123456.json"
+                    required
+                    style="width: 100%; max-width: 600px;">
+            </p>
+
+            <p>
+                <label>
+                    <input
+                        type="checkbox"
+                        id="flatten"
+                        name="flatten"
+                        data-on:change="$flatten = evt.target.checked">
+                    Flatten PDF (lock all fields)
+                </label>
+            </p>
+
+            <p>
+                <button
+                    type="button"
+                    data-indicator="fillFetching"
+                    data-on:click="if (!$dataPath) { $error = 'Please enter a data path'; return; }; $$post('/gui/fill')">
+                    <span data-show="!$filling">✍️ Fill Form</span>
+                    <span data-show="$filling">⏳ Filling...</span>
+                </button>
+            </p>
+        </form>
+
+        <!-- Status messages -->
+        <div data-show="$status || $error">
+            <div data-show="$status" style="color: green; padding: 10px; margin-top: 10px;">
+                <p>🎉 <span data-text="$status"></span></p>
+                <p data-show="$outputPath"><strong>Output PDF:</strong> <span data-text="$outputPath"></span></p>
+            </div>
+            <div data-show="$error" style="color: red; padding: 10px; margin-top: 10px;">
+                <p>❌ Error: <span data-text="$error"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+    <p><strong>🎉 Final Step:</strong> <a href="/5-test">5️⃣ Run tests (optional)</a></p>
+</body>
+</html>

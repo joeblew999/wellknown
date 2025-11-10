@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/joeblew999/wellknown/pkg/env"
+	"github.com/joeblew999/wellknown/pkg/env/webui"
 )
 
 // Server runs the HTTP server demonstrating environment variable usage
@@ -26,9 +27,13 @@ func runServer() error {
 
 	// Setup routes
 	mux := http.NewServeMux()
+
+	// Register webui routes for env management
+	webuiHandler := webui.NewHandler(AppRegistry)
+	webuiHandler.RegisterRoutes(mux)
+
+	// App-specific routes
 	mux.HandleFunc("/", handleHome)
-	mux.HandleFunc("/health", handleHealth)
-	mux.HandleFunc("/env", handleEnv)
 	mux.HandleFunc("/feature-demo", handleFeatureDemo)
 	mux.HandleFunc("/database", handleDatabase)
 
@@ -47,8 +52,8 @@ func runServer() error {
 		log.Printf("🚀 Server starting at %s (log level: %s)\n", baseURL, logLevel)
 		log.Printf("📍 Endpoints:\n")
 		log.Printf("   GET %s/          - Homepage\n", baseURL)
-		log.Printf("   GET %s/health    - Health check\n", baseURL)
-		log.Printf("   GET %s/env       - Environment variables\n", baseURL)
+		log.Printf("   GET %s/env       - Environment variables (webui)\n", baseURL)
+		log.Printf("   GET %s/health    - Health check (webui)\n", baseURL)
 		log.Printf("   GET %s/feature-demo - Feature flag demo\n", baseURL)
 		log.Printf("   GET %s/database  - Database status\n", baseURL)
 		log.Println()
@@ -87,7 +92,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	port := getRegistryDefault("SERVER_PORT")
 	logLevel := getRegistryDefault("LOG_LEVEL")
 	featureBeta := getRegistryDefault("FEATURE_BETA")
-	environment := detectEnvironment()
+	environment := env.DetectEnvironment()
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, `<!DOCTYPE html>
@@ -137,8 +142,8 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
     <div class="endpoints">
         <ul>
             <li><a href="/">/</a> - This homepage</li>
-            <li><a href="/health">/health</a> - Health check endpoint (JSON)</li>
-            <li><a href="/env">/env</a> - Environment variables showcase (JSON)</li>
+            <li><a href="/env">/env</a> - Environment variables GUI (webui package)</li>
+            <li><a href="/health">/health</a> - Health check (JSON, webui package)</li>
             <li><a href="/feature-demo">/feature-demo</a> - Feature flag demonstration</li>
             <li><a href="/database">/database</a> - Database connection status (JSON)</li>
         </ul>
@@ -168,304 +173,6 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 </html>`, environment, port, logLevel, featureBeta)
 }
 
-// handleHealth returns health check status
-func handleHealth(w http.ResponseWriter, r *http.Request) {
-	environment := detectEnvironment()
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status":      "healthy",
-		"environment": environment,
-		"timestamp":   time.Now().Format(time.RFC3339),
-	})
-}
-
-// handleEnv shows environment variables (hides secret values)
-func handleEnv(w http.ResponseWriter, r *http.Request) {
-	// Get all variables from registry
-	vars := AppRegistry.All()
-
-	// Build response
-	response := map[string]interface{}{
-		"server": map[string]string{
-			"port":      getRegistryDefault("SERVER_PORT"),
-			"log_level": getRegistryDefault("LOG_LEVEL"),
-		},
-		"features": map[string]interface{}{
-			"beta": getRegistryDefault("FEATURE_BETA") == "true",
-		},
-		"secrets": map[string]bool{},
-	}
-
-	// Check which secrets are configured
-	secrets := response["secrets"].(map[string]bool)
-	for _, v := range vars {
-		if v.Secret {
-			key := strings.ToLower(v.Name)
-			secrets[key+"_configured"] = os.Getenv(v.Name) != ""
-		}
-	}
-
-	// Check if client wants JSON (via Accept header or query param)
-	acceptHeader := r.Header.Get("Accept")
-	format := r.URL.Query().Get("format")
-
-	if format == "json" || strings.Contains(acceptHeader, "application/json") {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	// Default: HTML output
-	port := getRegistryDefault("SERVER_PORT")
-	logLevel := getRegistryDefault("LOG_LEVEL")
-	featureBeta := getRegistryDefault("FEATURE_BETA")
-	environment := detectEnvironment()
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, `<!DOCTYPE html>
-<html>
-<head>
-    <title>Environment Variables - env-demo</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        h1 { color: #2c3e50; }
-        h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 30px; }
-        .env-section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .env-group { margin: 20px 0; }
-        .env-group h3 { color: #555; margin-bottom: 10px; font-size: 1.1em; }
-        .env-var {
-            display: flex;
-            padding: 10px;
-            margin: 5px 0;
-            background: white;
-            border-radius: 5px;
-            border-left: 4px solid #3498db;
-        }
-        .env-var.secret { border-left-color: #e74c3c; }
-        .env-var.required { border-left-color: #f39c12; }
-        .env-name {
-            font-weight: bold;
-            font-family: monospace;
-            min-width: 200px;
-            color: #2c3e50;
-        }
-        .env-value {
-            flex: 1;
-            font-family: monospace;
-            color: #27ae60;
-        }
-        .env-value.secret {
-            color: #999;
-            font-style: italic;
-        }
-        .env-value.empty {
-            color: #e74c3c;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 0.8em;
-            margin-left: 10px;
-            font-weight: normal;
-        }
-        .badge.secret { background: #ffe6e6; color: #c0392b; }
-        .badge.required { background: #fff3cd; color: #856404; }
-        .badge.configured { background: #d4edda; color: #155724; }
-        .badge.missing { background: #f8d7da; color: #721c24; }
-        .nav { margin: 20px 0; }
-        .nav a {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #3498db;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-right: 10px;
-        }
-        .nav a:hover { background: #2980b9; }
-        code {
-            background: #f4f4f4;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.9em;
-        }
-        .status-box {
-            background: #e8f5e9;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
-    </style>
-</head>
-<body>
-    <h1>🔧 Environment Variables</h1>
-
-    <div class="nav">
-        <a href="/">← Home</a>
-        <a href="/env?format=json">View as JSON</a>
-    </div>
-
-    <div class="status-box">
-        <strong>Environment:</strong> %s<br>
-        <strong>Registry Variables:</strong> %d total (%d secrets, %d required)
-    </div>
-
-    <h2>Configuration Values</h2>
-
-    <div class="env-section">
-        <div class="env-group">
-            <h3>Server Configuration</h3>
-            <div class="env-var">
-                <span class="env-name">SERVER_PORT</span>
-                <span class="env-value">%s</span>
-            </div>
-            <div class="env-var">
-                <span class="env-name">LOG_LEVEL</span>
-                <span class="env-value">%s</span>
-            </div>
-        </div>
-
-        <div class="env-group">
-            <h3>Features</h3>
-            <div class="env-var">
-                <span class="env-name">FEATURE_BETA</span>
-                <span class="env-value">%s</span>
-            </div>
-        </div>
-
-        <div class="env-group">
-            <h3>Secrets Status</h3>`,
-		environment,
-		len(vars),
-		len(AppRegistry.GetSecrets()),
-		len(AppRegistry.GetRequired()),
-		port,
-		logLevel,
-		featureBeta)
-
-	// Add secret status for each secret variable
-	for _, v := range vars {
-		if v.Secret {
-			configured := os.Getenv(v.Name) != ""
-			requiredBadge := ""
-			if v.Required {
-				requiredBadge = `<span class="badge required">REQUIRED</span>`
-			}
-
-			statusBadge := `<span class="badge missing">NOT SET</span>`
-			valueDisplay := `<span class="env-value empty">(not configured)</span>`
-			if configured {
-				statusBadge = `<span class="badge configured">CONFIGURED</span>`
-				valueDisplay = `<span class="env-value secret">••••••••</span>`
-			}
-
-			fmt.Fprintf(w, `
-            <div class="env-var secret">
-                <span class="env-name">%s<span class="badge secret">SECRET</span>%s</span>
-                %s
-                %s
-            </div>`, v.Name, requiredBadge, valueDisplay, statusBadge)
-		}
-	}
-
-	fmt.Fprintf(w, `
-        </div>
-    </div>
-
-    <h2>All Registry Variables</h2>
-    <div class="env-section">`)
-
-	// Group variables by group
-	groups := make(map[string][]env.EnvVar)
-	for _, v := range vars {
-		group := v.Group
-		if group == "" {
-			group = "Other"
-		}
-		groups[group] = append(groups[group], v)
-	}
-
-	// Display each group
-	for groupName, groupVars := range groups {
-		fmt.Fprintf(w, `
-        <div class="env-group">
-            <h3>%s</h3>`, groupName)
-
-		for _, v := range groupVars {
-			value := os.Getenv(v.Name)
-			if value == "" {
-				value = v.Default
-			}
-
-			badges := ""
-			varClass := "env-var"
-			valueClass := "env-value"
-
-			if v.Secret {
-				badges += `<span class="badge secret">SECRET</span>`
-				varClass += " secret"
-				if value != "" {
-					value = "••••••••"
-					valueClass += " secret"
-				} else {
-					valueClass += " empty"
-					value = "(not set)"
-				}
-			} else if value == "" {
-				valueClass += " empty"
-				value = "(empty)"
-			}
-
-			if v.Required {
-				badges += `<span class="badge required">REQUIRED</span>`
-				varClass += " required"
-			}
-
-			fmt.Fprintf(w, `
-            <div class="%s">
-                <span class="env-name">%s%s</span>
-                <span class="%s">%s</span>
-            </div>`, varClass, v.Name, badges, valueClass, value)
-		}
-
-		fmt.Fprintf(w, `
-        </div>`)
-	}
-
-	fmt.Fprintf(w, `
-    </div>
-
-    <h2>How to Use</h2>
-    <div class="env-section">
-        <p>
-            <strong>View as JSON:</strong> Add <code>?format=json</code> to the URL or set
-            <code>Accept: application/json</code> header.
-        </p>
-        <p>
-            <strong>Registry-driven:</strong> All values come from <code>registry.go</code>
-            with environment variable overrides.
-        </p>
-        <p>
-            <strong>Secrets:</strong> Secret values are hidden in HTML view but their
-            configured status is shown.
-        </p>
-    </div>
-
-    <p style="margin-top: 40px; color: #999; font-size: 0.9em;">
-        Powered by <strong>github.com/joeblew999/wellknown/pkg/env</strong>
-    </p>
-</body>
-</html>`)
-}
-
 // handleFeatureDemo demonstrates feature flag usage
 func handleFeatureDemo(w http.ResponseWriter, r *http.Request) {
 	featureBeta := getRegistryDefault("FEATURE_BETA") == "true"
@@ -486,9 +193,13 @@ func handleFeatureDemo(w http.ResponseWriter, r *http.Request) {
             text-align: center;
         }
         .beta { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
-                color: white; padding: 40px; border-radius: 10px; }
+                color: white; padding: 40px; border-radius: 10px; margin-bottom: 20px; }
         h1 { font-size: 3em; margin: 0; }
         p { font-size: 1.2em; }
+        a { display: inline-block; margin-top: 20px; padding: 10px 20px;
+            background: #667eea; color: white; text-decoration: none;
+            border-radius: 5px; }
+        a:hover { background: #764ba2; }
     </style>
 </head>
 <body>
@@ -497,6 +208,7 @@ func handleFeatureDemo(w http.ResponseWriter, r *http.Request) {
         <p>You're seeing this because FEATURE_BETA=true</p>
         <p>Welcome to the cutting edge! 🚀</p>
     </div>
+    <a href="/">← Back to Home</a>
 </body>
 </html>`)
 	} else {
@@ -512,9 +224,13 @@ func handleFeatureDemo(w http.ResponseWriter, r *http.Request) {
             padding: 20px;
             text-align: center;
         }
-        .standard { background: #f5f5f5; padding: 40px; border-radius: 10px; }
+        .standard { background: #f5f5f5; padding: 40px; border-radius: 10px; margin-bottom: 20px; }
         h1 { font-size: 2.5em; margin: 0; color: #333; }
         p { font-size: 1.1em; color: #666; }
+        a { display: inline-block; margin-top: 20px; padding: 10px 20px;
+            background: #3498db; color: white; text-decoration: none;
+            border-radius: 5px; }
+        a:hover { background: #2980b9; }
     </style>
 </head>
 <body>
@@ -523,6 +239,7 @@ func handleFeatureDemo(w http.ResponseWriter, r *http.Request) {
         <p>You're seeing this because FEATURE_BETA=false</p>
         <p>Set FEATURE_BETA=true to enable beta features</p>
     </div>
+    <a href="/">← Back to Home</a>
 </body>
 </html>`)
 	}
@@ -566,26 +283,6 @@ func getRegistryDefault(key string) string {
 		return envVar.Default
 	}
 	return ""
-}
-
-func detectEnvironment() string {
-	// Check if we're running on Fly.io
-	if os.Getenv("FLY_APP_NAME") != "" {
-		return "production (Fly.io)"
-	}
-
-	// Check if we're in a container
-	if _, err := os.Stat("/.dockerenv"); err == nil {
-		return "docker"
-	}
-
-	// Check if DATABASE_URL looks like production
-	if dbURL := os.Getenv("DATABASE_URL"); strings.Contains(dbURL, "production") ||
-		strings.Contains(dbURL, "prod") {
-		return "production"
-	}
-
-	return "local"
 }
 
 // cmdServe starts the HTTP server

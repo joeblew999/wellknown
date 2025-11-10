@@ -1,0 +1,17 @@
+{{define "download_status"}}
+<!-- Download status fragment - updated via SSE events -->
+<div id="download-status">
+    {{if .Error}}
+        <p style="color: red;">❌ Error: {{.Error}}</p>
+    {{else if .Success}}
+        <p style="color: green;">✅ {{.Message}}</p>
+        {{if .PDFPath}}
+            <p>📄 PDF saved to: <code>{{.PDFPath}}</code></p>
+        {{end}}
+    {{else if .InProgress}}
+        <p>⏳ {{.Message}}</p>
+    {{else}}
+        <p><em>Select a form above and click Download</em></p>
+    {{end}}
+</div>
+{{end}}

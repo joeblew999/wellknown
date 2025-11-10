@@ -1,0 +1,32 @@
+# PDF Package - Local .gitignore
+
+# Runtime data directories
+.data/downloads/
+.data/templates/
+.data/outputs/
+.data/temp/
+.data/certs/
+.data/cases/*/
+
+# Keep catalog and test scenarios
+!.data/catalog/
+!.data/cases/test_scenarios/
+
+# Legacy data/ directory (backwards compatibility)
+data/downloads/
+data/templates/
+data/outputs/
+data/temp/
+data/cases/
+!data/catalog/
+!data/cases/test_scenarios/
+
+# Example binaries
+examples/pdfform/pdfform
+examples/*/pdfform
+
+# Test artifacts
+*.test
+*.out
+coverage.*
+*.coverprofile

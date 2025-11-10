@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+{{template "header" .}}
+<body>
+    {{template "nav"}}
+
+    <h1>3️⃣ INSPECT FIELDS</h1>
+    <p><a href="/">&larr; Back to Home</a> | <a href="/2-download">← Previous: Download Form</a></p>
+
+    <h2>Extract Form Fields from PDF</h2>
+
+    <!-- Inspect form with Datastar v1.0 -->
+    <div id="inspect-container" data-signals='{"pdfPath":"downloads/","inspecting":false,"status":"","error":"","fieldCount":0,"templatePath":""}'>
+        <form id="inspect-form">
+            <p>
+                <label for="pdf_path">PDF Path (from downloads):</label><br>
+                <input
+                    type="text"
+                    id="pdf_path"
+                    name="pdf_path"
+                    data-bind:pdfPath
+                    placeholder="downloads/f3520.pdf"
+                    required
+                    style="width: 100%; max-width: 600px;">
+            </p>
+
+            <p>
+                <button
+                    type="button"
+                    data-indicator="inspectFetching"
+                    data-on:click="if (!$pdfPath) { $error = 'Please enter a PDF path'; return; }; $$post('/gui/inspect')">
+                    <span data-show="!$inspecting">🔬 Inspect PDF</span>
+                    <span data-show="$inspecting">⏳ Inspecting...</span>
+                </button>
+            </p>
+        </form>
+
+        <!-- Status messages -->
+        <div data-show="$status || $error">
+            <div data-show="$status" style="color: green; padding: 10px; margin-top: 10px;">
+                <p>✅ <span data-text="$status"></span></p>
+                <p data-show="$fieldCount > 0"><strong>Fields found:</strong> <span data-text="$fieldCount"></span></p>
+                <p data-show="$templatePath"><strong>Template:</strong> <span data-text="$templatePath"></span></p>
+            </div>
+            <div data-show="$error" style="color: red; padding: 10px; margin-top: 10px;">
+                <p>❌ Error: <span data-text="$error"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+    <p><strong>➡️ Next Step:</strong> <a href="/4-fill">4️⃣ Fill the form with your data</a></p>
+</body>
+</html>

@@ -1,0 +1,48 @@
+{{define "download_fragment"}}
+<!-- Main download fragment with Datastar v1.0 -->
+<div id="download-container"
+    data-signals='{"selectedForm":"","downloading":false,"status":"","error":""}'
+    data-on:load="@get('/gui/events')">
+    <h2>Select a Form to Download</h2>
+    <p><em>Forms are loaded automatically from the catalog - no manual input required!</em></p>
+
+    <!-- Forms selection -->
+    <form id="download-form">
+        <p>
+            <label for="form_code">Available Forms ({{len .Forms}} total):</label><br>
+            <select
+                id="form_code"
+                name="form_code"
+                data-model="$selectedForm"
+                data-on:click="$selectedForm = document.getElementById('form_code').value"
+                required
+                size="10"
+                style="width: 100%; max-width: 600px;">
+                <option value="">-- Select a form --</option>
+                {{range .Forms}}
+                <option value="{{.FormCode}}">{{.FormCode}} - {{.FormName}} ({{.State}})</option>
+                {{end}}
+            </select>
+        </p>
+
+        <p>
+            <button
+                type="button"
+                data-on:click="const selectedForm = document.getElementById('form_code').value; if (!selectedForm) { $error = 'Please select a form'; return; }; $downloading = true; $error = ''; const formData = new FormData(); formData.append('selectedForm', selectedForm); fetch('/gui/download', { method: 'POST', body: formData }).then(r => { if (!r.ok) throw new Error('Download request failed'); }).catch(err => { $downloading = false; $error = 'Download failed: ' + err.message; });">
+                <span data-show="!$downloading">📥 Download Selected Form</span>
+                <span data-show="$downloading">⏳ Downloading...</span>
+            </button>
+        </p>
+    </form>
+
+    <!-- Status messages -->
+    <div data-show="$status || $error">
+        <div data-show="$status" style="color: green; padding: 10px; margin-top: 10px;">
+            <p>✅ <span data-text="$status"></span></p>
+        </div>
+        <div data-show="$error" style="color: red; padding: 10px; margin-top: 10px;">
+            <p>❌ Error: <span data-text="$error"></span></p>
+        </div>
+    </div>
+</div>
+{{end}}

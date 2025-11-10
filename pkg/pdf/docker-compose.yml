@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  pdfform:
+    build:
+      context: ../..
+      dockerfile: pkg/pdf/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount .data directory for persistence
+      - pdfform-data:/app/.data
+      # Optional: mount local .data for development
+      # - ./.data:/app/.data
+    environment:
+      - PDFFORM_DATA_DIR=/app/.data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  pdfform-data:
+    driver: local

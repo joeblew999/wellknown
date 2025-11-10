@@ -12,6 +12,30 @@
 /wellknown
 /wellknown-pb
 
+# Example binaries
+/pkg/pdf/examples/pdfform/pdfform
+
+# PDF working data directories (old data/ - now using .data/)
+# These are legacy entries - keeping for backwards compatibility
+/pkg/pdf/data/downloads/
+/pkg/pdf/data/templates/
+/pkg/pdf/data/outputs/
+/pkg/pdf/data/temp/
+/pkg/pdf/data/cases/
+!/pkg/pdf/data/catalog/
+!/pkg/pdf/data/cases/test_scenarios/
+
+# PDF .data directory (new convention)
+# Runtime data is ignored, but catalog and test scenarios are tracked
+/pkg/pdf/.data/downloads/
+/pkg/pdf/.data/templates/
+/pkg/pdf/.data/outputs/
+/pkg/pdf/.data/temp/
+/pkg/pdf/.data/certs/
+/pkg/pdf/.data/cases/*/
+!/pkg/pdf/.data/catalog/
+!/pkg/pdf/.data/cases/test_scenarios/
+
 # Binary update backups (created during update process)
 *.old
 

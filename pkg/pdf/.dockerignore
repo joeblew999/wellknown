@@ -1,0 +1,36 @@
+# Ignore generated files
+.bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Ignore test and temp files
+*.test
+*.tmp
+*.log
+.data/temp/*
+.data/outputs/*
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore documentation (include in image if needed)
+*.md
+!README.md
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Keep catalog and test scenarios
+!.data/catalog/
+!.data/cases/test_scenarios/

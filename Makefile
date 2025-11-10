@@ -1,4 +1,4 @@
-.PHONY: help print go-dep go-mod-upgrade gen gen-testdata run bin test health clean kill version env-list env-validate env-example env-generate-example env-sync env-sync-dockerfile env-sync-flytoml env-generate-local env-generate-production env-sync-secrets env-sync-secrets-production release update fly-auth fly-launch fly-volume fly-secrets fly-deploy fly-status fly-logs fly-ssh fly-destroy certs-install certs-init certs-generate certs-clean certs-status
+.PHONY: help print go-dep go-mod-upgrade gen gen-testdata run bin test health clean kill version env-list env-validate env-example env-generate-example env-sync env-sync-dockerfile env-sync-flytoml env-generate-local env-generate-production env-sync-secrets env-sync-secrets-production release update fly-auth fly-launch fly-volume fly-secrets fly-deploy fly-status fly-logs fly-ssh fly-destroy certs-install certs-init certs-generate certs-clean certs-status test-pdf-unit test-pdf-integration build-pdfform run-pdfform-server run-pdfform-http pdfform-certs-info pdfform-certs-generate pdfform-certs-regenerate
 
 # Paths
 MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -198,6 +198,51 @@ test-unit:
 test-mcp:
 	@echo "🧪 Running MCP tests..."
 	go test -v ./pkg/pbmcp/...
+
+## test-pdf-unit: Run PDF package unit tests only
+test-pdf-unit:
+	@echo "🧪 Running PDF unit tests..."
+	go test -v ./pkg/pdf/...
+
+## test-pdf-integration: Run PDF package integration tests (downloads real forms)
+test-pdf-integration:
+	@echo "🧪 Running PDF integration tests..."
+	@echo "⚠️  These tests download real PDFs and populate data/ folders"
+	ENABLE_INTEGRATION_TESTS=true go test -v ./pkg/pdf/...
+
+## build-pdfform: Build pdfform CLI tool
+build-pdfform:
+	@echo "🏗️  Building pdfform CLI..."
+	@mkdir -p $(BIN_DIR)
+	cd pkg/pdf/cmd/pdfform && go build -o $(BIN_DIR)/pdfform .
+	@echo "✅ Binary: $(BIN_DIR)/pdfform"
+	@echo "💡 Try: $(BIN_DIR)/pdfform --help"
+
+## run-pdfform-server: Build and run pdfform HTTPS web server
+run-pdfform-server: build-pdfform
+	@echo "🌐 Starting pdfform HTTPS web server..."
+	@echo "🔒 The server will auto-generate certificates using mkcert"
+	@echo ""
+	cd pkg/pdf && $(BIN_DIR)/pdfform serve
+
+## run-pdfform-http: Build and run pdfform HTTP web server (not recommended for mobile)
+run-pdfform-http: build-pdfform
+	@echo "🌐 Starting pdfform HTTP web server..."
+	@echo "⚠️  HTTP mode - not recommended for mobile devices"
+	@echo ""
+	cd pkg/pdf && $(BIN_DIR)/pdfform serve --http
+
+## pdfform-certs-info: Show pdfform certificate information
+pdfform-certs-info: build-pdfform
+	@cd pkg/pdf && $(BIN_DIR)/pdfform certs info
+
+## pdfform-certs-generate: Generate pdfform HTTPS certificates
+pdfform-certs-generate: build-pdfform
+	@cd pkg/pdf && $(BIN_DIR)/pdfform certs generate
+
+## pdfform-certs-regenerate: Regenerate pdfform HTTPS certificates
+pdfform-certs-regenerate: build-pdfform
+	@cd pkg/pdf && $(BIN_DIR)/pdfform certs regenerate
 
 ## test-e2e: Build and test PocketBase API endpoints
 test-e2e: bin

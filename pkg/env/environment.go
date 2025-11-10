@@ -310,3 +310,24 @@ func SetupEnvironment(registry *Registry, environment *Environment, appName stri
 	content := environment.Generate(registry, appName)
 	return os.WriteFile(environment.FullPath(), []byte(content), 0600)
 }
+
+// DetectEnvironment determines the current runtime environment.
+// Returns one of: "fly.io", "docker", "kubernetes", or "local"
+//
+// Detection logic:
+//   - fly.io: Checks for FLY_APP_NAME environment variable
+//   - docker: Checks for /.dockerenv file
+//   - kubernetes: Checks for KUBERNETES_SERVICE_HOST environment variable
+//   - local: Default when none of the above match
+func DetectEnvironment() string {
+	if os.Getenv("FLY_APP_NAME") != "" {
+		return "fly.io"
+	}
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		return "docker"
+	}
+	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
+		return "kubernetes"
+	}
+	return "local"
+}

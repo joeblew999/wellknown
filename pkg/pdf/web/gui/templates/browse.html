@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>1️⃣  Browse Forms</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>1️⃣  BROWSE FORMS</h1>
+    <p><a href="/">&larr; Back to Home</a></p>
+
+    <h2>Browse Available Forms</h2>
+
+    <form id="browseForm">
+        <label for="state">Filter by State (optional):</label><br>
+        <select id="state" name="state">
+            <option value="">-- All States --</option>
+            <option value="VIC">Victoria (VIC)</option>
+            <option value="NSW">New South Wales (NSW)</option>
+            <option value="QLD">Queensland (QLD)</option>
+            <option value="SA">South Australia (SA)</option>
+            <option value="WA">Western Australia (WA)</option>
+            <option value="TAS">Tasmania (TAS)</option>
+            <option value="ACT">Australian Capital Territory (ACT)</option>
+            <option value="NT">Northern Territory (NT)</option>
+        </select><br><br>
+
+        <button type="submit">Browse</button>
+    </form>
+
+    <div id="results"></div>
+
+    <hr>
+    <p><strong>➡️  Next Step:</strong> <a href="/2-download">2️⃣  Download a form</a></p>
+
+    <script>
+        document.getElementById('browseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const state = document.getElementById('state').value;
+
+            try {
+                const response = await fetch('/api/browse?state=' + encodeURIComponent(state));
+                const data = await response.json();
+
+                let html = '<h3>Results:</h3>';
+
+                if (data.States && data.States.length > 0) {
+                    html += '<ul>';
+                    data.States.forEach(state => {
+                        html += '<li>' + state + '</li>';
+                    });
+                    html += '</ul>';
+                    html += '<p><em>Tip: Select a state to see available forms</em></p>';
+                } else if (data.Forms && data.Forms.length > 0) {
+                    html += '<table border="1">';
+                    html += '<tr><th>Form Code</th><th>Form Name</th><th>Format</th><th>Online Available</th></tr>';
+                    data.Forms.forEach(form => {
+                        html += '<tr>';
+                        html += '<td>' + (form.FormCode || 'N/A') + '</td>';
+                        html += '<td>' + form.FormName + '</td>';
+                        html += '<td>' + form.Format + '</td>';
+                        html += '<td>' + (form.OnlineAvailable ? 'Yes' : 'No') + '</td>';
+                        html += '</tr>';
+                    });
+                    html += '</table>';
+                } else {
+                    html += '<p>No results found</p>';
+                }
+
+                document.getElementById('results').innerHTML = html;
+            } catch (error) {
+                document.getElementById('results').innerHTML = '<p>Error: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>
