@@ -24,6 +24,9 @@ data/cases/
 # Example binaries
 examples/pdfform/pdfform
 examples/*/pdfform
+examples/basic-usage/basic-usage
+examples/case-management/case-management
+examples/easy-mount/easy-mount
 
 # Test artifacts
 *.test
