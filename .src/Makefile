@@ -1,29 +1,29 @@
-# Repository definitions
-# Format: REPO_NAME = directory_name|git_url|ref|description
-# ref can be: tag (v0.31.0), branch (main), commit hash, or empty for default branch
-REPO_POCKETBASE := pocketbase|https://github.com/pocketbase/pocketbase.git|v0.31.0|PocketBase (official source - matches go.mod version)
-REPO_POCKETBASE_HA := pocketbase-ha|https://github.com/litesql/pocketbase-ha.git|v0.0.6|PocketBase-HA (High Availability implementation)
-REPO_GOGEN := pocketbase-gogen|https://github.com/Snonky/pocketbase-gogen.git|v0.7.0|pocketbase-gogen (type-safe code generator - matches Makefile version)
-REPO_PRESENTATOR := presentator|https://github.com/presentator/presentator.git|v3.4.27|Presentator (PocketBase library pattern example)
-REPO_JSONSCHEMA := jsonschema|https://github.com/santhosh-tekuri/jsonschema.git|v6.0.2|jsonschema (validation library - matches go.mod v6.0.2)
-REPO_GOPOCJSON := goPocJsonSchemaForm|https://github.com/warlockxins/goPocJsonSchemaForm.git|main|goPocJsonSchemaForm (dynamic form generation example)
-REPO_DATASTARUI := datastarui|https://github.com/coreycole/datastarui.git|main|DatastarUI (Go/templ shadcn/ui components with Datastar)
-REPO_GIC := gic|https://github.com/yarlson/gic.git|v0.5.0|gic (Git + Claude AI commit message generator with MCP server mode)
-REPO_MCP_GO_SDK := mcp-go-sdk|https://github.com/modelcontextprotocol/go-sdk.git|v1.1.0|MCP Go SDK (Model Context Protocol implementation - stable version)
-REPO_ANTHROPIC_GO_SDK := anthropic-go-sdk|https://github.com/anthropics/anthropic-sdk-go.git|v1.17.0|Anthropic Go SDK (Claude API official client - stable version)
-REPO_PEANATS := peanats|https://github.com/mikluko/peanats.git|v0.20.2|peanats (NATS integration for PocketBase)
-REPO_TERRAFORM_PROVIDER_NSC := terraform-provider-nsc|https://github.com/mikluko/terraform-provider-nsc.git|v0.13.2|terraform-provider-nsc (Terraform provider for NATS Security CLI)
-REPO_DATASTAR_GO := datastar-go|https://github.com/starfederation/datastar-go.git|v1.0.3|Datastar Go SDK (v1.0.3 release)
-REPO_NORTHSTAR := northstar|https://github.com/zangster300/northstar.git|main|northstar (reference Datastar + Templ example)
+# Repository metadata lives in repos.csv (name,dir,url,ref,description)
+REPOS_FILE := repos.csv
+REPOS_MK := .repos.mk
+$(if $(wildcard $(REPOS_FILE)),,$(error Missing $(REPOS_FILE). Please create it.))
+
+$(REPOS_MK): $(REPOS_FILE)
+	@awk -F',' 'NR==1 {next} \
+	{ name=$$1; dir=$$2; url=$$3; ref=$$4; desc=$$5; var=name; gsub(/[^A-Za-z0-9]/,"_",var); var=toupper(var); \
+	  printf "REPO_%s := %s|%s|%s|%s\n", var, dir, url, ref, desc; \
+	  rv = (rv ? rv " REPO_" var : "REPO_" var); \
+	  rn = (rn ? rn " " name : name); \
+	  ar = (ar ? ar " " dir : dir); \
+	} \
+	END { \
+	  printf "REPO_VARS := %s\n", rv; \
+	  printf "REPO_NAMES := %s\n", rn; \
+	  printf "ALL_REPOS := %s\n", ar; \
+	}' $(REPOS_FILE) > $(REPOS_MK)
+
+include $(REPOS_MK)
 
 # Auto-computed variables
-REPO_VARS := $(filter REPO_%,$(.VARIABLES))
-# Extract directory names from all REPO_* variables
-ALL_REPOS := $(foreach var,$(REPO_VARS),$(word 1,$(subst |, ,$($(var)))))
-
-# Extract target names from REPO_* variable names (used for pattern rule invocation)
-# Example: REPO_POCKETBASE -> pocketbase, REPO_POCKETBASE_HA -> pocketbase-ha
-REPO_NAMES := $(foreach var,$(REPO_VARS),$(shell echo $(var) | sed 's/^REPO_//' | tr '[:upper:]' '[:lower:]' | tr '_' '-'))
+# Ensure derived values exist even if repos file was empty
+REPO_VARS ?=
+REPO_NAMES ?=
+ALL_REPOS ?=
 SORTED_REPO_NAMES := $(sort $(REPO_NAMES))
 
 # Control whether `make status` fetches remote tags before reporting (1=yes, 0=no)
@@ -33,7 +33,7 @@ STATUS_FETCH_TAGS ?= 1
 TAG_BRANCH_IGNORE := main master develop development dev head trunk default
 
 # Auto-generate .PHONY declaration (pattern rules don't need explicit .PHONY)
-.PHONY: help sync list print clean status update-tags
+.PHONY: help sync list print clean status update
 
 # ============================================================================
 # Parameterized Functions
@@ -107,7 +107,8 @@ endef
 
 ## help: Show available make targets
 help:
-	@grep -E '^##' $(MAKEFILE_LIST) | sed 's/^## /make /' | awk -F': ' '{printf "%-18s %s\n", $$1, $$2}'
+	@echo "Targets:"
+	@grep -E '^##' $(firstword $(MAKEFILE_LIST)) | sed 's/^## /make /' | awk -F': ' '{printf "  %-18s %s\n", $$1, $$2}'
 
 # print: Show all Makefile variables (for debugging) - Hidden from help
 print:
@@ -210,15 +211,20 @@ status:
 	fi
 	@$(foreach var,$(sort $(REPO_VARS)),\
 		DIR=$(call get-dir,$(var)); \
+		REF=$(call get-ref,$(var)); \
 		if [ -d "$$DIR" ]; then \
 			BRANCH=$$(cd $$DIR && git branch --show-current 2>/dev/null); \
 			COMMIT=$$(cd $$DIR && git rev-parse --short HEAD 2>/dev/null); \
 			TAG=$$(cd $$DIR && git describe --tags --exact-match 2>/dev/null); \
 			STATE=$$(cd $$DIR && git status --short); \
 			LAST=$$(cd $$DIR && git log --oneline -1 2>/dev/null); \
-			LATEST_TAG=$$(cd $$DIR && git tag --sort=-creatordate 2>/dev/null | head -1); \
-			if [ -z "$$LATEST_TAG" ]; then \
-				LATEST_TAG=$$(cd $$DIR && git describe --tags --abbrev=0 2>/dev/null); \
+			LATEST_TAG=""; \
+			REF_LOW=$$(echo "$$REF" | tr '[:upper:]' '[:lower:]'); \
+			if ! printf "%s" "$(TAG_BRANCH_IGNORE)" | tr ' ' '\n' | grep -qi "^$$REF_LOW$$"; then \
+				LATEST_TAG=$$(cd $$DIR && git tag --sort=-creatordate 2>/dev/null | head -1); \
+				if [ -z "$$LATEST_TAG" ]; then \
+					LATEST_TAG=$$(cd $$DIR && git describe --tags --abbrev=0 2>/dev/null); \
+				fi; \
 			fi; \
 			if [ -n "$$TAG" ]; then \
 				DISPLAY="$$TAG"; \
@@ -244,22 +250,22 @@ status:
 					printf "       • ⚠️ Latest tag: %s (update available)\n" "$$LATEST_TAG"; \
 				fi; \
 			else \
-				printf "       • Latest tag: none\n"; \
+				printf "       • Latest tag: n/a (tracking %s)\n" "$$REF"; \
 			fi; \
 		else \
 			printf "  ❌ %-25s %s\n" "$$DIR" "not cloned"; \
 		fi; \
 	)
 
-## update-tags: Update repo refs to latest tags (Makefile-only)
-update-tags: sync
+## update: Update repo refs to latest tags (updates repos.csv)
+update: sync
 	@echo "════════════════════════════════════════════════════════════════"
 	@echo "  🔁 Update Repository Tags"
 	@echo "════════════════════════════════════════════════════════════════"
 	@echo ""
-	@cp Makefile Makefile.tags.bak
+	@cp $(REPOS_FILE) $(REPOS_FILE).bak
 	@tmp=$$(mktemp); \
-	TMPFILE="$$tmp" TAG_BRANCH_IGNORE="$(TAG_BRANCH_IGNORE)" awk '\
+	TMPFILE="$$tmp" TAG_BRANCH_IGNORE="$(TAG_BRANCH_IGNORE)" awk -F',' '\
 	function trim(s){gsub(/^[ \t]+|[ \t]+$$/, "", s); return s} \
 	function is_hex_commit(ref,   i,c){ \
 		if (length(ref) < 7 || length(ref) > 40) return 0; \
@@ -304,36 +310,33 @@ update-tags: sync
 		for (i in arr){ if (arr[i]!="") branch_map[tolower(arr[i])]=1; } \
 	} \
 	{ \
-		line=$0; \
-		if (match(line, /^(REPO_[A-Z0-9_]+)\s*:=\s*([^|]+)\|([^|]+)\|([^|]*)\|(.*)$$/, m)){ \
-			name=m[1]; dir=trim(m[2]); url=trim(m[3]); ref=trim(m[4]); desc=m[5]; \
-			newref=ref; \
-			if (!dir_exists(dir)){ \
-				printf("  ⚠️  %s: directory missing (run make sync)\n", dir) > "/dev/stderr"; \
-			}else if (is_branch(ref)){ \
-				printf("  ↩︎ %s: ref \"%s\" treated as branch/commit\n", dir, ref==""?"default":ref) > "/dev/stderr"; \
+		if (NR==1){ print $$0 >> tmp; next; } \
+		name=trim($$1); dir=trim($$2); url=trim($$3); ref=trim($$4); desc=$$5; \
+		newref=ref; \
+		if (!dir_exists(dir)){ \
+			printf("  ⚠️  %s: directory missing (run make sync)\n", dir) > "/dev/stderr"; \
+		}else if (is_branch(ref)){ \
+			printf("  ↩︎ %s: ref \"%s\" treated as branch/commit\n", dir, ref==""?"default":ref) > "/dev/stderr"; \
+		}else{ \
+			fetch_tags(dir); \
+			candidate=latest_tag(dir, ref); \
+			if (candidate!="" && candidate!=ref){ \
+				newref=candidate; \
+				printf("  🔼 %s: %s -> %s\n", dir, ref, newref) > "/dev/stderr"; \
 			}else{ \
-				fetch_tags(dir); \
-				candidate=latest_tag(dir, ref); \
-				if (candidate!="" && candidate!=ref){ \
-					newref=candidate; \
-					printf("  🔼 %s: %s -> %s\n", dir, ref, newref) > "/dev/stderr"; \
-				}else{ \
-					printf("  ✅ %s: %s\n", dir, ref) > "/dev/stderr"; \
-				} \
+				printf("  ✅ %s: %s\n", dir, ref) > "/dev/stderr"; \
 			} \
-			printf("%s := %s|%s|%s|%s\n", name, dir, url, newref, desc) >> tmp; \
-			next; \
 		} \
-		print line >> tmp; \
+		printf("%s,%s,%s,%s,%s\n", name, dir, url, newref, desc) >> tmp; \
 	} \
-	END{close(tmp)}' Makefile; \
-	if cmp -s $$tmp Makefile; then \
+	END{close(tmp)}' $(REPOS_FILE); \
+	if cmp -s $$tmp $(REPOS_FILE); then \
 		rm $$tmp; \
 		echo ""; \
 		echo "No tag updates detected."; \
 	else \
-		mv $$tmp Makefile; \
+		mv $$tmp $(REPOS_FILE); \
 		echo ""; \
-		echo "Makefile updated with latest tags."; \
+		echo "$(REPOS_FILE) updated with latest tags."; \
+		$(MAKE) $(REPOS_MK) >/dev/null; \
 	fi
