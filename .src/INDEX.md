@@ -1,7 +1,7 @@
 # Reference Repository Index
 
 > **Auto-generated** from repos.list and discovered agent files
-> Last updated: 2025-11-11 10:37:13
+> Last updated: 2025-11-11 16:33:21
 > Run `make index` to regenerate
 
 Quick reference guide for finding patterns and examples in `.src/` repositories.
@@ -24,7 +24,9 @@ Quick reference guide for finding patterns and examples in `.src/` repositories.
 - **terraform-provider-nsc/** (v0.13.2) - terraform-provider-nsc (Terraform provider for NATS Security CLI)
 - **datastar-go/** (v1.0.3) - Datastar Go SDK (v1.0.3 release)
 - **northstar/** (main) - northstar (reference Datastar + Templ example)
-- **via/** (main) - via (Go web framework)
+- **via/** (main) 🍴 - via (Go web framework)
+- **gomponents/** (main) - gomponents (HTML components in pure Go - used by via/h)
+- **gomponents-starter-kit/** (main) - gomponents-starter-kit (Full app example with gomponents)
 
 ---
 
@@ -67,20 +69,64 @@ Quick reference guide for finding patterns and examples in `.src/` repositories.
 ---
 
 ### 4️⃣ Datastar
-**Triggers**: `api`, `app`, `build`, `create`, `datastar`, `example`, `pure go`, `reactive`, `sdk`, `sse`, `via`, `web framework`
+**Triggers**: `build`, `create`, `datastar`, `reactive`, `web app`
 
 → **Read immediately**: `.src/DATASTAR.md`
 
-→ **Browse for patterns**: `.src/datastarui/components/` (20 components)
 
-→ **Browse for patterns**: `.src/northstar/features/` (6 examples)
+**Why**: Guide: compares 4 approaches (via/northstar/components/SDK) with examples and recommendations
 
-→ **Browse for patterns**: `.src/datastar-go/datastar/` (v1.0.3 SDK)
+---
+
+### 4️⃣ Via
+**Triggers**: `actions`, `no js`, `no templates`, `pure go`, `reactive`, `signals`, `sse`, `via`, `web framework`
 
 → **Browse for patterns**: `.src/via/internal/examples/` (7 examples)
 
 
-**Why**: Guide: compares 4 approaches (via/northstar/components/SDK) with examples and recommendations
+**Why**: Smart wrapper: via = datastar-go + gomponents with Context/Signal/Action abstractions
+
+---
+
+### 4️⃣ Gomponents
+**Triggers**: `app`, `components`, `database`, `full example`, `gomponents`, `h package`, `html`, `pure go html`, `starter`
+
+→ **Browse for patterns**: `.src/gomponents/` (v1.2.0)
+
+→ **Browse for patterns**: `.src/gomponents-starter-kit/` (full app)
+
+
+**Why**: Library: HTML composition in Go (used by via/h), components, html elements
+
+---
+
+### 4️⃣ Datastar SDK
+**Triggers**: `api`, `datastar`, `patches`, `sdk`, `signals`, `sse`
+
+→ **Browse for patterns**: `.src/datastar-go/datastar/` (v1.0.3 SDK)
+
+
+**Why**: Library: low-level datastar SDK (used by via), signals, SSE, elements, execute-script
+
+---
+
+### 4️⃣ Datastar UI
+**Triggers**: `components`, `datastar`, `shadcn`, `templ`, `ui`
+
+→ **Browse for patterns**: `.src/datastarui/components/` (20 components)
+
+
+**Why**: Library: shadcn-style components - Go/templ + datastar (not used by via)
+
+---
+
+### 4️⃣ Datastar Examples
+**Triggers**: `app`, `datastar`, `example`, `templ`
+
+→ **Browse for patterns**: `.src/northstar/features/` (6 examples)
+
+
+**Why**: Examples: counter, sortable, monitor - templ-based patterns (not via)
 
 ---
 
@@ -187,6 +233,11 @@ All `.claude/` directories and CLAUDE.md files found in reference repositories:
 ### terraform-provider-nsc/ - terraform-provider-nsc (Terraform provider for NATS Security CLI)
 
 **[CLAUDE.md](terraform-provider-nsc/CLAUDE.md)** - Project context and architecture
+
+
+### gomponents/ - gomponents (HTML components in pure Go - used by via/h)
+
+**[CLAUDE.md](gomponents/CLAUDE.md)** - gomponents Development Guide
 
 
 ---
