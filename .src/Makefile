@@ -86,6 +86,7 @@ gitignore:
 		echo "!repos.list"; \
 		echo "!triggers.list"; \
 		echo "!INDEX.md"; \
+		echo "!DATASTAR.md"; \
 		echo ""; \
 		echo "# Backup files"; \
 		echo "*.bak"; \

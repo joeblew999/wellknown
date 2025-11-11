@@ -11,6 +11,7 @@
 !repos.list
 !triggers.list
 !INDEX.md
+!DATASTAR.md
 
 # Backup files
 *.bak

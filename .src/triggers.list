@@ -8,6 +8,7 @@ Code Review|2|review,reviewing,code review,PR,pull request,merge request|read|.s
 Code Review|2|describe,pr description,summarize changes|read|.src/datastarui/.claude/commands/describe_pr.md|PR templates|Workflow: analyze commits → draft description → use templates
 Planning|3|plan,planning,design,architecture,breakdown|read|.src/datastarui/.claude/commands/create_plan.md|planning phase|Workflow: research context → interactive planning → success criteria
 Planning|3|implement,implementing,execution|read|.src/datastarui/.claude/commands/implement_plan.md|execution phase|Workflow: read plan → execute phases → verify criteria
+Datastar|4|datastar,build,create|read|.src/DATASTAR.md||Guide: compares 4 approaches (via/northstar/components/SDK) with examples and recommendations
 Datastar|4|datastar,sse,reactive|browse|.src/datastarui/components/|20 components|Pattern source: button, dialog, input, select, etc. - Go/templ + datastar
 Datastar|4|datastar,example,app|browse|.src/northstar/features/|6 examples|Pattern source: counter, sortable, monitor - working patterns
 Datastar|4|datastar,sdk,api|browse|.src/datastar-go/datastar/|v1.0.3 SDK|Pattern source: signals, SSE, elements, execute-script
