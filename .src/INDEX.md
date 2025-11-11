@@ -1,7 +1,7 @@
 # Reference Repository Index
 
 > **Auto-generated** from repos.list and discovered agent files
-> Last updated: 2025-11-11 10:12:00
+> Last updated: 2025-11-11 10:30:37
 > Run `make index` to regenerate
 
 Quick reference guide for finding patterns and examples in `.src/` repositories.
@@ -66,70 +66,58 @@ Quick reference guide for finding patterns and examples in `.src/` repositories.
 
 ---
 
-### 4️⃣ Exploration
-**Triggers**: `analyze`, `explain`, `explore`, `find`, `how`, `locate`, `search`, `trace`, `understand`, `where`
+### 4️⃣ Datastar
+**Triggers**: `api`, `app`, `datastar`, `example`, `reactive`, `sdk`, `sse`
 
-→ **Read immediately**: `.src/datastarui/.claude/commands/research_codebase.md`
+→ **Browse for patterns**: `.src/datastarui/components/` (20 components)
 
-→ **Read immediately**: `.src/datastarui/.claude/agents/codebase-analyzer.md`
+→ **Browse for patterns**: `.src/northstar/features/` (6 examples)
+
+→ **Browse for patterns**: `.src/datastar-go/datastar/` (v1.0.3 SDK)
 
 
-**Why**: Workflow: use specialized agents → parallel research → synthesize
+**Why**: Pattern source: button, dialog, input, select, etc. - Go/templ + datastar
 
 ---
 
 ### 5️⃣ PocketBase
-**Triggers**: `backend`, `cluster`, `codegen`, `database`, `generate`, `ha`, `high availability`, `pb`, `pocketbase`, `types`
-
-→ **Read immediately**: `.src/peanats/CLAUDE.md`
+**Triggers**: `backend`, `cluster`, `codegen`, `database`, `events`, `ha`, `nats`, `pb`, `pocketbase`, `types`
 
 → **Browse for patterns**: `.src/pocketbase/` (v0.32.0)
 
+→ **Read immediately**: `.src/peanats/CLAUDE.md`
+
 → **Browse for patterns**: `.src/pocketbase-ha/` (HA setup)
 
-→ **Browse for patterns**: `.src/pocketbase-gogen/` (type generation)
+→ **Browse for patterns**: `.src/pocketbase-gogen/` (generator)
 
 
-**Why**: Architecture: typed NATS handlers + PocketBase integration + OpenTelemetry
-
----
-
-### 6️⃣ UI
-**Triggers**: `datastar`, `demo`, `example`, `htmx-like`, `reactive`, `sdk`, `sse`, `templ`
-
-→ **Browse for patterns**: `.src/datastarui/` (components)
-
-→ **Browse for patterns**: `.src/northstar/` (reference app)
-
-→ **Browse for patterns**: `.src/datastar-go/` (v1.0.3 SDK)
-
-
-**Why**: Pattern source: server-driven UI without JS frameworks
+**Why**: Pattern source: migrations, stores, hooks, events, core/app.go
 
 ---
 
-### 7️⃣ AI
-**Triggers**: `ai`, `anthropic`, `api`, `claude`, `commit`, `generator`, `llm`, `mcp`, `protocol`, `server`
+### 6️⃣ AI
+**Triggers**: `ai`, `anthropic`, `claude`, `commit messages`, `git`, `mcp`, `protocol`, `server`, `streaming`, `tools`
 
 → **Browse for patterns**: `.src/anthropic-go-sdk/examples/` (v1.17.0)
 
 → **Browse for patterns**: `.src/mcp-go-sdk/examples/` (v1.1.0)
 
-→ **Browse for patterns**: `.src/gic/` (commit AI)
+→ **Browse for patterns**: `.src/gic/` (MCP mode)
 
 
-**Why**: Pattern source: streaming, tools, vision, prompt caching
+**Why**: Pattern source: streaming, tools, vision, prompt caching, messages API
 
 ---
 
-### 8️⃣ Schema
-**Triggers**: `dynamic forms`, `form generation`, `forms`, `json schema`, `schema`, `validation`
+### 7️⃣ Schema
+**Triggers**: `dynamic ui`, `forms`, `json schema`, `schema to ui`, `validation`
 
 → **Browse for patterns**: `.src/jsonschema/` (v6.0.2)
 
 → **Browse for patterns**: `.src/goPocJsonSchemaForm/` (POC)
 
-**Why**: Pattern source: schema compilation, validation, custom formats
+**Why**: Pattern source: schema compilation, validation, custom formats, draft 2020-12
 
 ---
 

@@ -11,8 +11,6 @@
 !repos.list
 !triggers.list
 !INDEX.md
-!TRIGGERS.md
-!SYSTEM.md
 
 # Backup files
 *.bak

@@ -8,17 +8,15 @@ Code Review|2|review,reviewing,code review,PR,pull request,merge request|read|.s
 Code Review|2|describe,pr description,summarize changes|read|.src/datastarui/.claude/commands/describe_pr.md|PR templates|Workflow: analyze commits → draft description → use templates
 Planning|3|plan,planning,design,architecture,breakdown|read|.src/datastarui/.claude/commands/create_plan.md|planning phase|Workflow: research context → interactive planning → success criteria
 Planning|3|implement,implementing,execution|read|.src/datastarui/.claude/commands/implement_plan.md|execution phase|Workflow: read plan → execute phases → verify criteria
-Exploration|4|how,where,find,explore,search,locate|read|.src/datastarui/.claude/commands/research_codebase.md||Workflow: use specialized agents → parallel research → synthesize
-Exploration|4|analyze,trace,understand,explain|read|.src/datastarui/.claude/agents/codebase-analyzer.md||Workflow: trace data flow → document patterns → provide file:line refs
-PocketBase|5|pocketbase,pb,backend,database|read|.src/peanats/CLAUDE.md||Architecture: typed NATS handlers + PocketBase integration + OpenTelemetry
-PocketBase|5|pocketbase,pb|browse|.src/pocketbase/|v0.32.0|Pattern source: migrations, stores, hooks, events
-PocketBase|5|ha,high availability,cluster|browse|.src/pocketbase-ha/|HA setup|Pattern source: distributed setup, consensus, failover
-PocketBase|5|codegen,generate,types|browse|.src/pocketbase-gogen/|type generation|Pattern source: type-safe DB access, code generation
-UI|6|datastar,templ,sse,reactive,htmx-like|browse|.src/datastarui/|components|Pattern source: server-driven UI without JS frameworks
-UI|6|datastar,example,demo|browse|.src/northstar/|reference app|Pattern source: complete working application
-UI|6|datastar,sdk|browse|.src/datastar-go/|v1.0.3 SDK|Pattern source: SSE, signals, actions, plugins
-AI|7|claude,anthropic,llm,api|browse|.src/anthropic-go-sdk/examples/|v1.17.0|Pattern source: streaming, tools, vision, prompt caching
-AI|7|mcp,protocol,server|browse|.src/mcp-go-sdk/examples/|v1.1.0|Pattern source: MCP servers, tools, resources, prompts
-AI|7|ai,commit,generator|browse|.src/gic/|commit AI|Pattern source: git integration + AI analysis + MCP mode
-Schema|8|schema,validation,json schema|browse|.src/jsonschema/|v6.0.2|Pattern source: schema compilation, validation, custom formats
-Schema|8|forms,form generation,dynamic forms|browse|.src/goPocJsonSchemaForm/|POC|Pattern source: schema → UI generation, validation
+Datastar|4|datastar,sse,reactive|browse|.src/datastarui/components/|20 components|Pattern source: button, dialog, input, select, etc. - Go/templ + datastar
+Datastar|4|datastar,example,app|browse|.src/northstar/features/|6 examples|Pattern source: counter, sortable, monitor - working patterns
+Datastar|4|datastar,sdk,api|browse|.src/datastar-go/datastar/|v1.0.3 SDK|Pattern source: signals, SSE, elements, execute-script
+PocketBase|5|pocketbase,pb,backend,database|browse|.src/pocketbase/|v0.32.0|Pattern source: migrations, stores, hooks, events, core/app.go
+PocketBase|5|pocketbase,nats,events|read|.src/peanats/CLAUDE.md||Architecture: typed NATS handlers + PocketBase hooks + OpenTelemetry
+PocketBase|5|pocketbase,ha,cluster|browse|.src/pocketbase-ha/|HA setup|Pattern source: distributed setup, raft consensus, failover
+PocketBase|5|pocketbase,codegen,types|browse|.src/pocketbase-gogen/|generator|Pattern source: type-safe DB access, migrations, code generation
+AI|6|claude,anthropic,streaming|browse|.src/anthropic-go-sdk/examples/|v1.17.0|Pattern source: streaming, tools, vision, prompt caching, messages API
+AI|6|mcp,protocol,server,tools|browse|.src/mcp-go-sdk/examples/|v1.1.0|Pattern source: MCP servers, tools, resources, prompts, transport
+AI|6|git,ai,commit messages|browse|.src/gic/|MCP mode|Pattern source: git integration + Claude analysis + MCP server
+Schema|7|json schema,validation|browse|.src/jsonschema/|v6.0.2|Pattern source: schema compilation, validation, custom formats, draft 2020-12
+Schema|7|forms,dynamic ui,schema to ui|browse|.src/goPocJsonSchemaForm/|POC|Pattern source: schema → form generation, validation, rendering

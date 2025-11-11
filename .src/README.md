@@ -1,68 +1,91 @@
 # .src/ - External Reference Code
 
-This directory contains external source code repositories for reference and learning purposes. **These are NOT part of our codebase** and are git-ignored.
+External repositories for reference patterns and AI agent workflows. **Git-ignored, not part of codebase.**
 
-## Purpose
-
-- Study implementation patterns from other projects
-- Extract useful techniques without direct dependencies
-- Keep reference code locally accessible for offline work
-- Avoid polluting our codebase with external code
-- Enable AI assistants (Claude) to access agent files and documentation from reference repositories
-
-## Usage
+## Quick Start
 
 ```bash
-make          # Show available commands (default)
-make doctor   # Check repos.list for errors
-make install  # Clone/update all repos (parallel, ~2s) + auto-generate INDEX.md
-make status   # Show repo status with versions, age, and descriptions
-make upgrade  # Update repos.list to latest tags and install repositories
-make index    # Manually regenerate INDEX.md (auto-runs after install/upgrade)
+make install  # Clone/update all repos + generate INDEX.md
+make status   # Show repo versions and status
+make upgrade  # Update to latest tags
 ```
 
-## Data Files
+## Files
 
-### repos.list - Repository Metadata
+- **repos.list** - Repository metadata (what to clone)
+- **triggers.list** - Claude trigger mappings (keywords → files)
+- **INDEX.md** - Auto-generated catalog (read by Claude)
 
-Pipe-delimited format:
+## How Claude Uses This
+
+Two discovery methods:
+
+### 1. Triggers (Curated)
+Keywords → specific files. Edit `triggers.list`:
+```
+category|priority|triggers|action|path|notes|why
+Commits|1|commit,commits|read|.src/datastarui/.claude/commands/commit.md||Workflow description
+```
+
+When user says "commit", Claude reads that file immediately.
+
+### 2. Auto-Discovery (Complete Catalog)
+Scans all repos for `.claude/` directories and CLAUDE.md files. Auto-generates catalog in INDEX.md.
+
+## repos.list Format
+
 ```
 name|dir|url|ref|description
 pocketbase|pocketbase|https://github.com/pocketbase/pocketbase.git|v0.32.0|PocketBase (official)
 ```
 
-Fields:
-- **name**: Repository identifier (not used, for documentation)
-- **dir**: Local directory name
-- **url**: Git clone URL
-- **ref**: Branch/tag to checkout (e.g., `main`, `v1.0.0`)
-- **description**: Human-readable description
+- **name** - Identifier (for documentation)
+- **dir** - Local directory name
+- **url** - Git clone URL
+- **ref** - Branch/tag (e.g., `main`, `v1.0.0`)
+- **description** - Human-readable description
 
-**Note**: `.gitignore` is auto-generated from this file via `make gitignore` (runs automatically during `make install` and `make upgrade`)
+## triggers.list Format
 
-### triggers.list - Claude Trigger Config
-
-Maps keywords → agent files. Format: `category|priority|triggers|action|path|notes|why`
-
-Example:
 ```
-Commits|1|commit,commits|read|.src/datastarui/.claude/commands/commit.md||No attribution
+category|priority|triggers|action|path|notes|why
 ```
 
-See [TRIGGERS.md](TRIGGERS.md) for details.
+- **category** - Group name
+- **priority** - Order 1-9 (displays as 1️⃣-9️⃣)
+- **triggers** - Comma-separated keywords
+- **action** - `read` (must read) or `browse` (explore)
+- **path** - File/directory path
+- **notes** - Optional context
+- **why** - Value explanation
 
-## Agent Files
+**Actions:**
+- `read` - Claude must read before responding
+- `browse` - Claude explores for patterns
 
-Many reference repositories contain AI assistant configurations:
+## Workflow
 
-- **CLAUDE.md**: Project-specific instructions for Claude
-- **.claude/**: Slash commands, hooks, and agent configurations
-- **.claud/**: Alternative naming convention (some projects)
+```bash
+# Add new repo
+echo "name|newrepo|https://github.com/user/repo.git|main|Description" >> repos.list
+make install
 
-**INDEX.md is auto-generated** after `make install` and `make upgrade` to provide an always-current catalog of:
-- All repositories with current versions
-- CLAUDE.md files with project-specific instructions
-- Available slash commands (`.claude/commands/`)
-- Available agents (`.claude/agents/`)
+# Add trigger
+echo "Category|5|keyword|read|.src/repo/file.md||Why" >> triggers.list
+make index
 
-Claude reads INDEX.md to discover patterns, workflows, and integration examples across all reference repositories.
+# Update everything
+make upgrade
+```
+
+## What Gets Committed
+
+Only meta files:
+- `.gitignore` (auto-generated)
+- `README.md`
+- `Makefile`
+- `repos.list`
+- `triggers.list`
+- `INDEX.md` (auto-generated)
+
+Cloned repos are git-ignored via pattern `*/` in `.gitignore`.
