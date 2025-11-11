@@ -1,7 +1,7 @@
 # Reference Repository Index
 
 > **Auto-generated** from repos.list and discovered agent files
-> Last updated: 2025-11-11 10:30:37
+> Last updated: 2025-11-11 10:33:50
 > Run `make index` to regenerate
 
 Quick reference guide for finding patterns and examples in `.src/` repositories.
@@ -67,13 +67,15 @@ Quick reference guide for finding patterns and examples in `.src/` repositories.
 ---
 
 ### 4️⃣ Datastar
-**Triggers**: `api`, `app`, `datastar`, `example`, `reactive`, `sdk`, `sse`
+**Triggers**: `api`, `app`, `datastar`, `example`, `pure go`, `reactive`, `sdk`, `sse`, `via`, `web framework`
 
 → **Browse for patterns**: `.src/datastarui/components/` (20 components)
 
 → **Browse for patterns**: `.src/northstar/features/` (6 examples)
 
 → **Browse for patterns**: `.src/datastar-go/datastar/` (v1.0.3 SDK)
+
+→ **Browse for patterns**: `.src/via/` (framework)
 
 
 **Why**: Pattern source: button, dialog, input, select, etc. - Go/templ + datastar

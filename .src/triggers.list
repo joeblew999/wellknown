@@ -11,6 +11,7 @@ Planning|3|implement,implementing,execution|read|.src/datastarui/.claude/command
 Datastar|4|datastar,sse,reactive|browse|.src/datastarui/components/|20 components|Pattern source: button, dialog, input, select, etc. - Go/templ + datastar
 Datastar|4|datastar,example,app|browse|.src/northstar/features/|6 examples|Pattern source: counter, sortable, monitor - working patterns
 Datastar|4|datastar,sdk,api|browse|.src/datastar-go/datastar/|v1.0.3 SDK|Pattern source: signals, SSE, elements, execute-script
+Datastar|4|via,web framework,pure go|browse|.src/via/|framework|Pattern source: reactive web apps, no templates/JS, signals, actions, SSE
 PocketBase|5|pocketbase,pb,backend,database|browse|.src/pocketbase/|v0.32.0|Pattern source: migrations, stores, hooks, events, core/app.go
 PocketBase|5|pocketbase,nats,events|read|.src/peanats/CLAUDE.md||Architecture: typed NATS handlers + PocketBase hooks + OpenTelemetry
 PocketBase|5|pocketbase,ha,cluster|browse|.src/pocketbase-ha/|HA setup|Pattern source: distributed setup, raft consensus, failover
