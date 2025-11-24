@@ -2,7 +2,7 @@
 
 https://github.com/joeblew999/wellknown
 
-**The README now tells the complete story: own your data, own your AI, own your routing, and optionally use Big Tech as enhancement services.**
+**Own your data, own your AI, own your routing, and optionally use Big Tech as enhancement services.**
 
 **Universal Go library for generating and opening deep links across the Google and Apple app ecosystems.**
 Pure Go · Zero deps · Deterministic URLs · Cross-platform.
