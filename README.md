@@ -3,6 +3,16 @@
 **Universal Go library for generating and opening deep links across the Google and Apple app ecosystems.**
 Pure Go · Zero deps · Deterministic URLs · Cross-platform.
 
+## WHY
+
+https://github.com/joeblew999/wellknown is building up URI Schema so that we can have our own open gateway and publish into the Apple, Google ones when we need to collaborate with those not using the Self hosted Gateway system
+
+For example you could host videos on your cloud or their devices BUT puboish to youtube and twitch for third parties .
+
+Then you draw people back to YOUR system and not theirs, but can still have the network effect by publishing to YouTube and twitch.
+
+The same goes for Email, Cal, Contacts, Maps ....
+
 ---
 
 ## ✨ Overview

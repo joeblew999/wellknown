@@ -1,0 +1,5 @@
+dir|url|ref|fork_of|description
+gh|https://github.com/cli/cli.git|v2.65.0||GitHub CLI (well-known, stable releases)
+gitleaks|https://github.com/gitleaks/gitleaks.git|v8.22.1||Gitleaks (security scanner, semantic versioning)
+dive|https://github.com/wagoodman/dive.git|v0.12.0||Dive (Docker image analyzer, lightweight)
+via|https://github.com/go-via/via.git|main||Via framework (branch-based, tests git pull)

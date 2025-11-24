@@ -1,178 +1,173 @@
-# .src/ - External Reference Code
+# .src/ - Reference Code & Fork Workflow
 
-This directory contains external source code repositories for reference and learning purposes. **These are NOT part of our codebase** and are git-ignored.
+External repositories for reference + Makefile-based fork workflow.
 
-## Purpose
-
-- Study implementation patterns from other projects
-- Extract useful techniques without direct dependencies
-- Keep reference code locally accessible for offline work
-- Avoid polluting our codebase with external code
-
-## Current References
-
-### goPocJsonSchemaForm
-- **Repo**: https://github.com/warlockxins/goPocJsonSchemaForm
-- **Why**: Demonstrates dynamic form generation from JSON Schema + HTMX patterns
-- **What we're learning**:
-  - JSON Schema → HTML form generation
-  - HTMX for progressive enhancement
-  - Go template rendering patterns
-  - Contact form with validation example
-
-**Clone command**:
-```bash
-cd .src
-git clone https://github.com/warlockxins/goPocJsonSchemaForm.git
-```
-
-### Presentator
-- **Repo**: https://github.com/presentator/presentator
-- **Why**: Real-world Pocketbase extension as importable library
-- **What we're learning**:
-  - How to structure PB code as reusable library
-  - `presentator.New()` pattern wrapping `pocketbase.New()`
-  - `base/main.go` as demo/test server
-  - Root package has all business logic
-  - Hooks registration: `bindAppHooks(pr)`
-  - Option management via PB Store
-
-**Clone command**:
-```bash
-cd .src
-git clone https://github.com/presentator/presentator.git
-```
-
-**Key Pattern**:
-```go
-// Root: presentator.go (library)
-package presentator
-
-type Presentator struct {
-    *pocketbase.PocketBase
-}
-
-func New() *Presentator {
-    pr := &Presentator{pocketbase.New()}
-    bindAppHooks(pr)  // Register routes, hooks, etc
-    return pr
-}
-
-// base/main.go (demo server)
-package main
-
-func main() {
-    app := presentator.New()
-    app.Start()
-}
-```
-
-### pocketbase
-- **Repo**: https://github.com/pocketbase/pocketbase
-- **Why**: Official PocketBase source code - understand core record system and proxy patterns
-- **What we're learning**:
-  - How `core.Record` and `core.BaseRecordProxy` work
-  - What methods exist that could cause shadowing issues
-  - Official patterns for type-safe record handling
-  - Auth collection special handling (email, password, etc.)
-  - How record proxies are meant to be used
-  - Alternative approaches to code generation
-
-**Clone command**:
-```bash
-cd .src
-git clone https://github.com/pocketbase/pocketbase.git
-```
-
-**Key files to study**:
-```bash
-# Core record system
-.src/pocketbase/core/record.go
-.src/pocketbase/core/record_proxy.go
-
-# Daos and record operations
-.src/pocketbase/daos/record.go
-
-# Auth collection handling
-.src/pocketbase/core/base_record_proxy.go
-```
-
-### pocketbase-gogen
-- **Repo**: https://github.com/Snonky/pocketbase-gogen
-- **Why**: Generate type-safe Go code from Pocketbase collections
-- **What we're learning**:
-  - Convert PB schemas to Go structs automatically
-  - Type-safe DAOs/Proxies instead of raw records
-  - Custom methods with typed data
-  - Template generation from `pb_data/`
-  - Proxy generation with getters/setters
-  - Optional utils and hooks generation
-  - **Limitation**: Generated code can shadow core.Record methods (email, etc.)
-
-**Clone command**:
-```bash
-cd .src
-git clone https://github.com/Snonky/pocketbase-gogen.git
-```
-
-**Install as tool**:
-```bash
-go install github.com/snonky/pocketbase-gogen@latest
-```
-
-**Usage**:
-```bash
-# Step 1: Generate template from pb_data
-pocketbase-gogen template ./path/to/pb_data ./yourmodule/pbschema/template.go
-
-# Step 2: Generate proxies from template
-pocketbase-gogen generate ./yourmodule/pbschema/template.go ./yourmodule/generated/proxies.go --utils --hooks
-```
-
-**Known Issues**:
-- Generated templates may contain fields that shadow `core.Record` methods
-- Requires manual editing of template between generation steps
-- See `pb/README.md` for workflow details
-
-## Managing Reference Repositories
-
-Use the included Makefile to manage all reference repositories:
+## Quick Start
 
 ```bash
-# Clone all reference repos at once
-make clone-all
+# 1. Clone reference repos
+make install
 
-# Or clone individual repos
-make clone-pocketbase
-make clone-gogen
-make clone-presentator
-make clone-jsonschema
-make clone-goPocJson
+# 2. Set fork context (only once!)
+make fork-context REPO=via
 
-# Update all repos (git pull)
-make update-all
-
-# List what's currently cloned
-make list
-
-# Show git status for all repos
-make status
-
-# Remove all cloned repos (WARNING: destructive!)
-make clean
+# 3. Use fork workflow (no flags needed!)
+make fork                # Interactive menu
+make fork-guide          # What should I do next?
+make fork-save MSG="..."  # Save and push changes
 ```
 
-## Usage Pattern
+## Fork Workflow Commands
 
-1. **Clone**: Use `make clone-all` or clone individual repos
-2. **Study**: Read code, run examples, understand patterns
-3. **Extract**: Adapt useful patterns to our codebase
-4. **Update**: Run `make update-all` periodically to stay current
-5. **Never commit**: Cloned repos are gitignored - only README.md and Makefile are tracked
+**🎯 Core Workflow (3 commands you'll use daily):**
+- `make fork-start` - Start new work (creates branch)
+- `make fork-continue` - Save progress (commit + push)
+- `make fork-finish` - Done with work (back to main)
 
-## Notes
+**🧭 Navigation (when you need it):**
+- `make fork-switch` - Switch branches
+- `make fork-sync` - Get latest from upstream
+- `make fork` - Interactive menu (explore all 16 states)
 
-- This is a **learning directory**, not a dependency directory
-- Code here is from external authors with their own licenses
-- Always check licenses before adapting patterns
-- Keep our codebase clean - import ideas, not code directly
+**📚 Info (read-only helpers):**
+- `make fork-guide` - Show current state + next steps
+- `make fork-list` - List all branches
+
+**Cognitive Load: 3 commands** (start, continue, finish)
+Learn the rest progressively as needed.
+
+All commands work without parameters (prompt when needed). Override with: `REPO=name`, `BRANCH=name`, `MSG="message"`.
+
+## Example Workflows
+
+### Standard Feature Development (3 commands)
+```bash
+make fork-start              # Creates branch (prompts for name)
+# Make your changes...
+make fork-continue           # Saves progress (prompts for msg)
+# Repeat as needed...
+make fork-finish             # Back to main, cleanup
+```
+
+### Quick Fix (2 commands)
+```bash
+make fork-start              # Creates branch
+# Edit files...
+make fork-continue           # Saves & pushes (gives PR link)
+make fork-finish             # Back to main
+```
+
+### Working on Multiple Branches
+```bash
+make fork-start              # Start feature A
+# Work on A...
+make fork-continue           # Save A
+make fork-switch             # Switch to feature B
+# Work on B...
+make fork-continue           # Save B
+make fork-finish             # Done with B, back to main
+```
+
+## Reference Repos
+
+```bash
+make install         # Clone all repos
+make upgrade         # Update all repos
+make status          # Show status of all repos
+```
+
+## Testing
+
+```bash
+make test            # Run all tests (30 seconds)
+
+# Individual test suites:
+./test-scenarios.sh          # State machine tests (7 scenarios)
+./test-fork-baseline.exp     # Regression tests
+./test-prompts.exp           # Prompt functionality
+
+# Development testing:
+make fork-branch DRY_RUN=1   # See prompts without executing
+```
+
+**Test coverage:**
+- 7 scenario tests (state-dependent logic + git operations)
+- 5 baseline tests (regression prevention)
+- 2 prompt tests (interactive functionality)
+- DRY_RUN mode for rapid UX validation
+
+## Files
+
+**Core:**
+- `Makefile` - Main entry point
+- `repos.mk`, `forks.mk`, `index.mk` - Modular command sets
+- `repos.list` - Repository metadata
+- `fork.list` - Current fork context
+- `index.list` - Trigger mappings for Claude agent discovery
+
+**Auto-generated:**
+- `.gitignore`, `INDEX.md`
+
+**Tests:**
+- `test-scenarios.sh` - Comprehensive scenario testing
+- `test-fork-baseline.exp` - Regression tests
+- `test-prompts.exp` - Prompt validation
+
+## repos.list Format
+
+```
+name|dir|url|ref|fork_url|description
+via|via|https://github.com/go-via/via.git|main|https://github.com/joeblew999/via.git|Via framework
+```
+
+## What Gets Committed
+
+Meta files only. Cloned repos ignored via `*/` pattern in `.gitignore`.
+
+## Fork Workflow Features
+
+- ✅ Interactive menus with numbered options
+- ✅ Shows which command is running (learn as you use)
+- ✅ Always displays repo context
+- ✅ Prevents commits to main branch
+- ✅ Detects uncommitted changes
+- ✅ Creates branches automatically when switching
+- ✅ Generates PR links after push
+- ✅ No manual git commands needed
+
+## How Testing Works
+
+**Three-tier approach:**
+
+1. **DRY_RUN** - Test prompts instantly without git operations
+2. **Scenarios** - Test state machine (main/feature × clean/dirty)
+3. **Expect** - Test user journeys end-to-end
+
+Run `make test` to execute all tiers (~30 seconds).
+
+## Common Questions
+
+**Q: Which command should I use most?**
+A: `make fork` (interactive) or `make fork-save MSG="..."` (direct)
+
+**Q: How do I know what to do next?**
+A: Run `make fork-guide` - it tells you exactly what to do
+
+**Q: Can I work on multiple repos?**
+A: Yes! Use `make fork-context REPO=name` to switch between repos
+
+**Q: What if I'm on the wrong branch?**
+A: `make fork-switch` or `make fork-list` to see/switch branches
+
+**Q: Do I need to learn git?**
+A: No! The Makefile handles all git operations
+
+## Safety Features
+
+- ❌ Cannot commit to main (shows menu with options)
+- ⚠️  Warns about uncommitted changes before switching
+- ✅ Detects detached HEAD state
+- 📍 Always shows current repo + branch
+- 🔍 Validates all inputs
+
+See `make help` for all available commands.

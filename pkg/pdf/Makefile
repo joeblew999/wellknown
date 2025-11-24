@@ -1,4 +1,4 @@
-.PHONY: help build serve serve-http certs-info certs-generate certs-regenerate test clean
+.PHONY: help build serve serve-http certs-info certs-generate certs-regenerate test clean kill
 
 # Paths
 BIN_DIR := ../../.bin
@@ -75,6 +75,13 @@ clean:
 	@rm -rf .data/outputs/
 	@rm -rf .data/temp/
 	@echo "✅ Clean complete"
+
+## kill: Kill pdfform web server processes on ports 8080 and 8443
+kill:
+	@echo "🔫 Killing pdfform servers on ports 8080 and 8443..."
+	@lsof -ti:8080 | xargs kill -9 2>/dev/null || echo "   No processes on 8080"
+	@lsof -ti:8443 | xargs kill -9 2>/dev/null || echo "   No processes on 8443"
+	@echo "✅ Ports freed"
 
 ## run-example-basic: Run basic usage example
 run-example-basic:

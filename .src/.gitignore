@@ -1,7 +1,20 @@
-# Ignore all cloned repositories
-*
+# Auto-generated - do not edit manually
+# Regenerate with: make gitignore
 
-# But track these meta files
+# Ignore all cloned repositories
+*/
+
+# Track meta files
 !.gitignore
 !README.md
 !Makefile
+!repos.list
+!stacks.list
+!agent-prompt.md
+!INDEX.md
+!STACK-*.md
+!DATASTAR.md
+
+# Backup files
+*.bak
+*.old

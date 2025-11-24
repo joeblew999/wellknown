@@ -109,4 +109,8 @@ tmp/
 # Fly.io (keep fly.toml for deployment config)
 .fly/
 
+# Reference repositories in .src/ (cloned repos, not tracked)
+# Track only meta files: .src/Makefile, .src/INDEX.md, etc.
+.src/*/
+
 

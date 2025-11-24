@@ -1,0 +1,10 @@
+stack|repos|tags|description
+pocketbase|pocketbase,pocketbase-ha,pocketbase-gogen,presentator|pocketbase|PocketBase backend framework - batteries-included backend with admin UI, auth, and real-time subscriptions
+datastar|datastar-go,datastarui,northstar,via,via-fork|datastar,via|Datastar hypermedia framework - reactive UI with SSE, HTML fragments, and Via real-time engine
+gomponents|gomponents,gomponents-starter-kit|gomponents|Gomponents - type-safe HTML components in pure Go (no templates)
+cloudflare|workers,workers-fork|cloudflare|Cloudflare Workers in Go - Go compiled to WASM for edge computing
+mcp|mcp-go-sdk,gic|mcp|Model Context Protocol - standard for AI tool integration and context sharing
+ai|anthropic-go-sdk,gic|anthropic,claude|AI/LLM integration - Claude API and AI-assisted git commits
+jsonschema|jsonschema,goPocJsonSchemaForm|jsonschema|JSON Schema - validation and dynamic form generation from schemas
+nats|peanats,terraform-provider-nsc|nats|NATS messaging - PubSub integration and infrastructure as code
+hugo|hugo,hugoplate|hugo|Hugo static site generator - fast static site generator with themes and templates

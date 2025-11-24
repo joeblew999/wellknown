@@ -1,0 +1,122 @@
+#!/usr/bin/expect -f
+# Baseline test suite - key pathways for DRY refactoring verification
+# Tests the patterns we're about to refactor
+
+set timeout 15
+set test_count 0
+set pass_count 0
+set fail_count 0
+
+proc test_result {name result} {
+    global test_count pass_count fail_count
+    incr test_count
+    if {$result} {
+        incr pass_count
+        puts "✅ PASS: $name"
+    } else {
+        incr fail_count
+        puts "❌ FAIL: $name"
+    }
+}
+
+puts "╔════════════════════════════════════════════════════════════════╗"
+puts "║         Baseline Tests for DRY Refactoring                    ║"
+puts "╚════════════════════════════════════════════════════════════════╝\n"
+
+# Test 1: fork-commit on main with changes - tests "on main" menu pattern
+puts "\n━━━ TEST 1: fork-commit on main (tests handle-main-branch pattern) ━━━"
+exec sh -c "cd via && git checkout main 2>/dev/null && echo '# test' > .test-tmp && git add .test-tmp"
+spawn make fork-commit MSG="test"
+expect {
+    "Select:" {
+        send "3\r"
+        expect {
+            "Cancelled" {
+                test_result "fork-commit on main menu" 1
+            }
+            timeout { test_result "fork-commit on main menu" 0 }
+        }
+    }
+    "No changes" {
+        test_result "fork-commit on main menu (no changes)" 1
+    }
+    timeout { test_result "fork-commit on main menu" 0 }
+}
+expect eof
+catch {exec sh -c "cd via && git reset --hard 2>/dev/null"}
+
+# Test 2: fork-save on main with changes - tests same pattern
+puts "\n━━━ TEST 2: fork-save on main (tests handle-main-branch pattern) ━━━"
+exec sh -c "cd via && git checkout main 2>/dev/null && echo '# test' > .test-tmp && git add .test-tmp"
+spawn make fork-save MSG="test"
+expect {
+    "Select:" {
+        send "3\r"
+        expect {
+            "Cancelled" {
+                test_result "fork-save on main menu" 1
+            }
+            timeout { test_result "fork-save on main menu" 0 }
+        }
+    }
+    "No changes" {
+        test_result "fork-save on main menu (no changes)" 1
+    }
+    timeout { test_result "fork-save on main menu" 0 }
+}
+expect eof
+catch {exec sh -c "cd via && git reset --hard 2>/dev/null"}
+
+# Test 3: fork interactive menu
+puts "\n━━━ TEST 3: fork main menu (various scenarios) ━━━"
+exec sh -c "cd via && git checkout main 2>/dev/null"
+spawn make fork
+expect "Select:"
+send "4\r"
+expect {
+    "Cancelled" {
+        test_result "fork cancel" 1
+    }
+    timeout { test_result "fork cancel" 0 }
+}
+expect eof
+
+# Test 4: Non-interactive commands still work
+puts "\n━━━ TEST 4: Non-interactive commands ━━━"
+spawn make fork-list
+expect {
+    "Branch List" {
+        test_result "fork-list" 1
+    }
+    timeout { test_result "fork-list" 0 }
+}
+expect eof
+
+spawn make fork-guide
+expect {
+    "Fork Workflow Guide" {
+        test_result "fork-guide" 1
+    }
+    timeout { test_result "fork-guide" 0 }
+}
+expect eof
+
+# Cleanup
+catch {exec sh -c "cd via && git checkout main 2>/dev/null && git reset --hard 2>/dev/null && rm -f .test-tmp"}
+
+# Results
+puts "\n╔════════════════════════════════════════════════════════════════╗"
+puts "║                     BASELINE TEST RESULTS                      ║"
+puts "╠════════════════════════════════════════════════════════════════╣"
+puts [format "║  Total Tests:  %-44s║" $test_count]
+puts [format "║  Passed:       %-44s║" "$pass_count ✅"]
+puts [format "║  Failed:       %-44s║" "$fail_count ❌"]
+puts "╚════════════════════════════════════════════════════════════════╝\n"
+
+if {$fail_count > 0} {
+    puts "⚠️  Baseline tests failed - DO NOT refactor yet!"
+    exit 1
+} else {
+    puts "✅ Baseline established - safe to refactor!"
+    exit 0
+}

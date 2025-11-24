@@ -1,6 +1,15 @@
 # PDF Form Filler
 
+```sh
+
+make build
+make serve
+```
+
 http://localhost:8080
+
+Nice to see the SSE events:
+http://127.0.0.1:8080/gui/events
 
 A Go package and CLI tool for working with fillable PDF forms. This tool helps you:
 - Extract form field names from any fillable PDF

@@ -69,11 +69,18 @@ Before doing ANYTHING, verify:
 
 **Path:** `/Users/apple/workspace/go/src/github.com/joeblew999/wellknown/.src/`
 
-**When to use:**
-- Planning features → Check `.src/` for patterns first
-- Need examples → Look in `.src/` before searching
-- Makefile patterns → Check `.src/Makefile`
-- Implementation guidance → Review `.src/` reference code
+### Agent File Discovery
+
+**Check `.src/INDEX.md` when user mentions:**
+Commits • Reviews • Planning • Exploration • PocketBase • UI • AI • Schemas
+
+**Flow:**
+```
+User: "help me commit" → INDEX.md → Read trigger file → Apply workflow
+```
+
+**Configured via:** `.src/triggers.list` (edit there, run `make index`)
+**Auto-generated:** INDEX.md updates after `make install`/`make upgrade`
 
 **Keep `.src/Makefile` in sync with root Makefile**
 

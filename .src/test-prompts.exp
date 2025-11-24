@@ -1,0 +1,54 @@
+#!/usr/bin/expect -f
+# Test new prompts in fork-branch and fork-switch
+
+set timeout 10
+
+puts "\n=== Test 1: fork-branch without BRANCH parameter ==="
+spawn make fork-branch
+expect {
+    "Branch name:" {
+        send "test-prompt-branch\r"
+        expect {
+            -re "Creating|created" {
+                puts "✅ PASS: fork-branch prompts for branch name"
+            }
+            timeout {
+                puts "❌ FAIL: No success message"
+                exit 1
+            }
+        }
+    }
+    timeout {
+        puts "❌ FAIL: No prompt for branch name"
+        exit 1
+    }
+}
+expect eof
+
+puts "\n=== Test 2: fork-switch without BRANCH parameter ==="
+spawn make fork-switch
+expect {
+    "Select branch" {
+        send "1\r"
+        expect {
+            -re "Already on|Switched" {
+                puts "✅ PASS: fork-switch prompts for branch selection"
+            }
+            timeout {
+                puts "❌ FAIL: No success message after switch"
+                exit 1
+            }
+        }
+    }
+    timeout {
+        puts "❌ FAIL: No prompt for branch selection"
+        exit 1
+    }
+}
+expect eof
+
+puts "\n=== Cleanup ==="
+catch {exec sh -c "cd via && git checkout main 2>/dev/null && git branch -D test-prompt-branch 2>/dev/null"}
+
+puts "\n✅ All prompt tests passed!\n"
+exit 0
