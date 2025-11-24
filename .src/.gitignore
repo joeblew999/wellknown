@@ -9,8 +9,10 @@
 !README.md
 !Makefile
 !repos.list
-!index.list
+!stacks.list
+!agent-prompt.md
 !INDEX.md
+!STACK-*.md
 !DATASTAR.md
 
 # Backup files
