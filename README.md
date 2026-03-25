@@ -7,6 +7,18 @@ https://github.com/joeblew999/wellknown
 **Universal Go library for generating and opening deep links across the Google and Apple app ecosystems.**
 Pure Go · Zero deps · Deterministic URLs · Cross-platform.
 
+---
+
+## 🎯 For Different Audiences
+
+**📈 Investors:** $87B+ TAM (cloud storage + SaaS collaboration market). Open source core + enterprise licensing model. Data sovereignty = regulatory moat (GDPR, HIPAA, FedRAMP ready). Network effects via mirrors. Exit targets: Cloudflare, Proton, Tailscale, Oracle.
+
+**🏛️ Government/Enterprise:** 100% air-gapped operation for classified/sensitive data. 70-86% cost reduction vs Microsoft 365/Google Workspace. Zero vendor lock-in (open standards: CalDAV, CardDAV, IMAP/SMTP). Full audit trail with Git-like version control. GDPR/HIPAA/FedRAMP compliance built-in.
+
+**💻 Developers:** [Jump to Quick Start](#-getting-started) | [Architecture](#how-it-works) | [API Reference](https://pkg.go.dev/github.com/joeblew999/wellknown)
+
+---
+
 ## WHY
 
 ### The Problem: Platform Lock-In

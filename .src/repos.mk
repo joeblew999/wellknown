@@ -227,7 +227,7 @@ upgrade:
 	$(call parallel-fetch-tags)
 	$(call print-table-header)
 	@tmpfile=$$(mktemp); output=$$(mktemp); \
-	updated=0; uptodate=0; branch=0; notag=0; notinstalled=0; \
+	updated=0; uptodate=0; on_branch=0; notag=0; notinstalled=0; \
 	trap "rm -f $$tmpfile $$output" EXIT; \
 	while IFS='|' read -r dir url ref fork_of desc; do \
 		[ "$$dir" = "dir" ] && echo "$$dir|$$url|$$ref|$$fork_of|$$desc" >> $$tmpfile && continue; \
@@ -240,7 +240,7 @@ upgrade:
 		case "$$ref" in main|master|develop|head|trunk) \
 			printf "  ↩︎  %-27s %-15s %-18s %-20s %-15s %s / %s\n" "$$dir" "on branch" "$$age" "$$owner" "$$fork_display" "$$ref" "$$branch" >> $$output; \
 			echo "$$dir|$$url|$$ref|$$fork_of|$$desc" >> $$tmpfile; \
-			branch=$$((branch + 1)); \
+			on_branch=$$((on_branch + 1)); \
 			continue;; \
 		esac; \
 		latest=$$(cd $$dir && git tag --sort=-version:refname | grep -vE '(rc|beta|alpha|pre)' | head -1 2>/dev/null); \
@@ -261,14 +261,14 @@ upgrade:
 		fi; \
 	done < $(REPOS_FILE); \
 	LC_ALL=C sort -k1.5 $$output; \
-	total=$$((updated + uptodate + branch + notag + notinstalled)); \
+	total=$$((updated + uptodate + on_branch + notag + notinstalled)); \
 	echo ""; \
 	if [ $$updated -gt 0 ]; then \
 		mv $$tmpfile $(REPOS_FILE) && echo "✅ Updated $$updated repo(s)"; \
 	else \
 		echo "✅ All repos up to date"; \
 	fi; \
-	echo "Summary: $$total repos total - $$updated upgraded, $$uptodate up-to-date, $$branch on branch, $$notag no tags, $$notinstalled not installed"
+	echo "Summary: $$total repos total - $$updated upgraded, $$uptodate up-to-date, $$on_branch on branch, $$notag no tags, $$notinstalled not installed"
 	@echo ""
 	@echo "Legend: ✅ up-to-date  🔼 outdated  ↩︎  skipped"
 	@echo ""
